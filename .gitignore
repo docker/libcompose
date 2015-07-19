@@ -1,2 +1,5 @@
 .DS_Store
-main/main
+/main/main
+/docker-compose*
+*.log
+*.swp
