@@ -205,7 +205,13 @@ func parse(configLookup ConfigLookup, inFile string, serviceData rawService, dat
 	logrus.Debugf("Merging %#v, %#v", baseService, serviceData)
 
 	for _, k := range noMerge {
-		delete(baseService, k)
+		if _, ok := baseService[k]; ok {
+			source := file
+			if source == "" {
+				source = inFile
+			}
+			return nil, fmt.Errorf("Cannot extend service '%s' in %s: services with '%s' cannot be extended", service, source, k)
+		}
 	}
 
 	for k, v := range serviceData {
