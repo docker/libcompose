@@ -50,3 +50,7 @@ func (e *EmptyService) Containers() ([]Container, error) {
 func (e *EmptyService) Scale(count int) error {
 	return nil
 }
+
+func (e *EmptyService) Info() (InfoSet, error) {
+	return InfoSet{}, nil
+}
