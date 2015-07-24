@@ -2,9 +2,9 @@ package app
 
 import (
 	"github.com/codegangsta/cli"
-	"github.com/docker/libcompose/command"
+	"github.com/docker/libcompose/cli/command"
+	"github.com/docker/libcompose/cli/logger"
 	"github.com/docker/libcompose/docker"
-	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project"
 )
 

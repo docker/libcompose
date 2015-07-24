@@ -2,7 +2,7 @@ package command
 
 import (
 	"github.com/codegangsta/cli"
-	"github.com/docker/libcompose/app"
+	"github.com/docker/libcompose/cli/app"
 	"github.com/docker/libcompose/project"
 )
 
