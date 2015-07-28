@@ -1,0 +1,3 @@
+# Contributing to libcompose
+
+You should do that...
