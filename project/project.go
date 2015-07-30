@@ -40,14 +40,7 @@ func NewProject(context *Context) *Project {
 
 	context.Project = p
 
-	listener := defaultListener{
-		listenChan: make(chan ProjectEvent),
-		project:    p,
-	}
-
-	p.listeners = []chan<- ProjectEvent{listener.listenChan}
-
-	go listener.start()
+	p.listeners = []chan<- ProjectEvent{NewDefaultListener(p)}
 
 	return p
 }

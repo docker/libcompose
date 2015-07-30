@@ -33,6 +33,15 @@ type defaultListener struct {
 	upCount    int
 }
 
+func NewDefaultListener(p *Project) chan<- ProjectEvent {
+	l := defaultListener{
+		listenChan: make(chan ProjectEvent),
+		project:    p,
+	}
+	go l.start()
+	return l.listenChan
+}
+
 func (d *defaultListener) start() {
 	for event := range d.listenChan {
 		buffer := bytes.NewBuffer(nil)
