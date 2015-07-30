@@ -31,7 +31,8 @@ func (s *Service) Create() error {
 }
 
 func (s *Service) collectContainers() ([]*Container, error) {
-	containers, err := GetContainersByFilter(s.context.Client, SERVICE.Eq(s.name), PROJECT.Eq(s.context.Project.Name))
+	client := s.context.ClientFactory.Create(s)
+	containers, err := GetContainersByFilter(client, SERVICE.Eq(s.name), PROJECT.Eq(s.context.Project.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +40,7 @@ func (s *Service) collectContainers() ([]*Container, error) {
 	result := []*Container{}
 
 	for _, container := range containers {
-		result = append(result, NewContainer(s.context.Client, container.Labels[NAME.Str()], s))
+		result = append(result, NewContainer(client, container.Labels[NAME.Str()], s))
 	}
 
 	return result, nil
@@ -83,13 +84,15 @@ func (s *Service) constructContainers(create bool, count int) ([]*Container, err
 		return nil, err
 	}
 
-	namer := NewNamer(s.context.Client, s.context.Project.Name, s.name)
+	client := s.context.ClientFactory.Create(s)
+
+	namer := NewNamer(client, s.context.Project.Name, s.name)
 	defer namer.Close()
 
 	for i := len(result); i < count; i++ {
 		containerName := namer.Next()
 
-		c := NewContainer(s.context.Client, containerName, s)
+		c := NewContainer(client, containerName, s)
 
 		if create {
 			imageName, err := s.build()
@@ -105,7 +108,7 @@ func (s *Service) constructContainers(create bool, count int) ([]*Container, err
 			}
 		}
 
-		result = append(result, NewContainer(s.context.Client, containerName, s))
+		result = append(result, NewContainer(client, containerName, s))
 	}
 
 	return result, nil

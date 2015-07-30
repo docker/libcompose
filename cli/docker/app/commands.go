@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/docker"
 )
@@ -12,8 +13,9 @@ func DockerClientFlags() []cli.Flag {
 			Usage: "Use TLS; implied by --tlsverify",
 		},
 		cli.BoolFlag{
-			Name:  "tlsverify",
-			Usage: "Use TLS and verify the remote",
+			Name:   "tlsverify",
+			Usage:  "Use TLS and verify the remote",
+			EnvVar: "DOCKER_TLS_VERIFY",
 		},
 		cli.StringFlag{
 			Name:  "tlscacert",
@@ -35,10 +37,19 @@ func DockerClientFlags() []cli.Flag {
 }
 
 func Populate(context *docker.Context, c *cli.Context) {
-	context.Tls = c.Bool("tls")
-	context.TlsVerify = c.Bool("tlsverify")
-	context.Ca = c.String("tlscacert")
-	context.Cert = c.String("tlscert")
-	context.Key = c.String("tlskey")
 	context.ConfigDir = c.String("configdir")
+
+	opts := docker.ClientOpts{}
+	opts.TLS = c.GlobalBool("tls")
+	opts.TLSVerify = c.GlobalBool("tlsverify")
+	opts.TLSOptions.CAFile = c.GlobalString("tlscacert")
+	opts.TLSOptions.CertFile = c.GlobalString("tlscert")
+	opts.TLSOptions.KeyFile = c.GlobalString("tlskey")
+
+	clientFactory, err := docker.NewDefaultClientFactory(opts)
+	if err != nil {
+		logrus.Fatalf("Failed to construct Docker client: %v", err)
+	}
+
+	context.ClientFactory = clientFactory
 }

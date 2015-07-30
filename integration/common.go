@@ -82,12 +82,11 @@ func (s *RunSuite) FromText(c *C, projectName, command string, argsAndInput ...s
 }
 
 func GetClient(c *C) dockerclient.Client {
-	context := docker.Context{}
-	err := context.CreateClient()
+	client, err := docker.CreateClient(docker.ClientOpts{})
 
 	c.Assert(err, IsNil)
 
-	return context.Client
+	return client
 }
 
 func (s *RunSuite) GetContainerByName(c *C, name string) *dockerclient.ContainerInfo {
