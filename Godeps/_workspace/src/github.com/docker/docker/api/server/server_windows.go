@@ -19,7 +19,7 @@ func (s *Server) newServer(proto, addr string) ([]serverCloser, error) {
 	)
 	switch proto {
 	case "tcp":
-		l, err := s.initTcpSocket(addr)
+		l, err := s.initTCPSocket(addr)
 		if err != nil {
 			return nil, err
 		}
@@ -31,7 +31,7 @@ func (s *Server) newServer(proto, addr string) ([]serverCloser, error) {
 
 	var res []serverCloser
 	for _, l := range ls {
-		res = append(res, &HttpServer{
+		res = append(res, &HTTPServer{
 			&http.Server{
 				Addr:    addr,
 				Handler: s.router,
@@ -43,6 +43,7 @@ func (s *Server) newServer(proto, addr string) ([]serverCloser, error) {
 
 }
 
+// AcceptConnections allows router to start listening for the incoming requests.
 func (s *Server) AcceptConnections(d *daemon.Daemon) {
 	s.daemon = d
 	s.registerSubRouter()
@@ -58,5 +59,11 @@ func allocateDaemonPort(addr string) error {
 	return nil
 }
 
-func adjustCpuShares(version version.Version, hostConfig *runconfig.HostConfig) {
+func adjustCPUShares(version version.Version, hostConfig *runconfig.HostConfig) {
+}
+
+// getContainersByNameDownlevel performs processing for pre 1.20 APIs. This
+// is only relevant on non-Windows daemons.
+func getContainersByNameDownlevel(w http.ResponseWriter, s *Server, namevar string) error {
+	return nil
 }

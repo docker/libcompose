@@ -7,33 +7,37 @@ import (
 
 func TestParseHost(t *testing.T) {
 	var (
-		defaultHttpHost = "127.0.0.1"
+		defaultHTTPHost = "127.0.0.1"
 		defaultUnix     = "/var/run/docker.sock"
 	)
 	invalids := map[string]string{
 		"0.0.0.0":              "Invalid bind address format: 0.0.0.0",
 		"tcp://":               "Invalid proto, expected tcp: ",
 		"tcp:a.b.c.d":          "Invalid bind address format: tcp:a.b.c.d",
+		"tcp:a.b.c.d/path":     "Invalid bind address format: tcp:a.b.c.d/path",
 		"udp://127.0.0.1":      "Invalid bind address format: udp://127.0.0.1",
 		"udp://127.0.0.1:2375": "Invalid bind address format: udp://127.0.0.1:2375",
 	}
 	valids := map[string]string{
-		"0.0.0.1:5555": "tcp://0.0.0.1:5555",
-		":6666":        "tcp://127.0.0.1:6666",
-		"tcp://:7777":  "tcp://127.0.0.1:7777",
-		"":             "unix:///var/run/docker.sock",
+		"0.0.0.1:5555":      "tcp://0.0.0.1:5555",
+		"0.0.0.1:5555/path": "tcp://0.0.0.1:5555/path",
+		":6666":             "tcp://127.0.0.1:6666",
+		":6666/path":        "tcp://127.0.0.1:6666/path",
+		"tcp://:7777":       "tcp://127.0.0.1:7777",
+		"tcp://:7777/path":  "tcp://127.0.0.1:7777/path",
+		"":                  "unix:///var/run/docker.sock",
 		"unix:///run/docker.sock": "unix:///run/docker.sock",
 		"unix://":                 "unix:///var/run/docker.sock",
 		"fd://":                   "fd://",
 		"fd://something":          "fd://something",
 	}
 	for invalidAddr, expectedError := range invalids {
-		if addr, err := ParseHost(defaultHttpHost, defaultUnix, invalidAddr); err == nil || err.Error() != expectedError {
+		if addr, err := ParseHost(defaultHTTPHost, defaultUnix, invalidAddr); err == nil || err.Error() != expectedError {
 			t.Errorf("tcp %v address expected error %v return, got %s and addr %v", invalidAddr, expectedError, err, addr)
 		}
 	}
 	for validAddr, expectedAddr := range valids {
-		if addr, err := ParseHost(defaultHttpHost, defaultUnix, validAddr); err != nil || addr != expectedAddr {
+		if addr, err := ParseHost(defaultHTTPHost, defaultUnix, validAddr); err != nil || addr != expectedAddr {
 			t.Errorf("%v -> expected %v, got %v", validAddr, expectedAddr, addr)
 		}
 	}

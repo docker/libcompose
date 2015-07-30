@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	Cli "github.com/docker/docker/cli"
 	flag "github.com/docker/docker/pkg/mflag"
 	"github.com/docker/docker/pkg/units"
 )
@@ -35,7 +36,7 @@ func (s *containerStats) Collect(cli *DockerCli, streamStats bool) {
 	} else {
 		v.Set("stream", "0")
 	}
-	stream, _, _, err := cli.call("GET", "/containers/"+s.Name+"/stats?"+v.Encode(), nil, nil)
+	serverResp, err := cli.call("GET", "/containers/"+s.Name+"/stats?"+v.Encode(), nil, nil)
 	if err != nil {
 		s.mu.Lock()
 		s.err = err
@@ -43,12 +44,12 @@ func (s *containerStats) Collect(cli *DockerCli, streamStats bool) {
 		return
 	}
 
-	defer stream.Close()
+	defer serverResp.body.Close()
 
 	var (
 		previousCPU    uint64
 		previousSystem uint64
-		dec            = json.NewDecoder(stream)
+		dec            = json.NewDecoder(serverResp.body)
 		u              = make(chan error, 1)
 	)
 	go func() {
@@ -124,9 +125,10 @@ func (s *containerStats) Display(w io.Writer) error {
 //
 // Usage: docker stats CONTAINER [CONTAINER...]
 func (cli *DockerCli) CmdStats(args ...string) error {
-	cmd := cli.Subcmd("stats", []string{"CONTAINER [CONTAINER...]"}, "Display a live stream of one or more containers' resource usage statistics", true)
+	cmd := Cli.Subcmd("stats", []string{"CONTAINER [CONTAINER...]"}, "Display a live stream of one or more containers' resource usage statistics", true)
 	noStream := cmd.Bool([]string{"-no-stream"}, false, "Disable streaming stats and only pull the first result")
 	cmd.Require(flag.Min, 1)
+
 	cmd.ParseFlags(args, true)
 
 	names := cmd.Args()

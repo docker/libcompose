@@ -2,10 +2,10 @@ package client
 
 import (
 	"errors"
-	"io"
 	"net/url"
 	"os"
 
+	Cli "github.com/docker/docker/cli"
 	flag "github.com/docker/docker/pkg/mflag"
 )
 
@@ -15,14 +15,14 @@ import (
 //
 // Usage: docker save [OPTIONS] IMAGE [IMAGE...]
 func (cli *DockerCli) CmdSave(args ...string) error {
-	cmd := cli.Subcmd("save", []string{"IMAGE [IMAGE...]"}, "Save an image(s) to a tar archive (streamed to STDOUT by default)", true)
+	cmd := Cli.Subcmd("save", []string{"IMAGE [IMAGE...]"}, "Save an image(s) to a tar archive (streamed to STDOUT by default)", true)
 	outfile := cmd.String([]string{"o", "-output"}, "", "Write to an file, instead of STDOUT")
 	cmd.Require(flag.Min, 1)
 
 	cmd.ParseFlags(args, true)
 
 	var (
-		output io.Writer = cli.out
+		output = cli.out
 		err    error
 	)
 	if *outfile != "" {

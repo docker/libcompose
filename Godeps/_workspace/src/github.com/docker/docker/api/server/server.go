@@ -34,12 +34,14 @@ import (
 	"github.com/docker/docker/pkg/sockets"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/docker/pkg/streamformatter"
+	"github.com/docker/docker/pkg/ulimit"
 	"github.com/docker/docker/pkg/version"
 	"github.com/docker/docker/runconfig"
 	"github.com/docker/docker/utils"
 )
 
-type ServerConfig struct {
+// Config provides the configuration for the API server
+type Config struct {
 	Logging     bool
 	EnableCors  bool
 	CorsHeaders string
@@ -48,15 +50,17 @@ type ServerConfig struct {
 	TLSConfig   *tls.Config
 }
 
+// Server contains instance details for the server
 type Server struct {
 	daemon  *daemon.Daemon
-	cfg     *ServerConfig
+	cfg     *Config
 	router  *mux.Router
 	start   chan struct{}
 	servers []serverCloser
 }
 
-func New(cfg *ServerConfig) *Server {
+// New returns a new instance of the server based on the specified configuration.
+func New(cfg *Config) *Server {
 	srv := &Server{
 		cfg:   cfg,
 		start: make(chan struct{}),
@@ -66,6 +70,7 @@ func New(cfg *ServerConfig) *Server {
 	return srv
 }
 
+// Close closes servers and thus stop receiving requests
 func (s *Server) Close() {
 	for _, srv := range s.servers {
 		if err := srv.Close(); err != nil {
@@ -79,9 +84,9 @@ type serverCloser interface {
 	Close() error
 }
 
-// ServeApi loops through all of the protocols sent in to docker and spawns
+// ServeAPI loops through all of the protocols sent in to docker and spawns
 // off a go routine to setup a serving http.Server for each.
-func (s *Server) ServeApi(protoAddrs []string) error {
+func (s *Server) ServeAPI(protoAddrs []string) error {
 	var chErrors = make(chan error, len(protoAddrs))
 
 	for _, protoAddr := range protoAddrs {
@@ -116,19 +121,27 @@ func (s *Server) ServeApi(protoAddrs []string) error {
 	return nil
 }
 
-type HttpServer struct {
+// HTTPServer contains an instance of http server and the listener.
+// srv *http.Server, contains configuration to create a http server and a mux router with all api end points.
+// l   net.Listener, is a TCP or Socket listener that dispatches incoming request to the router.
+type HTTPServer struct {
 	srv *http.Server
 	l   net.Listener
 }
 
-func (s *HttpServer) Serve() error {
+// Serve starts listening for inbound requests.
+func (s *HTTPServer) Serve() error {
 	return s.srv.Serve(s.l)
 }
-func (s *HttpServer) Close() error {
+
+// Close closes the HTTPServer from listening for the inbound requests.
+func (s *HTTPServer) Close() error {
 	return s.l.Close()
 }
 
-type HttpApiFunc func(version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error
+// HTTPAPIFunc is an adapter to allow the use of ordinary functions as Docker API endpoints.
+// Any function that has the appropriate signature can be register as a API endpoint (e.g. getVersion).
+type HTTPAPIFunc func(version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error
 
 func hijackServer(w http.ResponseWriter) (io.ReadCloser, io.Writer, error) {
 	conn, _, err := w.(http.Hijacker).Hijack()
@@ -152,8 +165,8 @@ func closeStreams(streams ...interface{}) {
 	}
 }
 
-// Check to make sure request's Content-Type is application/json
-func checkForJson(r *http.Request) error {
+// checkForJSON makes sure that the request's Content-Type is application/json.
+func checkForJSON(r *http.Request) error {
 	ct := r.Header.Get("Content-Type")
 
 	// No Content-Type header is ok as long as there's no Body
@@ -297,7 +310,13 @@ func (s *Server) postContainersKill(version version.Version, w http.ResponseWrit
 	}
 
 	if err := s.daemon.ContainerKill(name, sig); err != nil {
-		return err
+		_, isStopped := err.(daemon.ErrContainerNotRunning)
+		// Return error that's not caused because the container is stopped.
+		// Return error if the container is not running and the api is >= 1.20
+		// to keep backwards compatibility.
+		if version.GreaterThanOrEqualTo("1.20") || !isStopped {
+			return fmt.Errorf("Cannot kill container %s: %v", name, err)
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)
@@ -437,7 +456,7 @@ func (s *Server) getEvents(version version.Version, w http.ResponseWriter, r *ht
 	outStream.Write(nil) // make sure response is sent immediately
 	enc := json.NewEncoder(outStream)
 
-	getContainerId := func(cn string) string {
+	getContainerID := func(cn string) string {
 		c, err := d.Get(cn)
 		if err != nil {
 			return ""
@@ -448,7 +467,7 @@ func (s *Server) getEvents(version version.Version, w http.ResponseWriter, r *ht
 	sendEvent := func(ev *jsonmessage.JSONMessage) error {
 		//incoming container filter can be name,id or partial id, convert and replace as a full container id
 		for i, cn := range ef["container"] {
-			ef["container"][i] = getContainerId(cn)
+			ef["container"][i] = getContainerID(cn)
 		}
 
 		if isFiltered(ev.Status, ef["event"]) || (isFiltered(ev.ID, ef["image"]) &&
@@ -629,6 +648,17 @@ func (s *Server) getContainersLogs(version version.Version, w http.ResponseWrite
 		closeNotifier = notifier.CloseNotify()
 	}
 
+	c, err := s.daemon.Get(vars["name"])
+	if err != nil {
+		return err
+	}
+
+	outStream := ioutils.NewWriteFlusher(w)
+	// write an empty chunk of data (this is to ensure that the
+	// HTTP Response is sent immediatly, even if the container has
+	// not yet produced any data)
+	outStream.Write(nil)
+
 	logsConfig := &daemon.ContainerLogsConfig{
 		Follow:     boolValue(r, "follow"),
 		Timestamps: boolValue(r, "timestamps"),
@@ -636,11 +666,11 @@ func (s *Server) getContainersLogs(version version.Version, w http.ResponseWrite
 		Tail:       r.Form.Get("tail"),
 		UseStdout:  stdout,
 		UseStderr:  stderr,
-		OutStream:  ioutils.NewWriteFlusher(w),
+		OutStream:  outStream,
 		Stop:       closeNotifier,
 	}
 
-	if err := s.daemon.ContainerLogs(vars["name"], logsConfig); err != nil {
+	if err := s.daemon.ContainerLogs(c, logsConfig); err != nil {
 		fmt.Fprintf(w, "Error running logs job: %s\n", err)
 	}
 
@@ -672,7 +702,7 @@ func (s *Server) postCommit(version version.Version, w http.ResponseWriter, r *h
 		return err
 	}
 
-	if err := checkForJson(r); err != nil {
+	if err := checkForJSON(r); err != nil {
 		return err
 	}
 
@@ -688,7 +718,7 @@ func (s *Server) postCommit(version version.Version, w http.ResponseWriter, r *h
 		return err
 	}
 
-	commitCfg := &builder.BuilderCommitConfig{
+	commitCfg := &builder.CommitConfig{
 		Pause:   pause,
 		Repo:    r.Form.Get("repo"),
 		Tag:     r.Form.Get("tag"),
@@ -722,8 +752,8 @@ func (s *Server) postImagesCreate(version version.Version, w http.ResponseWriter
 	authEncoded := r.Header.Get("X-Registry-Auth")
 	authConfig := &cliconfig.AuthConfig{}
 	if authEncoded != "" {
-		authJson := base64.NewDecoder(base64.URLEncoding, strings.NewReader(authEncoded))
-		if err := json.NewDecoder(authJson).Decode(authConfig); err != nil {
+		authJSON := base64.NewDecoder(base64.URLEncoding, strings.NewReader(authEncoded))
+		if err := json.NewDecoder(authJSON).Decode(authConfig); err != nil {
 			// for a pull it is not an error if no auth was given
 			// to increase compatibility with the existing api it is defaulting to be empty
 			authConfig = &cliconfig.AuthConfig{}
@@ -802,8 +832,8 @@ func (s *Server) getImagesSearch(version version.Version, w http.ResponseWriter,
 	)
 
 	if authEncoded != "" {
-		authJson := base64.NewDecoder(base64.URLEncoding, strings.NewReader(authEncoded))
-		if err := json.NewDecoder(authJson).Decode(&config); err != nil {
+		authJSON := base64.NewDecoder(base64.URLEncoding, strings.NewReader(authEncoded))
+		if err := json.NewDecoder(authJSON).Decode(&config); err != nil {
 			// for a search it is not an error if no auth was given
 			// to increase compatibility with the existing api it is defaulting to be empty
 			config = &cliconfig.AuthConfig{}
@@ -818,7 +848,7 @@ func (s *Server) getImagesSearch(version version.Version, w http.ResponseWriter,
 	if err != nil {
 		return err
 	}
-	return json.NewEncoder(w).Encode(query.Results)
+	return writeJSON(w, http.StatusOK, query.Results)
 }
 
 func (s *Server) postImagesPush(version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
@@ -840,8 +870,8 @@ func (s *Server) postImagesPush(version version.Version, w http.ResponseWriter, 
 	authEncoded := r.Header.Get("X-Registry-Auth")
 	if authEncoded != "" {
 		// the new format is to handle the authConfig as a header
-		authJson := base64.NewDecoder(base64.URLEncoding, strings.NewReader(authEncoded))
-		if err := json.NewDecoder(authJson).Decode(authConfig); err != nil {
+		authJSON := base64.NewDecoder(base64.URLEncoding, strings.NewReader(authEncoded))
+		if err := json.NewDecoder(authJSON).Decode(authConfig); err != nil {
 			// to increase compatibility to existing api it is defaulting to be empty
 			authConfig = &cliconfig.AuthConfig{}
 		}
@@ -911,7 +941,7 @@ func (s *Server) postContainersCreate(version version.Version, w http.ResponseWr
 	if err := parseForm(r); err != nil {
 		return err
 	}
-	if err := checkForJson(r); err != nil {
+	if err := checkForJSON(r); err != nil {
 		return err
 	}
 	var (
@@ -923,15 +953,15 @@ func (s *Server) postContainersCreate(version version.Version, w http.ResponseWr
 	if err != nil {
 		return err
 	}
-	adjustCpuShares(version, hostConfig)
+	adjustCPUShares(version, hostConfig)
 
-	containerId, warnings, err := s.daemon.ContainerCreate(name, config, hostConfig)
+	containerID, warnings, err := s.daemon.ContainerCreate(name, config, hostConfig)
 	if err != nil {
 		return err
 	}
 
 	return writeJSON(w, http.StatusCreated, &types.ContainerCreateResponse{
-		ID:       containerId,
+		ID:       containerID,
 		Warnings: warnings,
 	})
 }
@@ -1033,7 +1063,7 @@ func (s *Server) postContainersStart(version version.Version, w http.ResponseWri
 	// allow a nil body for backwards compatibility
 	var hostConfig *runconfig.HostConfig
 	if r.Body != nil && (r.ContentLength > 0 || r.ContentLength == -1) {
-		if err := checkForJson(r); err != nil {
+		if err := checkForJSON(r); err != nil {
 			return err
 		}
 
@@ -1193,12 +1223,8 @@ func (s *Server) getContainersByName(version version.Version, w http.ResponseWri
 		return fmt.Errorf("Missing parameter")
 	}
 
-	if version.LessThan("1.19") {
-		containerJSONRaw, err := s.daemon.ContainerInspectRaw(vars["name"])
-		if err != nil {
-			return err
-		}
-		return writeJSON(w, http.StatusOK, containerJSONRaw)
+	if version.LessThan("1.20") && runtime.GOOS != "windows" {
+		return getContainersByNameDownlevel(w, s, vars["name"])
 	}
 
 	containerJSON, err := s.daemon.ContainerInspect(vars["name"])
@@ -1276,12 +1302,21 @@ func (s *Server) postBuild(version version.Version, w http.ResponseWriter, r *ht
 	buildConfig.AuthConfigs = authConfigs
 	buildConfig.MemorySwap = int64ValueOrZero(r, "memswap")
 	buildConfig.Memory = int64ValueOrZero(r, "memory")
-	buildConfig.CpuShares = int64ValueOrZero(r, "cpushares")
-	buildConfig.CpuPeriod = int64ValueOrZero(r, "cpuperiod")
-	buildConfig.CpuQuota = int64ValueOrZero(r, "cpuquota")
-	buildConfig.CpuSetCpus = r.FormValue("cpusetcpus")
-	buildConfig.CpuSetMems = r.FormValue("cpusetmems")
+	buildConfig.CPUShares = int64ValueOrZero(r, "cpushares")
+	buildConfig.CPUPeriod = int64ValueOrZero(r, "cpuperiod")
+	buildConfig.CPUQuota = int64ValueOrZero(r, "cpuquota")
+	buildConfig.CPUSetCpus = r.FormValue("cpusetcpus")
+	buildConfig.CPUSetMems = r.FormValue("cpusetmems")
 	buildConfig.CgroupParent = r.FormValue("cgroupparent")
+
+	var buildUlimits = []*ulimit.Ulimit{}
+	ulimitsJSON := r.FormValue("ulimits")
+	if ulimitsJSON != "" {
+		if err := json.NewDecoder(strings.NewReader(ulimitsJSON)).Decode(&buildUlimits); err != nil {
+			return err
+		}
+		buildConfig.Ulimits = buildUlimits
+	}
 
 	// Job cancellation. Note: not all job types support this.
 	if closeNotifier, ok := w.(http.CloseNotifier); ok {
@@ -1309,12 +1344,13 @@ func (s *Server) postBuild(version version.Version, w http.ResponseWriter, r *ht
 	return nil
 }
 
+// postContainersCopy is deprecated in favor of getContainersArchivePath.
 func (s *Server) postContainersCopy(version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	if vars == nil {
 		return fmt.Errorf("Missing parameter")
 	}
 
-	if err := checkForJson(r); err != nil {
+	if err := checkForJSON(r); err != nil {
 		return err
 	}
 
@@ -1348,11 +1384,72 @@ func (s *Server) postContainersCopy(version version.Version, w http.ResponseWrit
 	return nil
 }
 
+// // Encode the stat to JSON, base64 encode, and place in a header.
+func setContainerPathStatHeader(stat *types.ContainerPathStat, header http.Header) error {
+	statJSON, err := json.Marshal(stat)
+	if err != nil {
+		return err
+	}
+
+	header.Set(
+		"X-Docker-Container-Path-Stat",
+		base64.StdEncoding.EncodeToString(statJSON),
+	)
+
+	return nil
+}
+
+func (s *Server) headContainersArchive(version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	v, err := archiveFormValues(r, vars)
+	if err != nil {
+		return err
+	}
+
+	stat, err := s.daemon.ContainerStatPath(v.name, v.path)
+	if err != nil {
+		return err
+	}
+
+	return setContainerPathStatHeader(stat, w.Header())
+}
+
+func (s *Server) getContainersArchive(version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	v, err := archiveFormValues(r, vars)
+	if err != nil {
+		return err
+	}
+
+	tarArchive, stat, err := s.daemon.ContainerArchivePath(v.name, v.path)
+	if err != nil {
+		return err
+	}
+	defer tarArchive.Close()
+
+	if err := setContainerPathStatHeader(stat, w.Header()); err != nil {
+		return err
+	}
+
+	w.Header().Set("Content-Type", "application/x-tar")
+	_, err = io.Copy(w, tarArchive)
+
+	return err
+}
+
+func (s *Server) putContainersArchive(version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	v, err := archiveFormValues(r, vars)
+	if err != nil {
+		return err
+	}
+
+	noOverwriteDirNonDir := boolValue(r, "noOverwriteDirNonDir")
+	return s.daemon.ContainerExtractToDir(v.name, v.path, noOverwriteDirNonDir, r.Body)
+}
+
 func (s *Server) postContainerExecCreate(version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	if err := parseForm(r); err != nil {
 		return err
 	}
-	if err := checkForJson(r); err != nil {
+	if err := checkForJSON(r); err != nil {
 		return err
 	}
 	name := vars["name"]
@@ -1468,11 +1565,11 @@ func (s *Server) ping(version version.Version, w http.ResponseWriter, r *http.Re
 	return err
 }
 
-func (s *Server) initTcpSocket(addr string) (l net.Listener, err error) {
+func (s *Server) initTCPSocket(addr string) (l net.Listener, err error) {
 	if s.cfg.TLSConfig == nil || s.cfg.TLSConfig.ClientAuth != tls.RequireAndVerifyClientCert {
 		logrus.Warn("/!\\ DON'T BIND ON ANY IP ADDRESS WITHOUT setting -tlsverify IF YOU DON'T KNOW WHAT YOU'RE DOING /!\\")
 	}
-	if l, err = sockets.NewTcpSocket(addr, s.cfg.TLSConfig, s.start); err != nil {
+	if l, err = sockets.NewTCPSocket(addr, s.cfg.TLSConfig, s.start); err != nil {
 		return nil, err
 	}
 	if err := allocateDaemonPort(addr); err != nil {
@@ -1481,7 +1578,7 @@ func (s *Server) initTcpSocket(addr string) (l net.Listener, err error) {
 	return
 }
 
-func makeHttpHandler(logging bool, localMethod string, localRoute string, handlerFunc HttpApiFunc, corsHeaders string, dockerVersion version.Version) http.HandlerFunc {
+func makeHTTPHandler(logging bool, localMethod string, localRoute string, handlerFunc HTTPAPIFunc, corsHeaders string, dockerVersion version.Version) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// log the request
 		logrus.Debugf("Calling %s %s", localMethod, localRoute)
@@ -1533,9 +1630,12 @@ func makeHttpHandler(logging bool, localMethod string, localRoute string, handle
 func createRouter(s *Server) *mux.Router {
 	r := mux.NewRouter()
 	if os.Getenv("DEBUG") != "" {
-		ProfilerSetup(r, "/debug/")
+		profilerSetup(r, "/debug/")
 	}
-	m := map[string]map[string]HttpApiFunc{
+	m := map[string]map[string]HTTPAPIFunc{
+		"HEAD": {
+			"/containers/{name:.*}/archive": s.headContainersArchive,
+		},
 		"GET": {
 			"/_ping":                          s.ping,
 			"/events":                         s.getEvents,
@@ -1557,6 +1657,7 @@ func createRouter(s *Server) *mux.Router {
 			"/containers/{name:.*}/stats":     s.getContainersStats,
 			"/containers/{name:.*}/attach/ws": s.wsContainersAttach,
 			"/exec/{id:.*}/json":              s.getExecByID,
+			"/containers/{name:.*}/archive":   s.getContainersArchive,
 		},
 		"POST": {
 			"/auth":                         s.postAuth,
@@ -1581,6 +1682,9 @@ func createRouter(s *Server) *mux.Router {
 			"/exec/{name:.*}/start":         s.postContainerExecStart,
 			"/exec/{name:.*}/resize":        s.postContainerExecResize,
 			"/containers/{name:.*}/rename":  s.postContainerRename,
+		},
+		"PUT": {
+			"/containers/{name:.*}/archive": s.putContainersArchive,
 		},
 		"DELETE": {
 			"/containers/{name:.*}": s.deleteContainers,
@@ -1607,7 +1711,7 @@ func createRouter(s *Server) *mux.Router {
 			localMethod := method
 
 			// build the handler function
-			f := makeHttpHandler(s.cfg.Logging, localMethod, localRoute, localFct, corsHeaders, version.Version(s.cfg.Version))
+			f := makeHTTPHandler(s.cfg.Logging, localMethod, localRoute, localFct, corsHeaders, version.Version(s.cfg.Version))
 
 			// add the new route
 			if localRoute == "" {
