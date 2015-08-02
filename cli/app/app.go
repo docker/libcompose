@@ -18,7 +18,7 @@ func BeforeApp(c *cli.Context) error {
 	if c.GlobalBool("verbose") {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
-	logrus.Warning("Experimental, not a replacement for Python docker-compose (https://github.com/docker/compose)")
+	logrus.Warning("Note: This is an experimental alternate implementation of the Compose CLI (https://github.com/docker/compose)")
 	return nil
 }
 

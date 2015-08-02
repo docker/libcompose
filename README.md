@@ -2,7 +2,7 @@
 
 An official implementation of Docker Compose in Go made available as a library.
 
-**NOTE: Experimental and not a replacement for [Python docker-compose](https://github.com/docker/compose)**
+**Note: This is an experimental alternate implementation of [Docker Compose](https://github.com/docker/compose)**
 
 ```go
 package main
