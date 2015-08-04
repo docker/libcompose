@@ -65,3 +65,6 @@ This will be fully Dockerized in a bit
 
 The project is still being kickstarted... But it does a lot.  Please try it out and help us find bugs.
 
+## Contributing
+
+Want to hack on libcompose? [Docker's contributions guidelines](https://github.com/docker/docker/blob/master/CONTRIBUTING.md) apply.
