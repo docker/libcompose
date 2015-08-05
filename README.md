@@ -2,6 +2,7 @@
 
 An official implementation of Docker Compose in Go made available as a library.
 
+**Note: This is an experimental alternate implementation of [Docker Compose](https://github.com/docker/compose)**
 
 ```go
 package main
@@ -38,8 +39,6 @@ You need Docker and then run
 
 ## Running
 
-### **NOTE: Experimental and not a replacement for Python docker-compose**
-
 A full implementation of the docker-compose CLI is implemented also in Go.  The primary purpose of this code is to provide a way in which one can easily test the correctness of the behavior of libcompose.
 
 Run one of these:
@@ -66,3 +65,6 @@ This will be fully Dockerized in a bit
 
 The project is still being kickstarted... But it does a lot.  Please try it out and help us find bugs.
 
+## Contributing
+
+Want to hack on libcompose? [Docker's contributions guidelines](https://github.com/docker/docker/blob/master/CONTRIBUTING.md) apply.
