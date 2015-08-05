@@ -21,6 +21,7 @@ type Context struct {
 	Timeout             uint
 	Log                 bool
 	Volume              bool
+	Rebuild             bool
 	Signal              int
 	ComposeFile         string
 	ComposeBytes        []byte

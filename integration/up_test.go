@@ -25,6 +25,182 @@ func (s *RunSuite) TestUpNotExistService(c *C) {
 	c.Assert(cn, IsNil)
 }
 
+func (s *RunSuite) TestRebuildForceRecreate(c *C) {
+	p := s.ProjectFromText(c, "up", SimpleTemplate)
+
+	name := fmt.Sprintf("%s_%s_1", p, "hello")
+	cn := s.GetContainerByName(c, name)
+	c.Assert(cn, NotNil)
+
+	p = s.FromText(c, p, "up", "--force-recreate", SimpleTemplate)
+	cn2 := s.GetContainerByName(c, name)
+	c.Assert(cn.ID, Not(Equals), cn2.ID)
+}
+
+func (s *RunSuite) TestRebuildNoRecreate(c *C) {
+	p := s.ProjectFromText(c, "up", SimpleTemplate)
+
+	name := fmt.Sprintf("%s_%s_1", p, "hello")
+	cn := s.GetContainerByName(c, name)
+	c.Assert(cn, NotNil)
+
+	p = s.FromText(c, p, "up", "--no-recreate", `
+	hello:
+	  labels:
+	    key: val
+	  image: busybox
+	  stdin_open: true
+	  tty: true
+	`)
+	cn2 := s.GetContainerByName(c, name)
+	c.Assert(cn.ID, Equals, cn2.ID)
+}
+
+func (s *RunSuite) TestRebuild(c *C) {
+	p := s.ProjectFromText(c, "up", SimpleTemplate)
+
+	name := fmt.Sprintf("%s_%s_1", p, "hello")
+	cn := s.GetContainerByName(c, name)
+	c.Assert(cn, NotNil)
+
+	p = s.FromText(c, p, "up", SimpleTemplate)
+	cn2 := s.GetContainerByName(c, name)
+	c.Assert(cn.ID, Equals, cn2.ID)
+
+	p = s.FromText(c, p, "up", `
+	hello:
+	  labels:
+	    key: val
+	  image: busybox
+	  stdin_open: true
+	  tty: true
+	`)
+	cn3 := s.GetContainerByName(c, name)
+	c.Assert(cn2.ID, Not(Equals), cn3.ID)
+
+	// Should still rebuild because old has a different label
+	p = s.FromText(c, p, "up", "--rebuild", `
+	hello:
+	  labels:
+	    io.docker.compose.rebuild: false
+	  image: busybox
+	  stdin_open: true
+	  tty: true
+	`)
+	cn4 := s.GetContainerByName(c, name)
+	c.Assert(cn3.ID, Not(Equals), cn4.ID)
+
+	p = s.FromText(c, p, "up", "--rebuild", `
+	hello:
+	  labels:
+	    io.docker.compose.rebuild: false
+	  image: busybox
+	  stdin_open: true
+	  tty: true
+	`)
+	cn5 := s.GetContainerByName(c, name)
+	c.Assert(cn4.ID, Equals, cn5.ID)
+
+	p = s.FromText(c, p, "up", "--rebuild", `
+	hello:
+	  labels:
+	    io.docker.compose.rebuild: always
+	  image: busybox
+	  stdin_open: true
+	  tty: true
+	`)
+	cn6 := s.GetContainerByName(c, name)
+	c.Assert(cn5.ID, Not(Equals), cn6.ID)
+
+	p = s.FromText(c, p, "up", "--rebuild", `
+	hello:
+	  labels:
+	    io.docker.compose.rebuild: always
+	  image: busybox
+	  stdin_open: true
+	  tty: true
+	`)
+	cn7 := s.GetContainerByName(c, name)
+	c.Assert(cn6.ID, Not(Equals), cn7.ID)
+
+	c.Assert(cn.State.Running, Equals, true)
+}
+
+func (s *RunSuite) TestUpAfterImageTagDeleted(c *C) {
+	client := GetClient(c)
+	label := RandStr(7)
+	repo := "busybox"
+	image := fmt.Sprintf("%s:%s", repo, label)
+
+	template := fmt.Sprintf(`
+	hello:
+	  labels:
+	    key: val
+		image: %s
+	  stdin_open: true
+	  tty: true
+	`, image)
+
+	err := client.TagImage("busybox:latest", dockerclient.TagImageOptions{Repo: repo, Tag: label, Force: true})
+	c.Assert(err, IsNil)
+
+	p := s.ProjectFromText(c, "up", template)
+	name := fmt.Sprintf("%s_%s_1", p, "hello")
+	firstContainer := s.GetContainerByName(c, name)
+
+	_, err = client.RemoveImage(image)
+	c.Assert(err, IsNil)
+
+	p = s.FromText(c, p, "up", "--rebuild", template)
+	latestContainer := s.GetContainerByName(c, name)
+	c.Assert(firstContainer.ID, Equals, latestContainer.ID)
+}
+
+func (s *RunSuite) TestRebuildImageChanging(c *C) {
+	client := GetClient(c)
+	label := "buildroot-2013.08.1"
+	repo := "busybox"
+	image := fmt.Sprintf("%s:%s", repo, label)
+
+	template := fmt.Sprintf(`
+	hello:
+	  labels:
+	    key: val
+		image: %s
+	  stdin_open: true
+	  tty: true
+	`, image)
+
+	// Ignore error here
+	client.RemoveImage(image)
+
+	// Build w/ pull needed
+	p := s.ProjectFromText(c, "up", template)
+	name := fmt.Sprintf("%s_%s_1", p, "hello")
+	firstContainer := s.GetContainerByName(c, name)
+
+	// Rebuild in place, no pull needed
+	p = s.FromText(c, p, "up", "--rebuild", template)
+	latestContainer := s.GetContainerByName(c, name)
+	c.Assert(firstContainer.ID, Equals, latestContainer.ID)
+
+	// Rebuild in place, no pull needed
+	p = s.FromText(c, p, "up", "--rebuild", template)
+	latestContainer = s.GetContainerByName(c, name)
+	c.Assert(firstContainer.ID, Equals, latestContainer.ID)
+
+	// Change what tag points to
+	err := client.TagImage("busybox:latest", dockerclient.TagImageOptions{Repo: repo, Tag: label, Force: true})
+	c.Assert(err, IsNil)
+
+	// Rebuild from new image of changed tag
+	p = s.FromText(c, p, "up", "--rebuild", template)
+	latestContainer = s.GetContainerByName(c, name)
+	c.Assert(firstContainer.ID, Not(Equals), latestContainer.ID)
+
+	s.FromText(c, p, "rm", "-f", template)
+}
+
 func (s *RunSuite) TestLink(c *C) {
 	p := s.ProjectFromText(c, "up", `
         server:
