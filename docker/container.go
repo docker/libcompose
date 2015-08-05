@@ -160,12 +160,8 @@ func (c *Container) Up(imageName string) error {
 	}
 
 	if !info.State.Running {
-		logrus.Debugf("Starting container: %s: %#v", container.Id, info.HostConfig)
-		err = c.populateAdditionalHostConfig(info.HostConfig)
-		if err != nil {
-			return err
-		}
-		err := c.client.StartContainer(container.Id, info.HostConfig)
+		logrus.Debugf("Starting container: %s: %#v", container.Id)
+		err := c.client.StartContainer(container.Id, nil)
 		return err
 	}
 
