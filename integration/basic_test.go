@@ -41,6 +41,42 @@ func (s *RunSuite) TestUp(c *C) {
 	c.Assert(cn.State.Running, Equals, true)
 }
 
+func (s *RunSuite) TestRebuild(c *C) {
+	p := s.ProjectFromText(c, "up", SimpleTemplate)
+
+	name := fmt.Sprintf("%s_%s_1", p, "hello")
+	cn := s.GetContainerByName(c, name)
+	c.Assert(cn, NotNil)
+
+	p = s.FromText(c, p, "up", SimpleTemplate)
+	cn2 := s.GetContainerByName(c, name)
+	c.Assert(cn.Id, Equals, cn2.Id)
+
+	p = s.FromText(c, p, "up", "--rebuild", `
+	hello:
+	  labels:
+	    key: val
+	  image: busybox
+	  stdin_open: true
+	  tty: true
+	`)
+	cn3 := s.GetContainerByName(c, name)
+	c.Assert(cn2.Id, Not(Equals), cn3.Id)
+
+	p = s.FromText(c, p, "up", "--rebuild", `
+	hello:
+	  labels:
+	    io.docker.compose.rebuild: false
+	  image: busybox
+	  stdin_open: true
+	  tty: true
+	`)
+	cn4 := s.GetContainerByName(c, name)
+	c.Assert(cn3.Id, Equals, cn4.Id)
+
+	c.Assert(cn.State.Running, Equals, true)
+}
+
 func (s *RunSuite) TestRestart(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 

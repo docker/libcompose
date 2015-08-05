@@ -63,11 +63,6 @@ func (i *inOrderNamer) Next() string {
 }
 
 func (i *inOrderNamer) Close() error {
-	select {
-	case i.done <- true:
-		close(i.done)
-	default:
-	}
-
+	close(i.done)
 	return nil
 }
