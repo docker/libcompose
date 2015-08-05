@@ -59,6 +59,107 @@ func (s *RunSuite) TestUp(c *C) {
 	c.Assert(cn.State.Running, Equals, true)
 }
 
+func (s *RunSuite) TestRebuildForceRecreate(c *C) {
+	p := s.ProjectFromText(c, "up", SimpleTemplate)
+
+	name := fmt.Sprintf("%s_%s_1", p, "hello")
+	cn := s.GetContainerByName(c, name)
+	c.Assert(cn, NotNil)
+
+	p = s.FromText(c, p, "up", "--force-recreate", SimpleTemplate)
+	cn2 := s.GetContainerByName(c, name)
+	c.Assert(cn.Id, Not(Equals), cn2.Id)
+}
+
+func (s *RunSuite) TestRebuildNoRecreate(c *C) {
+	p := s.ProjectFromText(c, "up", SimpleTemplate)
+
+	name := fmt.Sprintf("%s_%s_1", p, "hello")
+	cn := s.GetContainerByName(c, name)
+	c.Assert(cn, NotNil)
+
+	p = s.FromText(c, p, "up", "--no-recreate", `
+	hello:
+	  labels:
+	    key: val
+	  image: busybox
+	  stdin_open: true
+	  tty: true
+	`)
+	cn2 := s.GetContainerByName(c, name)
+	c.Assert(cn.Id, Equals, cn2.Id)
+}
+
+func (s *RunSuite) TestRebuild(c *C) {
+	p := s.ProjectFromText(c, "up", SimpleTemplate)
+
+	name := fmt.Sprintf("%s_%s_1", p, "hello")
+	cn := s.GetContainerByName(c, name)
+	c.Assert(cn, NotNil)
+
+	p = s.FromText(c, p, "up", SimpleTemplate)
+	cn2 := s.GetContainerByName(c, name)
+	c.Assert(cn.Id, Equals, cn2.Id)
+
+	p = s.FromText(c, p, "up", `
+	hello:
+	  labels:
+	    key: val
+	  image: busybox
+	  stdin_open: true
+	  tty: true
+	`)
+	cn3 := s.GetContainerByName(c, name)
+	c.Assert(cn2.Id, Not(Equals), cn3.Id)
+
+	// Should still rebuild because old has a different label
+	p = s.FromText(c, p, "up", `
+	hello:
+	  labels:
+	    io.docker.compose.rebuild: false
+	  image: busybox
+	  stdin_open: true
+	  tty: true
+	`)
+	cn4 := s.GetContainerByName(c, name)
+	c.Assert(cn3.Id, Not(Equals), cn4.Id)
+
+	p = s.FromText(c, p, "up", `
+	hello:
+	  labels:
+	    io.docker.compose.rebuild: false
+	  image: busybox
+	  stdin_open: true
+	  tty: true
+	`)
+	cn5 := s.GetContainerByName(c, name)
+	c.Assert(cn4.Id, Equals, cn5.Id)
+
+	p = s.FromText(c, p, "up", `
+	hello:
+	  labels:
+	    io.docker.compose.rebuild: always
+	  image: busybox
+	  stdin_open: true
+	  tty: true
+	`)
+	cn6 := s.GetContainerByName(c, name)
+	c.Assert(cn5.Id, Not(Equals), cn6.Id)
+
+	p = s.FromText(c, p, "up", `
+	hello:
+	  labels:
+	    io.docker.compose.rebuild: always
+	  image: busybox
+	  stdin_open: true
+	  tty: true
+	`)
+	cn7 := s.GetContainerByName(c, name)
+	c.Assert(cn6.Id, Not(Equals), cn7.Id)
+
+	c.Assert(cn.State.Running, Equals, true)
+}
+
 func (s *RunSuite) TestRestart(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
