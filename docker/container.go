@@ -95,6 +95,48 @@ func name(names []string) string {
 	return current[1:]
 }
 
+func (c *Container) Rebuild(imageName string) (*dockerclient.Container, error) {
+	info, err := c.findInfo()
+	if err != nil {
+		return nil, err
+	} else if info == nil {
+		return nil, fmt.Errorf("Can not find container to rebuild for service: %s", c.service.Name())
+	}
+
+	hash := info.Config.Labels[HASH.Str()]
+	if hash == "" {
+		return nil, fmt.Errorf("Failed to find hash on old container: %s", info.Name)
+	}
+
+	name := info.Name[1:]
+	new_name := fmt.Sprintf("%s_%s", name, info.Id[:12])
+	deleted := false
+	logrus.Debugf("Renaming %s => %s", name, new_name)
+	if err := c.client.RenameContainer(name, new_name); err != nil {
+		logrus.Errorf("Rename failed, deleting %s", name)
+		if err := c.client.RemoveContainer(info.Id, true, false); err != nil {
+			return nil, err
+		}
+		deleted = true
+	}
+
+	newContainer, err := c.createContainer(imageName, info.Id)
+	if err != nil {
+		return nil, err
+	}
+	logrus.Debugf("Created replacement container %s", newContainer.Id)
+
+	if !deleted {
+		if err := c.client.RemoveContainer(info.Id, true, false); err != nil {
+			logrus.Errorf("Failed to remove old container %s", c.name)
+			return nil, err
+		}
+		logrus.Debugf("Removed old container %s %s", c.name, info.Id)
+	}
+
+	return newContainer, nil
+}
+
 // Create creates the container based on the specified image name and send an event
 // to notify the container has been created. If the container already exists, does
 // nothing.
@@ -105,7 +147,7 @@ func (c *Container) Create(imageName string) (*dockerclient.Container, error) {
 	}
 
 	if container == nil {
-		container, err = c.createContainer(imageName)
+		container, err = c.createContainer(imageName, "")
 		if err != nil {
 			return nil, err
 		}
@@ -197,21 +239,39 @@ func (c *Container) Up(imageName string) error {
 
 // OutOfSync checks if the container is out of sync with the service definition.
 // It looks if the the service hash container label is the same as the computed one.
-func (c *Container) OutOfSync() (bool, error) {
-	container, err := c.findExisting()
-	if err != nil || container == nil {
+func (c *Container) OutOfSync(imageName string) (bool, error) {
+	info, err := c.findInfo()
+	if err != nil || info == nil {
 		return false, err
 	}
 
-	info, err := c.client.InspectContainer(container.Id)
-	if err != nil {
+	if info.Config.Image != imageName {
+		logrus.Debugf("Images for %s do not match %s!=%s", c.name, info.Config.Image, imageName)
+		return true, nil
+	}
+
+	if info.Config.Labels[HASH.Str()] != c.getHash() {
+		logrus.Debugf("Hashes for %s do not match %s!=%s", c.name, info.Config.Labels[HASH.Str()], c.getHash())
+		return true, nil
+	}
+
+	image, err := c.client.InspectImage(info.Config.Image)
+	if err != nil && (err.Error() == "Not found" || image == nil) {
+		logrus.Debugf("Image %s do not exist, do not know if it's out of sync", info.Config.Image)
+		return false, nil
+	} else if err != nil {
 		return false, err
 	}
 
-	return info.Config.Labels[HASH.Str()] != project.GetServiceHash(c.service), nil
+	logrus.Debugf("Checking existing image name vs id: %s == %s", image.Id, info.Image)
+	return image.Id != info.Image, err
 }
 
-func (c *Container) createContainer(imageName string) (*dockerclient.Container, error) {
+func (c *Container) getHash() string {
+	return project.GetServiceHash(c.service.Name(), *c.service.Config())
+}
+
+func (c *Container) createContainer(imageName, oldContainer string) (*dockerclient.Container, error) {
 	config, err := ConvertToAPI(c.service.serviceConfig)
 	if err != nil {
 		return nil, err
@@ -226,22 +286,26 @@ func (c *Container) createContainer(imageName string) (*dockerclient.Container, 
 	config.Labels[NAME.Str()] = c.name
 	config.Labels[SERVICE.Str()] = c.service.name
 	config.Labels[PROJECT.Str()] = c.service.context.Project.Name
-	config.Labels[HASH.Str()] = project.GetServiceHash(c.service)
+	config.Labels[HASH.Str()] = c.getHash()
 
 	err = c.populateAdditionalHostConfig(&config.HostConfig)
 	if err != nil {
 		return nil, err
 	}
 
+	if oldContainer != "" {
+		config.HostConfig.VolumesFrom = append(config.HostConfig.VolumesFrom, oldContainer)
+	}
+
 	logrus.Debugf("Creating container %s %#v", c.name, config)
 
-	_, err = c.client.CreateContainer(config, c.name)
+	id, err := c.client.CreateContainer(config, c.name)
 	if err != nil && err.Error() == "Not found" {
 		logrus.Debugf("Not Found, pulling image %s", config.Image)
 		if err = c.pull(config.Image); err != nil {
 			return nil, err
 		}
-		if _, err = c.client.CreateContainer(config, c.name); err != nil {
+		if id, err = c.client.CreateContainer(config, c.name); err != nil {
 			return nil, err
 		}
 	}
@@ -251,7 +315,7 @@ func (c *Container) createContainer(imageName string) (*dockerclient.Container, 
 		return nil, err
 	}
 
-	return c.findExisting()
+	return GetContainerById(c.client, id)
 }
 
 func (c *Container) populateAdditionalHostConfig(hostConfig *dockerclient.HostConfig) error {
@@ -404,6 +468,10 @@ func (c *Container) Log() error {
 }
 
 func (c *Container) pull(image string) error {
+	return PullImage(c.client, c.service, image)
+}
+
+func PullImage(client dockerclient.Client, service *Service, image string) error {
 	taglessRemote, tag := parsers.ParseRepositoryTag(image)
 	if tag == "" {
 		image = utils.ImageReference(taglessRemote, tags.DEFAULTTAG)
@@ -415,11 +483,11 @@ func (c *Container) pull(image string) error {
 	}
 
 	authConfig := cliconfig.AuthConfig{}
-	if c.service.context.ConfigFile != nil && repoInfo != nil && repoInfo.Index != nil {
-		authConfig = registry.ResolveAuthConfig(c.service.context.ConfigFile, repoInfo.Index)
+	if service.context.ConfigFile != nil && repoInfo != nil && repoInfo.Index != nil {
+		authConfig = registry.ResolveAuthConfig(service.context.ConfigFile, repoInfo.Index)
 	}
 
-	err = c.client.PullImage(image, &dockerclient.AuthConfig{
+	err = client.PullImage(image, &dockerclient.AuthConfig{
 		Username: authConfig.Username,
 		Password: authConfig.Password,
 		Email:    authConfig.Email,

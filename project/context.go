@@ -20,6 +20,7 @@ var projectRegexp = regexp.MustCompile("[^a-zA-Z0-9_.-]")
 type Context struct {
 	Timeout             int
 	Log                 bool
+	Rebuild             bool
 	Signal              string
 	ComposeFile         string
 	ComposeBytes        []byte

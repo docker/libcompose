@@ -65,6 +65,10 @@ func UpCommand(factory app.ProjectFactory) cli.Command {
 				Name:  "d",
 				Usage: "Do not block and log",
 			},
+			cli.BoolFlag{
+				Name:  "rebuild",
+				Usage: "Rebuild containers",
+			},
 		},
 	}
 }
@@ -217,6 +221,7 @@ func Populate(context *project.Context, c *cli.Context) {
 		context.Log = true
 	} else if c.Command.Name == "up" {
 		context.Log = !c.Bool("d")
+		context.Rebuild = c.Bool("rebuild")
 	} else if c.Command.Name == "stop" || c.Command.Name == "restart" || c.Command.Name == "scale" {
 		context.Timeout = c.Int("timeout")
 	} else if c.Command.Name == "kill" {
