@@ -1,8 +1,8 @@
 # libcompose
 
-An official implementation of Docker Compose in Go made available as a library.
+A Go library for Docker Compose. It does everything the command-line tool does, but from within Go -- read Compose files, start them, scale them, etc.
 
-**Note: This is an experimental alternate implementation of [Docker Compose](https://github.com/docker/compose)**
+**Note: This is experimental and not intended to replace the [Docker Compose](https://github.com/docker/compose) command-line tool. If you're looking to use Compose, head over to the [Compose installation instructions](http://docs.docker.com/compose/install/) to get started with it.**
 
 ```go
 package main
@@ -39,7 +39,7 @@ You need Docker and then run
 
 ## Running
 
-A full implementation of the docker-compose CLI is implemented also in Go.  The primary purpose of this code is to provide a way in which one can easily test the correctness of the behavior of libcompose.
+A partial implementation of the docker-compose CLI is also implemented in Go. The primary purpose of this code is so one can easily test the behavior of libcompose.
 
 Run one of these:
 
