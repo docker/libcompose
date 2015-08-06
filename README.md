@@ -44,13 +44,13 @@ A partial implementation of the docker-compose CLI is also implemented in Go. Th
 Run one of these:
 
 ```
-docker-compose_darwin-386
-docker-compose_linux-amd64
-docker-compose_windows-amd64.exe
-docker-compose_darwin-amd64
-docker-compose_linux-arm
-docker-compose_linux-386
-docker-compose_windows-386.exe
+libcompose-cli_darwin-386
+libcompose-cli_linux-amd64
+libcompose-cli_windows-amd64.exe
+libcompose-cli_darwin-amd64
+libcompose-cli_linux-arm
+libcompose-cli_linux-386
+libcompose-cli_windows-386.exe
 ```
 
 ### Tests
