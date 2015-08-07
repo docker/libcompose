@@ -47,7 +47,7 @@ func (c *Container) findInfo() (*dockerclient.ContainerInfo, error) {
 	return c.client.InspectContainer(container.Id)
 }
 
-func (c *Container) Info() (project.Info, error) {
+func (c *Container) Info(qFlag bool) (project.Info, error) {
 	container, err := c.findExisting()
 	if err != nil {
 		return nil, err
@@ -55,10 +55,14 @@ func (c *Container) Info() (project.Info, error) {
 
 	result := project.Info{}
 
-	result = append(result, project.InfoPart{Key: "Name", Value: name(container.Names)})
-	result = append(result, project.InfoPart{Key: "Command", Value: container.Command})
-	result = append(result, project.InfoPart{Key: "State", Value: container.Status})
-	result = append(result, project.InfoPart{Key: "Ports", Value: portString(container.Ports)})
+	if qFlag {
+		result = append(result, project.InfoPart{Key: "Id", Value: container.Id})
+	} else {
+		result = append(result, project.InfoPart{Key: "Name", Value: name(container.Names)})
+		result = append(result, project.InfoPart{Key: "Command", Value: container.Command})
+		result = append(result, project.InfoPart{Key: "State", Value: container.Status})
+		result = append(result, project.InfoPart{Key: "Ports", Value: portString(container.Ports)})
+	}
 
 	return result, nil
 }

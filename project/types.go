@@ -221,7 +221,7 @@ type Project struct {
 }
 
 type Service interface {
-	Info() (InfoSet, error)
+	Info(qFlag bool) (InfoSet, error)
 	Name() string
 	Build() error
 	Create() error

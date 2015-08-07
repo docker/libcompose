@@ -132,7 +132,7 @@ func (s *Service) Up() error {
 	return s.up(imageName, true)
 }
 
-func (s *Service) Info() (project.InfoSet, error) {
+func (s *Service) Info(qFlag bool) (project.InfoSet, error) {
 	result := project.InfoSet{}
 	containers, err := s.collectContainers()
 	if err != nil {
@@ -140,7 +140,7 @@ func (s *Service) Info() (project.InfoSet, error) {
 	}
 
 	for _, c := range containers {
-		if info, err := c.Info(); err != nil {
+		if info, err := c.Info(qFlag); err != nil {
 			return nil, err
 		} else {
 			result = append(result, info)

@@ -30,6 +30,12 @@ func PsCommand(factory app.ProjectFactory) cli.Command {
 		Name:   "ps",
 		Usage:  "List containers",
 		Action: app.WithProject(factory, app.ProjectPs),
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "q",
+				Usage: "Only display IDs",
+			},
+		},
 	}
 }
 
