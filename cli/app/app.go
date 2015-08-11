@@ -34,7 +34,7 @@ func WithProject(factory ProjectFactory, action ProjectAction) func(context *cli
 
 func ProjectPs(p *project.Project, c *cli.Context) {
 	allInfo := project.InfoSet{}
-	for name, _ := range p.Configs {
+	for name := range p.Configs {
 		service, err := p.CreateService(name)
 		if err != nil {
 			logrus.Fatal(err)
