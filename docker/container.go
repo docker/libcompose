@@ -212,7 +212,13 @@ func (c *Container) createContainer(imageName string) (*dockerclient.Container, 
 
 	_, err = c.client.CreateContainer(config, c.name)
 	if err != nil && err.Error() == "Not found" {
-		err = c.pull(config.Image)
+		logrus.Debugf("Not Found, pulling image %s", config.Image)
+		if err = c.pull(config.Image); err != nil {
+			return nil, err
+		}
+		if _, err = c.client.CreateContainer(config, c.name); err != nil {
+			return nil, err
+		}
 	}
 
 	if err != nil {
