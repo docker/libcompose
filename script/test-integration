@@ -1,0 +1,12 @@
+#!/bin/bash
+
+export SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export DEST=.
+
+bundle .integration-daemon-start
+
+TESTFLAGS="$TESTFLAGS -check.v"
+#godep go test -v ./_integration-test
+godep go test -v ./integration
+
+bundle .integration-daemon-stop
