@@ -213,6 +213,7 @@ func (c *Container) createContainer(imageName string) (*dockerclient.Container, 
 	_, err = c.client.CreateContainer(config, c.name)
 	if err != nil && err.Error() == "Not found" {
 		err = c.pull(config.Image)
+		_, err = c.client.CreateContainer(config, c.name)
 	}
 
 	if err != nil {
