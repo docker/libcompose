@@ -34,7 +34,7 @@ func main() {
 
 You need Docker and then run
 
-    ./script/build
+    make
 
 
 ## Running
