@@ -9,15 +9,13 @@ import (
 	"sort"
 )
 
-func GetServiceHash(service Service) string {
+func GetServiceHash(name string, config ServiceConfig) string {
 	hash := sha1.New()
 
-	io.WriteString(hash, fmt.Sprintln(service.Name()))
-
-	config := service.Config()
+	io.WriteString(hash, name)
 
 	//Get values of Service through reflection
-	val := reflect.ValueOf(config).Elem()
+	val := reflect.ValueOf(&config).Elem()
 
 	//Create slice to sort the keys in Service Config, which allow constant hash ordering
 	serviceKeys := []string{}

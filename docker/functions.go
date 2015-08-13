@@ -28,3 +28,22 @@ func GetContainerByName(client dockerclient.Client, name string) (*dockerclient.
 
 	return &containers[0], nil
 }
+
+func GetContainerById(client dockerclient.Client, id string) (*dockerclient.Container, error) {
+	containers, err := client.ListContainers(true, false, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if len(containers) == 0 {
+		return nil, nil
+	}
+
+	for _, c := range containers {
+		if c.Id == id {
+			return &c, nil
+		}
+	}
+
+	return nil, nil
+}
