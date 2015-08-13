@@ -5,9 +5,8 @@ type Event string
 const (
 	CONTAINER_ID = "container_id"
 
-	CONTAINER_STARTING = Event("Starting container")
-	CONTAINER_CREATED  = Event("Created container")
-	CONTAINER_STARTED  = Event("Started container")
+	CONTAINER_CREATED = Event("Created container")
+	CONTAINER_STARTED = Event("Started container")
 
 	SERVICE_ADD           = Event("Adding")
 	SERVICE_UP_START      = Event("Starting")

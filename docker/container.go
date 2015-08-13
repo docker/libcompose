@@ -102,6 +102,9 @@ func (c *Container) Create(imageName string) (*dockerclient.Container, error) {
 		if err != nil {
 			return nil, err
 		}
+		c.service.context.Project.Notify(project.CONTAINER_CREATED, c.service.Name(), map[string]string{
+			"name": c.Name(),
+		})
 	}
 
 	return container, err
@@ -167,6 +170,10 @@ func (c *Container) Up(imageName string) error {
 		}
 		err := c.client.StartContainer(container.Id, info.HostConfig)
 		return err
+
+		c.service.context.Project.Notify(project.CONTAINER_STARTED, c.service.Name(), map[string]string{
+			"name": c.Name(),
+		})
 	}
 
 	return nil
