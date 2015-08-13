@@ -178,7 +178,7 @@ func ProjectScale(p *project.Project, c *cli.Context) {
 		}
 
 		if _, ok := p.Configs[name]; !ok {
-			logrus.Fatalf("% is not defined in the template", name)
+			logrus.Fatalf("%s is not defined in the template", name)
 		}
 
 		service, err := p.CreateService(name)
