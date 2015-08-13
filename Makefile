@@ -15,9 +15,9 @@ LIBCOMPOSE_IMAGE := libcompose-dev$(if $(GIT_BRANCH),:$(GIT_BRANCH))
 
 DOCKER_RUN_LIBCOMPOSE := docker run --rm -it --privileged $(LIBCOMPOSE_ENVS) $(LIBCOMPOSE_MOUNT) "$(LIBCOMPOSE_IMAGE)"
 
-all: build
-
 default: binary
+
+all: build
 
 binary: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary
