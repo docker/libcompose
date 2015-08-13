@@ -14,8 +14,8 @@ func main() {
 	factory := &dockerApp.ProjectFactory{}
 
 	app := cli.NewApp()
-	app.Name = "docker-compose"
-	app.Usage = "Fast, isolated environments using Docker."
+	app.Name = "libcompose-cli"
+	app.Usage = "Command line interface for libcompose."
 	app.Version = version.VERSION + " (" + version.GITCOMMIT + ")"
 	app.Author = "Docker Compose Contributors"
 	app.Email = "https://github.com/docker/libcompose"

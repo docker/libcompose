@@ -24,7 +24,7 @@ RUN set -ex; \
 RUN ln -s /usr/local/bin/docker-${DOCKER_VERSION} /usr/local/bin/docker
 
 ENV GOPATH /go/src/github.com/docker/libcompose/Godeps/_workspace:/go
-ENV COMPOSE_BINARY /go/src/github.com/docker/libcompose/docker-compose
+ENV COMPOSE_BINARY /go/src/github.com/docker/libcompose/libcompose-cli
 ENV USER root
 
 WORKDIR /go/src/github.com/docker/libcompose
