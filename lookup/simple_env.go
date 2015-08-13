@@ -19,7 +19,6 @@ func (o *OsEnvLookup) Lookup(key, serviceName string, config *project.ServiceCon
 	ret := os.Getenv(key)
 	if ret == "" {
 		return []string{}
-	} else {
-		return []string{fmt.Sprintf("%s=%s", key, ret)}
 	}
+	return []string{fmt.Sprintf("%s=%s", key, ret)}
 }

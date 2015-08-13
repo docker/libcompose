@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# We will eventually get to the point where packages should be the complete list
+# of subpackages, vendoring excluded, as given by:
+#
+# packages=( $(go list ./... 2> /dev/null | grep -vE "^github.com/docker/libcompose/Godeps" || true ) )
+
+packages=(
+    cli/main
+    lookup
+    version
+)
+
+errors=()
+for p in "${packages[@]}"; do
+	# Run golint on package/*.go file explicitly to validate all go files
+	# and not just the ones for the current platform.
+	failedLint=$(golint "$p"/*.go)
+	if [ "$failedLint" ]; then
+		errors+=( "$failedLint" )
+	fi
+done
+
+if [ ${#errors[@]} -eq 0 ]; then
+	echo 'Congratulations!  All Go source files have been linted.'
+else
+	{
+		echo "Errors from golint:"
+		for err in "${errors[@]}"; do
+			echo "$err"
+		done
+		echo
+		echo 'Please fix the above errors. You can test via "golint" and commit the result.'
+		echo
+	} >&2
+	false
+fi
