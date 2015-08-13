@@ -3,10 +3,10 @@ set -e
 
 # List of bundles to create when no argument is passed
 DEFAULT_BUNDLES=(
-	validate-dco
 	validate-gofmt
-	validate-git-marks
-
+	#validate-git-marks
+        validate-dco
+        
 	binary
 
 	test-unit
