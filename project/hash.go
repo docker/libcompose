@@ -4,17 +4,17 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
+	"hash"
 	"io"
 	"reflect"
 	"sort"
+	"strings"
 )
 
-func GetServiceHash(service Service) string {
+func GetServiceHash(name string, config ServiceConfig, ignore map[string]bool) string {
 	hash := sha1.New()
 
-	io.WriteString(hash, fmt.Sprintln(service.Name()))
-
-	config := service.Config()
+	io.WriteString(hash, fmt.Sprintln(name))
 
 	//Get values of Service through reflection
 	val := reflect.ValueOf(config).Elem()
@@ -39,69 +39,57 @@ func GetServiceHash(service Service) string {
 
 	//Go through keys and write hash
 	for _, serviceKey := range serviceKeys {
+		if ignore[strings.ToLower(serviceKey)] {
+			continue
+		}
+
 		serviceValue := unsortedKeyValue[serviceKey]
 
 		io.WriteString(hash, fmt.Sprintf("\n  %v: ", serviceKey))
 
 		switch s := serviceValue.(type) {
 		case SliceorMap:
-			sliceKeys := []string{}
-			for lkey := range s.MapParts() {
-				if lkey != "io.rancher.os.hash" {
-					sliceKeys = append(sliceKeys, lkey)
-				}
-			}
-			sort.Strings(sliceKeys)
-
-			for _, sliceKey := range sliceKeys {
-				io.WriteString(hash, fmt.Sprintf("%s=%v, ", sliceKey, s.MapParts()[sliceKey]))
-			}
+			writeMap(hash, s.MapParts())
 		case MaporEqualSlice:
-			sliceKeys := s.Slice()
-			// do not sort keys as the order matters
-
-			for _, sliceKey := range sliceKeys {
-				io.WriteString(hash, fmt.Sprintf("%s, ", sliceKey))
-			}
+			writeSlice(hash, s.Slice())
 		case MaporColonSlice:
-			sliceKeys := s.Slice()
-			// do not sort keys as the order matters
-
-			for _, sliceKey := range sliceKeys {
-				io.WriteString(hash, fmt.Sprintf("%s, ", sliceKey))
-			}
+			writeSlice(hash, s.Slice())
 		case MaporSpaceSlice:
-			sliceKeys := s.Slice()
-			// do not sort keys as the order matters
-
-			for _, sliceKey := range sliceKeys {
-				io.WriteString(hash, fmt.Sprintf("%s, ", sliceKey))
-			}
+			writeSlice(hash, s.Slice())
 		case Command:
-			sliceKeys := s.Slice()
-			// do not sort keys as the order matters
-
-			for _, sliceKey := range sliceKeys {
-				io.WriteString(hash, fmt.Sprintf("%s, ", sliceKey))
-			}
+			writeSlice(hash, s.Slice())
 		case Stringorslice:
-			sliceKeys := s.Slice()
-			sort.Strings(sliceKeys)
-
-			for _, sliceKey := range sliceKeys {
-				io.WriteString(hash, fmt.Sprintf("%s, ", sliceKey))
-			}
+			writeSlice(hash, s.Slice())
 		case []string:
-			sliceKeys := s
-			sort.Strings(sliceKeys)
-
-			for _, sliceKey := range sliceKeys {
-				io.WriteString(hash, fmt.Sprintf("%s, ", sliceKey))
-			}
+			writeSlice(hash, s)
 		default:
-			io.WriteString(hash, fmt.Sprintf("%v", serviceValue))
+			writeString(hash, fmt.Sprintf("%v", serviceValue))
 		}
 	}
 
 	return hex.EncodeToString(hash.Sum(nil))
+}
+
+func writeSlice(h hash.Hash, data []string) {
+	for _, part := range data {
+		writeString(h, fmt.Sprintf("%s", part))
+		h.Write([]byte{0})
+	}
+}
+
+func writeMap(h hash.Hash, data map[string]string) {
+	keys := []string{}
+	for key, _ := range data {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		writeString(h, fmt.Sprintf("%s=%v", key, data[key]))
+		h.Write([]byte{0})
+	}
+}
+
+func writeString(h hash.Hash, val string) {
+	io.WriteString(h, val)
 }

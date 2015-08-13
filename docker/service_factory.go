@@ -3,13 +3,9 @@ package docker
 import "github.com/docker/libcompose/project"
 
 type ServiceFactory struct {
-	context *Context
+	Context *Context
 }
 
 func (s *ServiceFactory) Create(project *project.Project, name string, serviceConfig *project.ServiceConfig) (project.Service, error) {
-	return &Service{
-		name:          name,
-		serviceConfig: serviceConfig,
-		context:       s.context,
-	}, nil
+	return NewService(name, serviceConfig, s.Context), nil
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/utils"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project"
+	lutils "github.com/docker/libcompose/utils"
 	"github.com/samalba/dockerclient"
 )
 
@@ -190,10 +191,27 @@ func (c *Container) OutOfSync() (bool, error) {
 		return false, err
 	}
 
-	return info.Config.Labels[HASH.Str()] != project.GetServiceHash(c.service), nil
+	if image, err := c.client.InspectImage(imageName); err == nil && image != nil && image.Id != info.Image {
+		return true, nil
+	}
+
+	return info.Config.Labels[HASH.Str()] != c.getHash(imageName), nil
 }
 
-func (c *Container) createContainer(imageName string) (*dockerclient.Container, error) {
+func (c *Container) getHash(imageName string) string {
+	serviceConfig := *c.service.Config()
+	ignore := serviceConfig.Labels.MapParts()[HASH_IGNORE.Str()]
+	ignores := map[string]bool{}
+	if ignore != "" {
+		for _, part := range lutils.TrimSplit(ignore, ",", -1) {
+			ignores[part] = true
+		}
+	}
+
+	return project.GetServiceHash(c.service.Name(), serviceConfig, ignores)
+}
+
+func (c *Container) createContainer(imageName, oldContainer string) (*dockerclient.Container, error) {
 	config, err := ConvertToApi(c.service.serviceConfig)
 	if err != nil {
 		return nil, err

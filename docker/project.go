@@ -18,7 +18,7 @@ func NewProject(context *Context) (*project.Project, error) {
 
 	if context.ServiceFactory == nil {
 		context.ServiceFactory = &ServiceFactory{
-			context: context,
+			Context: context,
 		}
 	}
 
