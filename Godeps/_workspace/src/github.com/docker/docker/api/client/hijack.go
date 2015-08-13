@@ -138,14 +138,14 @@ func (cli *DockerCli) hijack(method, path string, setRawTerminal bool, in io.Rea
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(method, fmt.Sprintf("/v%s%s", api.Version, path), params)
+	req, err := http.NewRequest(method, fmt.Sprintf("%s/v%s%s", cli.basePath, api.Version, path), params)
 	if err != nil {
 		return err
 	}
 
 	// Add CLI Config's HTTP Headers BEFORE we set the Docker headers
 	// then the user can't change OUR headers
-	for k, v := range cli.configFile.HttpHeaders {
+	for k, v := range cli.configFile.HTTPHeaders {
 		req.Header.Set(k, v)
 	}
 

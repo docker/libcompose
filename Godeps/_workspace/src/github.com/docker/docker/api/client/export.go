@@ -2,9 +2,9 @@ package client
 
 import (
 	"errors"
-	"io"
 	"os"
 
+	Cli "github.com/docker/docker/cli"
 	flag "github.com/docker/docker/pkg/mflag"
 )
 
@@ -14,14 +14,14 @@ import (
 //
 // Usage: docker export [OPTIONS] CONTAINER
 func (cli *DockerCli) CmdExport(args ...string) error {
-	cmd := cli.Subcmd("export", []string{"CONTAINER"}, "Export the contents of a container's filesystem as a tar archive", true)
+	cmd := Cli.Subcmd("export", []string{"CONTAINER"}, "Export the contents of a container's filesystem as a tar archive", true)
 	outfile := cmd.String([]string{"o", "-output"}, "", "Write to a file, instead of STDOUT")
 	cmd.Require(flag.Exact, 1)
 
 	cmd.ParseFlags(args, true)
 
 	var (
-		output io.Writer = cli.out
+		output = cli.out
 		err    error
 	)
 	if *outfile != "" {

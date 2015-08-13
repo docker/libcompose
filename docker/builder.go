@@ -46,8 +46,10 @@ func (d *DaemonBuilder) Build(p *project.Project, service project.Service) (stri
 
 	defer context.Close()
 
+	client := d.context.ClientFactory.Create(service)
+
 	logrus.Infof("Building %s...", tag)
-	output, err := d.context.Client.BuildImage(dockerclient.BuildImage{
+	output, err := client.BuildImage(&dockerclient.BuildImage{
 		Context:  context,
 		RepoName: tag,
 		Remove:   true,

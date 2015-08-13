@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	APIVersion = "v1.18"
+	APIVersion = "v1.15"
 )
 
 var (
@@ -638,7 +638,7 @@ func (client *DockerClient) ImportImage(source string, repository string, tag st
 	return client.doStreamRequest("POST", "/images/create?"+v.Encode(), in, nil)
 }
 
-func (client *DockerClient) BuildImage(image BuildImage) (io.ReadCloser, error) {
+func (client *DockerClient) BuildImage(image *BuildImage) (io.ReadCloser, error) {
 	v := url.Values{}
 
 	if image.DockerfileName != "" {

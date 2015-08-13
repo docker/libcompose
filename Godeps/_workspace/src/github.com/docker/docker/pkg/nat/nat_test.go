@@ -42,7 +42,11 @@ func TestParsePort(t *testing.T) {
 }
 
 func TestPort(t *testing.T) {
-	p := NewPort("tcp", "1234")
+	p, err := NewPort("tcp", "1234")
+
+	if err != nil {
+		t.Fatalf("tcp, 1234 had a parsing issue: %v", err)
+	}
 
 	if string(p) != "1234/tcp" {
 		t.Fatal("tcp, 1234 did not result in the string 1234/tcp")
@@ -58,6 +62,11 @@ func TestPort(t *testing.T) {
 
 	if p.Int() != 1234 {
 		t.Fatal("port int value was not 1234")
+	}
+
+	p, err = NewPort("tcp", "asd1234")
+	if err == nil {
+		t.Fatal("tcp, asd1234 was supposed to fail")
 	}
 }
 
@@ -124,8 +133,8 @@ func TestParsePortSpecs(t *testing.T) {
 			t.Fatalf("%s should have exactly one binding", portspec)
 		}
 
-		if bindings[0].HostIp != "" {
-			t.Fatalf("HostIp should not be set for %s", portspec)
+		if bindings[0].HostIP != "" {
+			t.Fatalf("HostIP should not be set for %s", portspec)
 		}
 
 		if bindings[0].HostPort != "" {
@@ -154,8 +163,8 @@ func TestParsePortSpecs(t *testing.T) {
 			t.Fatalf("%s should have exactly one binding", portspec)
 		}
 
-		if bindings[0].HostIp != "" {
-			t.Fatalf("HostIp should not be set for %s", portspec)
+		if bindings[0].HostIP != "" {
+			t.Fatalf("HostIP should not be set for %s", portspec)
 		}
 
 		if bindings[0].HostPort != port {
@@ -184,8 +193,8 @@ func TestParsePortSpecs(t *testing.T) {
 			t.Fatalf("%s should have exactly one binding", portspec)
 		}
 
-		if bindings[0].HostIp != "0.0.0.0" {
-			t.Fatalf("HostIp is not 0.0.0.0 for %s", portspec)
+		if bindings[0].HostIP != "0.0.0.0" {
+			t.Fatalf("HostIP is not 0.0.0.0 for %s", portspec)
 		}
 
 		if bindings[0].HostPort != port {
@@ -226,8 +235,8 @@ func TestParsePortSpecsWithRange(t *testing.T) {
 			t.Fatalf("%s should have exactly one binding", portspec)
 		}
 
-		if bindings[0].HostIp != "" {
-			t.Fatalf("HostIp should not be set for %s", portspec)
+		if bindings[0].HostIP != "" {
+			t.Fatalf("HostIP should not be set for %s", portspec)
 		}
 
 		if bindings[0].HostPort != "" {
@@ -255,8 +264,8 @@ func TestParsePortSpecsWithRange(t *testing.T) {
 			t.Fatalf("%s should have exactly one binding", portspec)
 		}
 
-		if bindings[0].HostIp != "" {
-			t.Fatalf("HostIp should not be set for %s", portspec)
+		if bindings[0].HostIP != "" {
+			t.Fatalf("HostIP should not be set for %s", portspec)
 		}
 
 		if bindings[0].HostPort != port {
@@ -280,7 +289,7 @@ func TestParsePortSpecsWithRange(t *testing.T) {
 
 	for portspec, bindings := range bindingMap {
 		_, port := SplitProtoPort(string(portspec))
-		if len(bindings) != 1 || bindings[0].HostIp != "0.0.0.0" || bindings[0].HostPort != port {
+		if len(bindings) != 1 || bindings[0].HostIP != "0.0.0.0" || bindings[0].HostPort != port {
 			t.Fatalf("Expect single binding to port %s but found %s", port, bindings)
 		}
 	}
@@ -289,5 +298,164 @@ func TestParsePortSpecsWithRange(t *testing.T) {
 
 	if err == nil {
 		t.Fatal("Received no error while trying to parse a hostname instead of ip")
+	}
+}
+
+func TestParseNetworkOptsPrivateOnly(t *testing.T) {
+	ports, bindings, err := ParsePortSpecs([]string{"192.168.1.100::80"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ports) != 1 {
+		t.Logf("Expected 1 got %d", len(ports))
+		t.FailNow()
+	}
+	if len(bindings) != 1 {
+		t.Logf("Expected 1 got %d", len(bindings))
+		t.FailNow()
+	}
+	for k := range ports {
+		if k.Proto() != "tcp" {
+			t.Logf("Expected tcp got %s", k.Proto())
+			t.Fail()
+		}
+		if k.Port() != "80" {
+			t.Logf("Expected 80 got %s", k.Port())
+			t.Fail()
+		}
+		b, exists := bindings[k]
+		if !exists {
+			t.Log("Binding does not exist")
+			t.FailNow()
+		}
+		if len(b) != 1 {
+			t.Logf("Expected 1 got %d", len(b))
+			t.FailNow()
+		}
+		s := b[0]
+		if s.HostPort != "" {
+			t.Logf("Expected \"\" got %s", s.HostPort)
+			t.Fail()
+		}
+		if s.HostIP != "192.168.1.100" {
+			t.Fail()
+		}
+	}
+}
+
+func TestParseNetworkOptsPublic(t *testing.T) {
+	ports, bindings, err := ParsePortSpecs([]string{"192.168.1.100:8080:80"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ports) != 1 {
+		t.Logf("Expected 1 got %d", len(ports))
+		t.FailNow()
+	}
+	if len(bindings) != 1 {
+		t.Logf("Expected 1 got %d", len(bindings))
+		t.FailNow()
+	}
+	for k := range ports {
+		if k.Proto() != "tcp" {
+			t.Logf("Expected tcp got %s", k.Proto())
+			t.Fail()
+		}
+		if k.Port() != "80" {
+			t.Logf("Expected 80 got %s", k.Port())
+			t.Fail()
+		}
+		b, exists := bindings[k]
+		if !exists {
+			t.Log("Binding does not exist")
+			t.FailNow()
+		}
+		if len(b) != 1 {
+			t.Logf("Expected 1 got %d", len(b))
+			t.FailNow()
+		}
+		s := b[0]
+		if s.HostPort != "8080" {
+			t.Logf("Expected 8080 got %s", s.HostPort)
+			t.Fail()
+		}
+		if s.HostIP != "192.168.1.100" {
+			t.Fail()
+		}
+	}
+}
+
+func TestParseNetworkOptsPublicNoPort(t *testing.T) {
+	ports, bindings, err := ParsePortSpecs([]string{"192.168.1.100"})
+
+	if err == nil {
+		t.Logf("Expected error Invalid containerPort")
+		t.Fail()
+	}
+	if ports != nil {
+		t.Logf("Expected nil got %s", ports)
+		t.Fail()
+	}
+	if bindings != nil {
+		t.Logf("Expected nil got %s", bindings)
+		t.Fail()
+	}
+}
+
+func TestParseNetworkOptsNegativePorts(t *testing.T) {
+	ports, bindings, err := ParsePortSpecs([]string{"192.168.1.100:-1:-1"})
+
+	if err == nil {
+		t.Fail()
+	}
+	if len(ports) != 0 {
+		t.Logf("Expected nil got %d", len(ports))
+		t.Fail()
+	}
+	if len(bindings) != 0 {
+		t.Logf("Expected 0 got %d", len(bindings))
+		t.Fail()
+	}
+}
+
+func TestParseNetworkOptsUdp(t *testing.T) {
+	ports, bindings, err := ParsePortSpecs([]string{"192.168.1.100::6000/udp"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ports) != 1 {
+		t.Logf("Expected 1 got %d", len(ports))
+		t.FailNow()
+	}
+	if len(bindings) != 1 {
+		t.Logf("Expected 1 got %d", len(bindings))
+		t.FailNow()
+	}
+	for k := range ports {
+		if k.Proto() != "udp" {
+			t.Logf("Expected udp got %s", k.Proto())
+			t.Fail()
+		}
+		if k.Port() != "6000" {
+			t.Logf("Expected 6000 got %s", k.Port())
+			t.Fail()
+		}
+		b, exists := bindings[k]
+		if !exists {
+			t.Log("Binding does not exist")
+			t.FailNow()
+		}
+		if len(b) != 1 {
+			t.Logf("Expected 1 got %d", len(b))
+			t.FailNow()
+		}
+		s := b[0]
+		if s.HostPort != "" {
+			t.Logf("Expected \"\" got %s", s.HostPort)
+			t.Fail()
+		}
+		if s.HostIP != "192.168.1.100" {
+			t.Fail()
+		}
 	}
 }
