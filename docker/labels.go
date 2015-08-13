@@ -9,10 +9,12 @@ import (
 type Label string
 
 const (
-	NAME    = Label("io.docker.compose.name")
-	PROJECT = Label("io.docker.compose.project")
-	SERVICE = Label("io.docker.compose.service")
-	HASH    = Label("io.docker.compose.config-hash")
+	NAME        = Label("io.docker.compose.name")
+	PROJECT     = Label("io.docker.compose.project")
+	SERVICE     = Label("io.docker.compose.service")
+	HASH        = Label("io.docker.compose.config-hash")
+	REBUILD     = Label("io.docker.compose.rebuild")
+	HASH_IGNORE = Label("io.docker.compose.config-hash.ignore")
 )
 
 func (f Label) Eq(value string) string {

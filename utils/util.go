@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/Sirupsen/logrus"
@@ -92,4 +93,13 @@ func Contains(collection []string, key string) bool {
 	}
 
 	return false
+}
+
+func TrimSplit(str, sep string, count int) []string {
+	result := []string{}
+	for _, i := range strings.SplitN(strings.TrimSpace(str), sep, count) {
+		result = append(result, strings.TrimSpace(i))
+	}
+
+	return result
 }
