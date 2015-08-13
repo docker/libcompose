@@ -40,7 +40,10 @@ validate-gofmt: build
 validate-lint: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-lint
 
-validate: validate-dco validate-gofmt validate-lint
+validate-vet: build
+	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-vet
+
+validate: validate-dco validate-gofmt validate-lint validate-vet
 
 shell: build
 	$(DOCKER_RUN_LIBCOMPOSE) bash
