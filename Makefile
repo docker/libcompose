@@ -43,7 +43,11 @@ validate-lint: build
 validate-vet: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-vet
 
-validate: validate-dco validate-gofmt validate-lint validate-vet
+validate-git-marks: build
+	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-git-marks
+
+validate: build
+	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-dco validate-git-marks validate-gofmt validate-lint validate-vet
 
 shell: build
 	$(DOCKER_RUN_LIBCOMPOSE) bash
