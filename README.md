@@ -32,14 +32,34 @@ func main() {
 
 ## Building
 
-You need Docker and then run
+You need Docker and ``make`` and then run the ``binary`` target. This
+will create binary for all platform in the `bundles` folder. 
 
-    ./script/build
+```bash
+$ make binary
+docker build -t "libcompose-dev:refactor-makefile" .
+# […]
+---> Making bundle: binary (in .)
+Number of parallel builds: 4
+
+-->      darwin/386: github.com/docker/libcompose/cli/main
+-->    darwin/amd64: github.com/docker/libcompose/cli/main
+-->       linux/386: github.com/docker/libcompose/cli/main
+-->     linux/amd64: github.com/docker/libcompose/cli/main
+-->       linux/arm: github.com/docker/libcompose/cli/main
+-->     windows/386: github.com/docker/libcompose/cli/main
+-->   windows/amd64: github.com/docker/libcompose/cli/main
+
+$ ls bundles
+libcompose-cli_darwin-386*    libcompose-cli_linux-amd64*      libcompose-cli_windows-amd64.exe*
+libcompose-cli_darwin-amd64*  libcompose-cli_linux-arm*
+libcompose-cli_linux-386*     libcompose-cli_windows-386.exe*
+```
 
 
 ## Running
 
-A partial implementation of the docker-compose CLI is also implemented in Go. The primary purpose of this code is so one can easily test the behavior of libcompose.
+A partial implementation of the libcompose-cli CLI is also implemented in Go. The primary purpose of this code is so one can easily test the behavior of libcompose.
 
 Run one of these:
 
@@ -55,11 +75,25 @@ libcompose-cli_windows-386.exe
 
 ### Tests
 
-Make sure you have a full Go 1.4 environment with godeps
 
-    godep go test ./...
+You can run unit tests using the `test-unit` target and the
+integration test using the `test-integration` target.
 
-This will be fully Dockerized in a bit
+```bash
+$ make test-unit
+docker build -t "libcompose-dev:refactor-makefile" .
+#[…]
+---> Making bundle: test-unit (in .)
++ go test -cover -coverprofile=cover.out ./docker
+ok      github.com/docker/libcompose/docker     0.019s  coverage: 4.6% of statements
++ go test -cover -coverprofile=cover.out ./project
+ok      github.com/docker/libcompose/project    0.010s  coverage: 8.4% of statements
++ go test -cover -coverprofile=cover.out ./version
+ok      github.com/docker/libcompose/version    0.002s  coverage: 0.0% of statements
+
+Test success
+```
+
 
 ## Current status
 
