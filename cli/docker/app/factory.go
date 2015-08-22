@@ -8,9 +8,11 @@ import (
 	"github.com/docker/libcompose/project"
 )
 
+// ProjectFactory is a struct that hold the app.ProjectFactory implementation.
 type ProjectFactory struct {
 }
 
+// Create implements ProjectFactory.Create using docker client.
 func (p *ProjectFactory) Create(c *cli.Context) (*project.Project, error) {
 	context := &docker.Context{}
 	context.LoggerFactory = logger.NewColorLoggerFactory()

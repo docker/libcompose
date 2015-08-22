@@ -6,6 +6,7 @@ import (
 	"github.com/docker/libcompose/project"
 )
 
+// CreateCommand defines the libcompose create subcommand.
 func CreateCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "create",
@@ -14,6 +15,7 @@ func CreateCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// BuildCommand defines the libcompose build subcommand.
 func BuildCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "build",
@@ -22,6 +24,7 @@ func BuildCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// PsCommand defines the libcompose ps subcommand.
 func PsCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "ps",
@@ -30,6 +33,7 @@ func PsCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// PortCommand defines the libcompose port subcommand.
 func PortCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "port",
@@ -50,6 +54,7 @@ func PortCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// UpCommand defines the libcompose up subcommand.
 func UpCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "up",
@@ -64,6 +69,7 @@ func UpCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// StartCommand defines the libcompose start subcommand.
 func StartCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "start",
@@ -78,6 +84,7 @@ func StartCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// PullCommand defines the libcompose pull subcommand.
 func PullCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "pull",
@@ -86,6 +93,7 @@ func PullCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// LogsCommand defines the libcompose logs subcommand.
 func LogsCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "logs",
@@ -101,6 +109,7 @@ func LogsCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// RestartCommand defines the libcompose restart subcommand.
 func RestartCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "restart",
@@ -116,6 +125,7 @@ func RestartCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// StopCommand defines the libcompose stop subcommand.
 func StopCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:      "stop",
@@ -132,6 +142,7 @@ func StopCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// ScaleCommand defines the libcompose scale subcommand.
 func ScaleCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "scale",
@@ -147,6 +158,7 @@ func ScaleCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// RmCommand defines the libcompose rm subcommand.
 func RmCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "rm",
@@ -161,6 +173,7 @@ func RmCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// KillCommand defines the libcompose kill subcommand.
 func KillCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "kill",
@@ -176,6 +189,7 @@ func KillCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// CommonFlags defines the flags that are in common for all subcommands.
 func CommonFlags() []cli.Flag {
 	return []cli.Flag{
 		cli.BoolFlag{
@@ -194,6 +208,7 @@ func CommonFlags() []cli.Flag {
 	}
 }
 
+// Populate updates the specified project context based on command line arguments and subcommands.
 func Populate(context *project.Context, c *cli.Context) {
 	context.ComposeFile = c.GlobalString("file")
 	context.ProjectName = c.GlobalString("project-name")
