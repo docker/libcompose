@@ -20,11 +20,19 @@ type inOrderNamer struct {
 	done  chan bool
 }
 
+type singleNamer struct {
+	name string
+}
+
 func OneName(client dockerclient.Client, project, service string) (string, error) {
 	namer := NewNamer(client, project, service)
 	defer namer.Close()
 
 	return namer.Next(), nil
+}
+
+func NewSingleNamer(name string) Namer {
+	return &singleNamer{name}
 }
 
 func NewNamer(client dockerclient.Client, project, service string) Namer {
@@ -69,5 +77,13 @@ func (i *inOrderNamer) Close() error {
 	default:
 	}
 
+	return nil
+}
+
+func (s *singleNamer) Next() string {
+	return s.name
+}
+
+func (s *singleNamer) Close() error {
 	return nil
 }
