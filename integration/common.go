@@ -31,6 +31,17 @@ type RunSuite struct {
 	projects []string
 }
 
+func (r *RunSuite) TearDownTest(c *C) {
+	// Delete all containers
+	client := GetClient(c)
+	containers, err := client.ListContainers(true, false, "")
+	c.Assert(err, IsNil)
+	for _, container := range containers {
+		err := client.RemoveContainer(container.Id, true, true)
+		c.Assert(err, IsNil)
+	}
+}
+
 var _ = Suite(&RunSuite{
 	command: "../bundles/libcompose-cli_linux-amd64",
 })
