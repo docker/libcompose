@@ -55,10 +55,10 @@ func (c *Container) Info() (project.Info, error) {
 
 	result := project.Info{}
 
-	result = append(result, project.InfoPart{"Name", name(container.Names)})
-	result = append(result, project.InfoPart{"Command", container.Command})
-	result = append(result, project.InfoPart{"State", container.Status})
-	result = append(result, project.InfoPart{"Ports", portString(container.Ports)})
+	result = append(result, project.InfoPart{Key: "Name", Value: name(container.Names)})
+	result = append(result, project.InfoPart{Key: "Command", Value: container.Command})
+	result = append(result, project.InfoPart{Key: "State", Value: container.Status})
+	result = append(result, project.InfoPart{Key: "Ports", Value: portString(container.Ports)})
 
 	return result, nil
 }
@@ -292,7 +292,7 @@ func (c *Container) addLinks(links map[string]string, service project.Service, r
 
 func (c *Container) addIpc(config *dockerclient.HostConfig, service project.Service, containers []project.Container) (*dockerclient.HostConfig, error) {
 	if len(containers) == 0 {
-		return nil, fmt.Errorf("Failed to find container for IPC %", c.service.Config().Ipc)
+		return nil, fmt.Errorf("Failed to find container for IPC %v", c.service.Config().Ipc)
 	}
 
 	id, err := containers[0].Id()
@@ -306,7 +306,7 @@ func (c *Container) addIpc(config *dockerclient.HostConfig, service project.Serv
 
 func (c *Container) addNetNs(config *dockerclient.HostConfig, service project.Service, containers []project.Container) (*dockerclient.HostConfig, error) {
 	if len(containers) == 0 {
-		return nil, fmt.Errorf("Failed to find container for networks ns %", c.service.Config().Net)
+		return nil, fmt.Errorf("Failed to find container for networks ns %v", c.service.Config().Net)
 	}
 
 	id, err := containers[0].Id()
@@ -382,8 +382,6 @@ func (c *Container) Log() error {
 		}, output)
 		return err
 	}
-
-	return nil
 }
 
 func (c *Container) pull(image string) error {

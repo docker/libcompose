@@ -7,6 +7,7 @@ DEFAULT_BUNDLES=(
 	#validate-git-marks
 	validate-dco
 	validate-lint
+	validate-vet
 
 	binary
 

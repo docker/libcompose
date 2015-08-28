@@ -12,6 +12,7 @@ RUN go get github.com/aktau/github-release
 RUN go get github.com/tools/godep
 RUN go get golang.org/x/tools/cmd/cover
 RUN go get github.com/golang/lint/golint
+RUN go get golang.org/x/tools/cmd/vet
 
 # Which docker version to test on
 ENV DOCKER_VERSION 1.7.1
