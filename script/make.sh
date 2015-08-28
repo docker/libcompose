@@ -6,9 +6,9 @@ DEFAULT_BUNDLES=(
 	validate-gofmt
 	#validate-git-marks
 	validate-dco
+	validate-git-marks
 	validate-lint
 	validate-vet
-
 	binary
 
 	test-unit
