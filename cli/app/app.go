@@ -12,8 +12,17 @@ import (
 	"github.com/docker/libcompose/project"
 )
 
+// ProjectAction is an adapter to allow the use of ordinary functions as libcompose actions.
+// Any function that has the appropriate signature can be register as an action on a codegansta/cli command.
+//
+// cli.Command{
+//		Name:   "ps",
+//		Usage:  "List containers",
+//		Action: app.WithProject(factory, app.ProjectPs),
+//	}
 type ProjectAction func(project *project.Project, c *cli.Context)
 
+// BeforeApp is an action that is executed before any cli command.
 func BeforeApp(c *cli.Context) error {
 	if c.GlobalBool("verbose") {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -22,6 +31,7 @@ func BeforeApp(c *cli.Context) error {
 	return nil
 }
 
+// WithProject is an helper function to create a cli.Command action with a ProjectFactory.
 func WithProject(factory ProjectFactory, action ProjectAction) func(context *cli.Context) {
 	return func(context *cli.Context) {
 		p, err := factory.Create(context)
@@ -32,6 +42,7 @@ func WithProject(factory ProjectFactory, action ProjectAction) func(context *cli
 	}
 }
 
+// ProjectPs lists the containers.
 func ProjectPs(p *project.Project, c *cli.Context) {
 	allInfo := project.InfoSet{}
 	for name := range p.Configs {
@@ -51,6 +62,7 @@ func ProjectPs(p *project.Project, c *cli.Context) {
 	os.Stdout.WriteString(allInfo.String())
 }
 
+// ProjectPort prints the public port for a port binding.
 func ProjectPort(p *project.Project, c *cli.Context) {
 	if len(c.Args()) != 2 {
 		logrus.Fatalf("Please pass arguments in the form: SERVICE PORT")
@@ -80,6 +92,7 @@ func ProjectPort(p *project.Project, c *cli.Context) {
 	fmt.Println(output)
 }
 
+// ProjectDown brings all services down.
 func ProjectDown(p *project.Project, c *cli.Context) {
 	err := p.Down(c.Args()...)
 	if err != nil {
@@ -87,6 +100,7 @@ func ProjectDown(p *project.Project, c *cli.Context) {
 	}
 }
 
+// ProjectBuild builds or rebuilds services.
 func ProjectBuild(p *project.Project, c *cli.Context) {
 	err := p.Build(c.Args()...)
 	if err != nil {
@@ -94,6 +108,7 @@ func ProjectBuild(p *project.Project, c *cli.Context) {
 	}
 }
 
+// ProjectCreate creates all services but do not start them.
 func ProjectCreate(p *project.Project, c *cli.Context) {
 	err := p.Create(c.Args()...)
 	if err != nil {
@@ -101,6 +116,7 @@ func ProjectCreate(p *project.Project, c *cli.Context) {
 	}
 }
 
+// ProjectUp brings all services up.
 func ProjectUp(p *project.Project, c *cli.Context) {
 	err := p.Up(c.Args()...)
 	if err != nil {
@@ -112,6 +128,7 @@ func ProjectUp(p *project.Project, c *cli.Context) {
 	}
 }
 
+// ProjectStart starts services.
 func ProjectStart(p *project.Project, c *cli.Context) {
 	err := p.Start(c.Args()...)
 	if err != nil {
@@ -119,6 +136,7 @@ func ProjectStart(p *project.Project, c *cli.Context) {
 	}
 }
 
+// ProjectRestart restarts services.
 func ProjectRestart(p *project.Project, c *cli.Context) {
 	err := p.Restart(c.Args()...)
 	if err != nil {
@@ -126,6 +144,7 @@ func ProjectRestart(p *project.Project, c *cli.Context) {
 	}
 }
 
+// ProjectLog gets services logs.
 func ProjectLog(p *project.Project, c *cli.Context) {
 	err := p.Log(c.Args()...)
 	if err != nil {
@@ -134,6 +153,7 @@ func ProjectLog(p *project.Project, c *cli.Context) {
 	wait()
 }
 
+// ProjectPull pulls images for services.
 func ProjectPull(p *project.Project, c *cli.Context) {
 	err := p.Pull(c.Args()...)
 	if err != nil {
@@ -141,6 +161,7 @@ func ProjectPull(p *project.Project, c *cli.Context) {
 	}
 }
 
+// ProjectDelete delete services.
 func ProjectDelete(p *project.Project, c *cli.Context) {
 	if !c.Bool("force") && len(c.Args()) == 0 {
 		logrus.Fatal("Will not remove all services with out --force")
@@ -151,6 +172,7 @@ func ProjectDelete(p *project.Project, c *cli.Context) {
 	}
 }
 
+// ProjectKill forces stop service containers.
 func ProjectKill(p *project.Project, c *cli.Context) {
 	err := p.Kill(c.Args()...)
 	if err != nil {
@@ -158,6 +180,7 @@ func ProjectKill(p *project.Project, c *cli.Context) {
 	}
 }
 
+// ProjectScale scales services.
 func ProjectScale(p *project.Project, c *cli.Context) {
 	// This code is a bit verbose but I wanted to parse everything up front
 	order := make([]string, 0, 0)

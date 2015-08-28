@@ -6,6 +6,10 @@
 # packages=( $(go list ./... 2> /dev/null | grep -vE "^github.com/docker/libcompose/Godeps" || true ) )
 
 packages=(
+    cli/app
+    cli/command
+    cli/docker/app
+    cli/logger
     cli/main
     lookup
     version

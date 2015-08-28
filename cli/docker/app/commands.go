@@ -6,6 +6,8 @@ import (
 	"github.com/docker/libcompose/docker"
 )
 
+// DockerClientFlags defines the flags that are specific to the docker client,
+// like configdir or tls related flags.
 func DockerClientFlags() []cli.Flag {
 	return []cli.Flag{
 		cli.BoolFlag{
@@ -36,6 +38,7 @@ func DockerClientFlags() []cli.Flag {
 	}
 }
 
+// Populate updates the specified docker context based on command line arguments and subcommands.
 func Populate(context *docker.Context, c *cli.Context) {
 	context.ConfigDir = c.String("configdir")
 
