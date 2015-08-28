@@ -5,8 +5,9 @@ set -e
 DEFAULT_BUNDLES=(
 	validate-gofmt
 	#validate-git-marks
-        validate-dco
-        
+	validate-dco
+	validate-lint
+
 	binary
 
 	test-unit
