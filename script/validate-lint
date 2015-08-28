@@ -13,6 +13,7 @@ packages=(
     cli/main
     lookup
     version
+    utils
 )
 
 errors=()
