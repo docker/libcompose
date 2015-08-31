@@ -32,6 +32,7 @@ func main() {
 
 ## Building
 
+### Create binary for all platform
 You need Docker and ``make`` and then run the ``binary`` target. This
 will create binary for all platform in the `bundles` folder. 
 
@@ -56,6 +57,29 @@ libcompose-cli_darwin-amd64*  libcompose-cli_linux-arm*
 libcompose-cli_linux-386*     libcompose-cli_windows-386.exe*
 ```
 
+### Installation for Libcompose Developers
+
+#### Prerequisites
+
+1. Install [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
+
+2. Install [godep](https://github.com/tools/godep).
+
+#### Clone and build Libcompose
+
+> **Note** `GOPATH` should be set when install godep in above step.
+
+Install the `libcompose` binary in the `$GOPATH/bin` directory.
+```bash
+$ mkdir -p $GOPATH/src/github.com/docker/
+$ cd $GOPATH/src/github.com/docker/
+$ git clone https://github.com/docker/libcompose
+$ cd libcompose
+$ $GOPATH/bin/godep go install ./cli/main
+$ mv $GOPATH/bin/main $GOPATH/bin/libcompose
+```
+
+Then you can find the `libcompose` binary under `$GOPATH/bin`.
 
 ## Running
 
