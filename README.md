@@ -1,5 +1,8 @@
 # libcompose
 
+[![GoDoc](https://godoc.org/github.com/docker/libcompose?status.png)](https://godoc.org/github.com/docker/libcompose)
+[![Jenkins Build Status](https://jenkins.dockerproject.org/view/Libcompose/job/Libcompose%20Master/badge/icon)](https://jenkins.dockerproject.org/view/Libcompose/job/Libcompose%20Master/)
+
 A Go library for Docker Compose. It does everything the command-line tool does, but from within Go -- read Compose files, start them, scale them, etc.
 
 **Note: This is experimental and not intended to replace the [Docker Compose](https://github.com/docker/compose) command-line tool. If you're looking to use Compose, head over to the [Compose installation instructions](http://docs.docker.com/compose/install/) to get started with it.**
