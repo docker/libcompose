@@ -78,6 +78,41 @@ func (s *RunSuite) ProjectFromText(c *C, command, input string) string {
 }
 
 func (s *RunSuite) FromText(c *C, projectName, command string, argsAndInput ...string) string {
+	command, args, input := s.createCommand(c, projectName, command, argsAndInput)
+
+	cmd := exec.Command(s.command, args...)
+	cmd.Stdin = bytes.NewBufferString(strings.Replace(input, "\t", "  ", -1))
+	if os.Getenv("TESTVERBOSE") != "" {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stdout
+	}
+
+	err := cmd.Run()
+	if err != nil {
+		logrus.Errorf("Failed to run %s %v: %v\n with input:\n%s", s.command, err, args, input)
+	}
+
+	c.Assert(err, IsNil)
+
+	return projectName
+}
+
+// Doesn't assert that command runs successfully
+func (s *RunSuite) FromTextCaptureOutput(c *C, projectName, command string, argsAndInput ...string) (string, string) {
+	command, args, input := s.createCommand(c, projectName, command, argsAndInput)
+
+	cmd := exec.Command(s.command, args...)
+	cmd.Stdin = bytes.NewBufferString(strings.Replace(input, "\t", "  ", -1))
+
+	output, err := cmd.Output()
+	if err != nil {
+		logrus.Errorf("Failed to run %s %v: %v\n with input:\n%s", s.command, err, args, input)
+	}
+
+	return projectName, string(output[:])
+}
+
+func (s *RunSuite) createCommand(c *C, projectName, command string, argsAndInput []string) (string, []string, string) {
 	args := []string{"--verbose", "-p", projectName, "-f", "-", command}
 	args = append(args, argsAndInput[0:len(argsAndInput)-1]...)
 
@@ -95,21 +130,7 @@ func (s *RunSuite) FromText(c *C, projectName, command string, argsAndInput ...s
 
 	logrus.Infof("Running %s %v", command, args)
 
-	cmd := exec.Command(s.command, args...)
-	cmd.Stdin = bytes.NewBufferString(strings.Replace(input, "\t", "  ", -1))
-	if os.Getenv("TESTVERBOSE") != "" {
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stdout
-	}
-
-	err := cmd.Run()
-	if err != nil {
-		logrus.Errorf("Failed to run %s %v: %v\n with input:\n%s", s.command, err, args, input)
-	}
-
-	c.Assert(err, IsNil)
-
-	return projectName
+	return command, args, input
 }
 
 func GetClient(c *C) *dockerclient.Client {

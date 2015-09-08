@@ -1,7 +1,9 @@
 package docker
 
 import (
+	"fmt"
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/docker/pkg/nat"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
 )
@@ -251,6 +253,10 @@ func (s *Service) Log() error {
 // Scale implements Service.Scale. It creates or removes containers to have the specified number
 // of related container to the service to run.
 func (s *Service) Scale(scale int) error {
+	if s.specificiesHostPort() {
+		logrus.Warnf("The \"%s\" service specifies a port on the host. If multiple containers for this service are created on a single host, the port will clash.", s.Name())
+	}
+
 	foundCount := 0
 	err := s.eachContainer(func(c *Container) error {
 		foundCount++
@@ -304,4 +310,22 @@ func (s *Service) Containers() ([]project.Container, error) {
 	}
 
 	return result, nil
+}
+
+func (s *Service) specificiesHostPort() bool {
+	_, bindings, err := nat.ParsePortSpecs(s.Config().Ports)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for _, portBindings := range bindings {
+		for _, portBinding := range portBindings {
+			if portBinding.HostPort != "" {
+				return true
+			}
+		}
+	}
+
+	return false
 }
