@@ -18,6 +18,24 @@ const SimpleTemplate = `
 
 func Test(t *testing.T) { TestingT(t) }
 
+func (s *RunSuite) TestFields(c *C) {
+	p := s.CreateProjectFromText(c, `
+	hello:
+	  image: tianon/true
+	  cpuset: 1,2
+	  mem_limit: 4194304
+	  memswap_limit: 8388608
+	`)
+
+	name := fmt.Sprintf("%s_%s_1", p, "hello")
+	cn := s.GetContainerByName(c, name)
+	c.Assert(cn, NotNil)
+
+	c.Assert(cn.Config.Cpuset, Equals, "1,2")
+	c.Assert(cn.HostConfig.Memory, Equals, int64(4194304))
+	c.Assert(cn.HostConfig.MemorySwap, Equals, int64(8388608))
+}
+
 func (s *RunSuite) TestHelloWorld(c *C) {
 	p := s.CreateProjectFromText(c, `
 	hello:
