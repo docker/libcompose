@@ -50,9 +50,10 @@ func (d *DaemonBuilder) Build(p *project.Project, service project.Service) (stri
 
 	logrus.Infof("Building %s...", tag)
 	output, err := client.BuildImage(&dockerclient.BuildImage{
-		Context:  context,
-		RepoName: tag,
-		Remove:   true,
+		Context:        context,
+		RepoName:       tag,
+		Remove:         true,
+		DockerfileName: service.Config().Dockerfile,
 	})
 	if err != nil {
 		return "", err
