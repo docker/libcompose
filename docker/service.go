@@ -86,7 +86,17 @@ func (s *Service) constructContainers(create bool, count int) ([]*Container, err
 
 	client := s.context.ClientFactory.Create(s)
 
-	namer := NewNamer(client, s.context.Project.Name, s.name)
+	var namer Namer
+
+	if s.serviceConfig.ContainerName != "" {
+		if count > 1 {
+			logrus.Warnf(`The "%s" service is using the custom container name "%s". Docker requires each container to have a unique name. Remove the custom name to scale the service.`, s.name, s.serviceConfig.ContainerName)
+		}
+		namer = NewSingleNamer(s.serviceConfig.ContainerName)
+	} else {
+		namer = NewNamer(client, s.context.Project.Name, s.name)
+	}
+
 	defer namer.Close()
 
 	for i := len(result); i < count; i++ {
@@ -103,12 +113,11 @@ func (s *Service) constructContainers(create bool, count int) ([]*Container, err
 			dockerContainer, err := c.Create(imageName)
 			if err != nil {
 				return nil, err
-			} else {
-				logrus.Debugf("Created container %s: %v", dockerContainer.Id, dockerContainer.Names)
 			}
+			logrus.Debugf("Created container %s: %v", dockerContainer.Id, dockerContainer.Names)
 		}
 
-		result = append(result, NewContainer(client, containerName, s))
+		result = append(result, c)
 	}
 
 	return result, nil

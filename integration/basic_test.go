@@ -264,6 +264,34 @@ func (s *RunSuite) TestBuild(c *C) {
 	c.Assert(two.Config.Cmd, DeepEquals, []string{"echo", "two"})
 }
 
+func (s *RunSuite) TestContainerName(c *C) {
+	containerName := "containerName"
+	template := fmt.Sprintf(`hello:
+    image: busybox
+    command: top
+    container_name: %s`, containerName)
+	s.CreateProjectFromText(c, template)
+
+	cn := s.GetContainerByName(c, containerName)
+	c.Assert(cn, NotNil)
+
+	c.Assert(cn.Name, Equals, "/"+containerName)
+}
+
+func (s *RunSuite) TestContainerNameWithScale(c *C) {
+	containerName := "containerName"
+	template := fmt.Sprintf(`hello:
+    image: busybox
+    command: top
+    container_name: %s`, containerName)
+	p := s.CreateProjectFromText(c, template)
+
+	s.FromText(c, p, "scale", "hello=2", template)
+	containers := s.GetContainersByProject(c, p)
+	c.Assert(len(containers), Equals, 1)
+
+}
+
 func asMap(items []string) map[string]bool {
 	result := map[string]bool{}
 	for _, item := range items {

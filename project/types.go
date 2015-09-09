@@ -161,6 +161,7 @@ type ServiceConfig struct {
 	CpuSet        string            `yaml:"cpuset,omitempty"`
 	CpuShares     int64             `yaml:"cpu_shares,omitempty"`
 	Command       Command           `yaml:"command"` // omitempty breaks serialization!
+	ContainerName string            `yaml:"container_name,omitempty"`
 	Devices       []string          `yaml:"devices,omitempty"`
 	Dns           Stringorslice     `yaml:"dns"`        // omitempty breaks serialization!
 	DnsSearch     Stringorslice     `yaml:"dns_search"` // omitempty breaks serialization!
