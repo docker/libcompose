@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	ValidRemotes = []string{
+	validRemotes = []string{
 		"git://",
 		"git@github.com:",
 		"github.com",
@@ -29,6 +29,8 @@ var (
 type rawService map[string]interface{}
 type rawServiceMap map[string]rawService
 
+// Merge read the specified byte array, which is the content of a yaml composefile,
+// and merge it into the current project.
 func Merge(p *Project, bytes []byte) (map[string]*ServiceConfig, error) {
 	configs := make(map[string]*ServiceConfig)
 
@@ -117,7 +119,7 @@ func resolveBuild(inFile string, serviceData rawService) (rawService, error) {
 		return serviceData, nil
 	}
 
-	for _, remote := range ValidRemotes {
+	for _, remote := range validRemotes {
 		if strings.HasPrefix(build, remote) {
 			return serviceData, nil
 		}
@@ -265,7 +267,6 @@ func clone(in rawService) rawService {
 func asString(obj interface{}) string {
 	if v, ok := obj.(string); ok {
 		return v
-	} else {
-		return ""
 	}
+	return ""
 }

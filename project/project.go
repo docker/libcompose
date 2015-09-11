@@ -10,17 +10,24 @@ import (
 	"github.com/docker/libcompose/utils"
 )
 
+// ServiceState holds the state of a service.
 type ServiceState string
 
+// State definitions
 var (
-	EXECUTED       ServiceState = ServiceState("executed")
-	UNKNOWN        ServiceState = ServiceState("unknown")
-	ErrRestart     error        = errors.New("Restart execution")
-	ErrUnsupported error        = errors.New("UnsupportedOperation")
+	StateExecuted = ServiceState("executed")
+	StateUnknown  = ServiceState("unknown")
 )
 
-type ProjectEvent struct {
-	Event       Event
+// Error definitions
+var (
+	ErrRestart     = errors.New("Restart execution")
+	ErrUnsupported = errors.New("UnsupportedOperation")
+)
+
+// Event holds project-wide event informations.
+type Event struct {
+	EventType   EventType
 	ServiceName string
 	Data        map[string]string
 }
@@ -28,6 +35,7 @@ type ProjectEvent struct {
 type wrapperAction func(*serviceWrapper, map[string]*serviceWrapper)
 type serviceAction func(service Service) error
 
+// NewProject create a new project with the specified context.
 func NewProject(context *Context) *Project {
 	p := &Project{
 		context: context,
@@ -40,11 +48,13 @@ func NewProject(context *Context) *Project {
 
 	context.Project = p
 
-	p.listeners = []chan<- ProjectEvent{NewDefaultListener(p)}
+	p.listeners = []chan<- Event{NewDefaultListener(p)}
 
 	return p
 }
 
+// Parse populates project information based on its context. It sets up the name,
+// the composefile and the composebytes (the composefile content).
 func (p *Project) Parse() error {
 	err := p.context.open()
 	if err != nil {
@@ -66,6 +76,8 @@ func (p *Project) Parse() error {
 	return nil
 }
 
+// CreateService creates a service with the specified name based. It there
+// is no config in the project for this service, it will return an error.
 func (p *Project) CreateService(name string) (Service, error) {
 	existing, ok := p.Configs[name]
 	if !ok {
@@ -95,8 +107,9 @@ func (p *Project) CreateService(name string) (Service, error) {
 	return p.context.ServiceFactory.Create(p, name, &config)
 }
 
+// AddConfig adds the specified service config for the specified name.
 func (p *Project) AddConfig(name string, config *ServiceConfig) error {
-	p.Notify(SERVICE_ADD, name, nil)
+	p.Notify(EventServiceAdd, name, nil)
 
 	p.Configs[name] = config
 	p.reload = append(p.reload, name)
@@ -104,6 +117,8 @@ func (p *Project) AddConfig(name string, config *ServiceConfig) error {
 	return nil
 }
 
+// Load loads the specified byte array (the composefile content) and adds the
+// service configuration to the project.
 func (p *Project) Load(bytes []byte) error {
 	configs := make(map[string]*ServiceConfig)
 	configs, err := Merge(p, bytes)
@@ -135,49 +150,55 @@ func (p *Project) loadWrappers(wrappers map[string]*serviceWrapper) error {
 	return nil
 }
 
+// Build builds the specified services (like docker build).
 func (p *Project) Build(services ...string) error {
-	return p.perform(PROJECT_BUILD_START, PROJECT_BUILD_DONE, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(wrappers, SERVICE_BUILD_START, SERVICE_BUILD, func(service Service) error {
+	return p.perform(EventProjectBuildStart, EventProjectBuildDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(wrappers, EventServiceBuildStart, EventServiceBuild, func(service Service) error {
 			return service.Build()
 		})
 	}), nil)
 }
 
+// Create creates the specified services (like docker create).
 func (p *Project) Create(services ...string) error {
-	return p.perform(PROJECT_CREATE_START, PROJECT_CREATE_DONE, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(wrappers, SERVICE_CREATE_START, SERVICE_CREATE, func(service Service) error {
+	return p.perform(EventProjectCreateStart, EventProjectCreateDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(wrappers, EventServiceCreateStart, EventServiceCreate, func(service Service) error {
 			return service.Create()
 		})
 	}), nil)
 }
 
+// Down stops the specified services (like docker stop).
 func (p *Project) Down(services ...string) error {
-	return p.perform(PROJECT_DOWN_START, PROJECT_DOWN_DONE, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(nil, SERVICE_DOWN_START, SERVICE_DOWN, func(service Service) error {
+	return p.perform(EventProjectDownStart, EventProjectDownDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(nil, EventServiceDownStart, EventServiceDown, func(service Service) error {
 			return service.Down()
 		})
 	}), nil)
 }
 
+// Restart restarts the specified services (like docker restart).
 func (p *Project) Restart(services ...string) error {
-	return p.perform(PROJECT_RESTART_START, PROJECT_RESTART_DONE, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(wrappers, SERVICE_RESTART_START, SERVICE_RESTART, func(service Service) error {
+	return p.perform(EventProjectRestartStart, EventProjectRestartDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(wrappers, EventServiceRestartStart, EventServiceRestart, func(service Service) error {
 			return service.Restart()
 		})
 	}), nil)
 }
 
+// Start starts the specified services (like docker start).
 func (p *Project) Start(services ...string) error {
-	return p.perform(PROJECT_START_START, PROJECT_START_DONE, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(wrappers, SERVICE_START_START, SERVICE_START, func(service Service) error {
+	return p.perform(EventProjectStartStart, EventProjectStartDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(wrappers, EventServiceStartStart, EventServiceStart, func(service Service) error {
 			return service.Start()
 		})
 	}), nil)
 }
 
+// Up create and start the specified services (kinda like docker run).
 func (p *Project) Up(services ...string) error {
-	return p.perform(PROJECT_UP_START, PROJECT_UP_DONE, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(wrappers, SERVICE_UP_START, SERVICE_UP, func(service Service) error {
+	return p.perform(EventProjectUpStart, EventProjectUpDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(wrappers, EventServiceUpStart, EventServiceUp, func(service Service) error {
 			return service.Up()
 		})
 	}), func(service Service) error {
@@ -185,39 +206,43 @@ func (p *Project) Up(services ...string) error {
 	})
 }
 
+// Log aggregate and prints out the logs for the specified services.
 func (p *Project) Log(services ...string) error {
 	return p.forEach(services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(nil, NO_EVENT, NO_EVENT, func(service Service) error {
+		wrapper.Do(nil, NoEvent, NoEvent, func(service Service) error {
 			return service.Log()
 		})
 	}), nil)
 }
 
+// Pull pulls the specified services (like docker pull).
 func (p *Project) Pull(services ...string) error {
 	return p.forEach(services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(nil, SERVICE_PULL_START, SERVICE_PULL, func(service Service) error {
+		wrapper.Do(nil, EventServicePullStart, EventServicePull, func(service Service) error {
 			return service.Pull()
 		})
 	}), nil)
 }
 
+// Delete removes the specified services (like docker rm).
 func (p *Project) Delete(services ...string) error {
-	return p.perform(PROJECT_DELETE_START, PROJECT_DELETE_DONE, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(nil, SERVICE_DELETE_START, SERVICE_DELETE, func(service Service) error {
+	return p.perform(EventProjectDeleteStart, EventProjectDeleteDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(nil, EventServiceDeleteStart, EventServiceDelete, func(service Service) error {
 			return service.Delete()
 		})
 	}), nil)
 }
 
+// Kill kills the specified services (like docker kill).
 func (p *Project) Kill(services ...string) error {
-	return p.perform(PROJECT_KILL_START, PROJECT_KILL_DONE, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(nil, SERVICE_KILL_START, SERVICE_KILL, func(service Service) error {
+	return p.perform(EventProjectKillStart, EventProjectKillDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(nil, EventServiceKillStart, EventServiceKill, func(service Service) error {
 			return service.Kill()
 		})
 	}), nil)
 }
 
-func (p *Project) perform(start, done Event, services []string, action wrapperAction, cycleAction serviceAction) error {
+func (p *Project) perform(start, done EventType, services []string, action wrapperAction, cycleAction serviceAction) error {
 	p.Notify(start, "", nil)
 
 	err := p.forEach(services, action, cycleAction)
@@ -332,30 +357,31 @@ func (p *Project) traverse(selected map[string]bool, wrappers map[string]*servic
 			}
 		}
 		return p.traverse(selected, wrappers, action, cycleAction)
-	} else {
-		return firstError
 	}
+	return firstError
 }
 
-func (p *Project) AddListener(c chan<- ProjectEvent) {
+// AddListener adds the specified listener to the project.
+func (p *Project) AddListener(c chan<- Event) {
 	if !p.hasListeners {
 		for _, l := range p.listeners {
 			close(l)
 		}
 		p.hasListeners = true
-		p.listeners = []chan<- ProjectEvent{c}
+		p.listeners = []chan<- Event{c}
 	} else {
 		p.listeners = append(p.listeners, c)
 	}
 }
 
-func (p *Project) Notify(event Event, serviceName string, data map[string]string) {
-	if event == NO_EVENT {
+// Notify notifies all project listener with the specified eventType, service name and datas.
+func (p *Project) Notify(eventType EventType, serviceName string, data map[string]string) {
+	if eventType == NoEvent {
 		return
 	}
 
-	projectEvent := ProjectEvent{
-		Event:       event,
+	event := Event{
+		EventType:   eventType,
 		ServiceName: serviceName,
 		Data:        data,
 	}
@@ -363,7 +389,7 @@ func (p *Project) Notify(event Event, serviceName string, data map[string]string
 	for _, l := range p.listeners {
 		// Don't ever block
 		select {
-		case l <- projectEvent:
+		case l <- event:
 		default:
 		}
 	}

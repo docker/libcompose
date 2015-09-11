@@ -13,6 +13,7 @@ packages=(
     cli/main
     lookup
     logger
+    project
     version
     utils
 )
