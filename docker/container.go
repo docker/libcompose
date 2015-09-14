@@ -374,9 +374,9 @@ func (c *Container) Log() error {
 		}
 		return scanner.Err()
 	} else {
-		_, err := stdcopy.StdCopy(&logger.LoggerWrapper{
+		_, err := stdcopy.StdCopy(&logger.Wrapper{
 			Logger: l,
-		}, &logger.LoggerWrapper{
+		}, &logger.Wrapper{
 			Err:    true,
 			Logger: l,
 		}, output)

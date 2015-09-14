@@ -12,6 +12,7 @@ packages=(
     cli/logger
     cli/main
     lookup
+    logger
     version
     utils
 )
