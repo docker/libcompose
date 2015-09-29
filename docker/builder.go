@@ -19,20 +19,26 @@ import (
 	"github.com/samalba/dockerclient"
 )
 
+// Builder defines methods to provide a docker builder. This makes libcompose
+// not tied up to the docker daemon builder.
 type Builder interface {
 	Build(p *project.Project, service project.Service) (string, error)
 }
 
+// DaemonBuilder is the daemon "docker build" Builder implementation.
 type DaemonBuilder struct {
 	context *Context
 }
 
+// NewDaemonBuilder creates a DaemonBuilder based on the specified context.
 func NewDaemonBuilder(context *Context) *DaemonBuilder {
 	return &DaemonBuilder{
 		context: context,
 	}
 }
 
+// Build implements Builder. It consumes the docker build API endpoint and sends
+// a tar of the specified service build context.
 func (d *DaemonBuilder) Build(p *project.Project, service project.Service) (string, error) {
 	if service.Config().Build == "" {
 		return service.Config().Image, nil
@@ -75,6 +81,7 @@ func (d *DaemonBuilder) Build(p *project.Project, service project.Service) (stri
 	return tag, nil
 }
 
+// CreateTar create a build context tar for the specified project and service name.
 func CreateTar(p *project.Project, name string) (io.ReadCloser, error) {
 	// This code was ripped off from docker/api/client/build.go
 

@@ -11,6 +11,7 @@ import (
 	"github.com/samalba/dockerclient"
 )
 
+// Filter filters the specified string slice with the specified function.
 func Filter(vs []string, f func(string) bool) []string {
 	r := make([]string, 0, len(vs))
 	for _, v := range vs {
@@ -29,7 +30,8 @@ func isVolume(s string) bool {
 	return !isBind(s)
 }
 
-func ConvertToApi(c *project.ServiceConfig) (*dockerclient.ContainerConfig, error) {
+// ConvertToAPI converts a service configuration to a docker API container configuration.
+func ConvertToAPI(c *project.ServiceConfig) (*dockerclient.ContainerConfig, error) {
 	config, hostConfig, err := Convert(c)
 	if err != nil {
 		return nil, err
@@ -49,6 +51,7 @@ func ConvertToApi(c *project.ServiceConfig) (*dockerclient.ContainerConfig, erro
 	return &result, err
 }
 
+// Convert converts a service configuration to an docker inner representation (using runconfig structures)
 func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig, error) {
 	vs := Filter(c.Volumes, isVolume)
 
@@ -66,12 +69,13 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		return nil, nil, err
 	}
 
-	if exposedPorts, _, err := nat.ParsePortSpecs(c.Expose); err != nil {
+	exposedPorts, _, err := nat.ParsePortSpecs(c.Expose)
+	if err != nil {
 		return nil, nil, err
-	} else {
-		for k, v := range exposedPorts {
-			ports[k] = v
-		}
+	}
+
+	for k, v := range exposedPorts {
+		ports[k] = v
 	}
 
 	deviceMappings, err := parseDevices(c.Devices)
@@ -95,7 +99,7 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		VolumeDriver: c.VolumeDriver,
 		Volumes:      volumes,
 	}
-	host_config := &runconfig.HostConfig{
+	hostConfig := &runconfig.HostConfig{
 		VolumesFrom: c.VolumesFrom,
 		CapAdd:      runconfig.NewCapList(c.CapAdd),
 		CapDrop:     runconfig.NewCapList(c.CapDrop),
@@ -123,7 +127,7 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		SecurityOpt:    c.SecurityOpt,
 	}
 
-	return config, host_config, nil
+	return config, hostConfig, nil
 }
 
 func parseDevices(devices []string) ([]runconfig.DeviceMapping, error) {

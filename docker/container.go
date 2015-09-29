@@ -18,6 +18,8 @@ import (
 	"github.com/samalba/dockerclient"
 )
 
+// Container holds information about a docker container and the service it is tied on.
+// It implements Service interface by encapsulating a EmptyService.
 type Container struct {
 	project.EmptyService
 
@@ -26,6 +28,7 @@ type Container struct {
 	client  dockerclient.Client
 }
 
+// NewContainer creates a container struct with the specified docker client, name and service.
 func NewContainer(client dockerclient.Client, name string, service *Service) *Container {
 	return &Container{
 		client:  client,
@@ -47,6 +50,7 @@ func (c *Container) findInfo() (*dockerclient.ContainerInfo, error) {
 	return c.client.InspectContainer(container.Id)
 }
 
+// Info returns info about the container, like name, command, state or ports.
 func (c *Container) Info() (project.Info, error) {
 	container, err := c.findExisting()
 	if err != nil {
@@ -91,6 +95,9 @@ func name(names []string) string {
 	return current[1:]
 }
 
+// Create creates the container based on the specified image name and send an event
+// to notify the container has been created. If the container already exists, does
+// nothing.
 func (c *Container) Create(imageName string) (*dockerclient.Container, error) {
 	container, err := c.findExisting()
 	if err != nil {
@@ -110,18 +117,22 @@ func (c *Container) Create(imageName string) (*dockerclient.Container, error) {
 	return container, err
 }
 
+// Down stops the container.
 func (c *Container) Down() error {
 	return c.withContainer(func(container *dockerclient.Container) error {
 		return c.client.StopContainer(container.Id, c.service.context.Timeout)
 	})
 }
 
+// Kill kill the container.
 func (c *Container) Kill() error {
 	return c.withContainer(func(container *dockerclient.Container) error {
 		return c.client.KillContainer(container.Id, c.service.context.Signal)
 	})
 }
 
+// Delete removes the container if existing. If the container is running, it tries
+// to stop it first.
 func (c *Container) Delete() error {
 	container, err := c.findExisting()
 	if err != nil || container == nil {
@@ -143,6 +154,9 @@ func (c *Container) Delete() error {
 	return c.client.RemoveContainer(container.Id, true, false)
 }
 
+// Up creates and start the container based on the image name and send an event
+// to notify the container has been created. If the container exists but is stopped
+// it tries to start it.
 func (c *Container) Up(imageName string) error {
 	var err error
 
@@ -181,6 +195,8 @@ func (c *Container) Up(imageName string) error {
 	return nil
 }
 
+// OutOfSync checks if the container is out of sync with the service definition.
+// It looks if the the service hash container label is the same as the computed one.
 func (c *Container) OutOfSync() (bool, error) {
 	container, err := c.findExisting()
 	if err != nil || container == nil {
@@ -196,7 +212,7 @@ func (c *Container) OutOfSync() (bool, error) {
 }
 
 func (c *Container) createContainer(imageName string) (*dockerclient.Container, error) {
-	config, err := ConvertToApi(c.service.serviceConfig)
+	config, err := ConvertToAPI(c.service.serviceConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +311,7 @@ func (c *Container) addIpc(config *dockerclient.HostConfig, service project.Serv
 		return nil, fmt.Errorf("Failed to find container for IPC %v", c.service.Config().Ipc)
 	}
 
-	id, err := containers[0].Id()
+	id, err := containers[0].ID()
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +325,7 @@ func (c *Container) addNetNs(config *dockerclient.HostConfig, service project.Se
 		return nil, fmt.Errorf("Failed to find container for networks ns %v", c.service.Config().Net)
 	}
 
-	id, err := containers[0].Id()
+	id, err := containers[0].ID()
 	if err != nil {
 		return nil, err
 	}
@@ -318,23 +334,26 @@ func (c *Container) addNetNs(config *dockerclient.HostConfig, service project.Se
 	return config, nil
 }
 
-func (c *Container) Id() (string, error) {
+// ID returns the container Id.
+func (c *Container) ID() (string, error) {
 	container, err := c.findExisting()
 	if container == nil {
 		return "", err
-	} else {
-		return container.Id, err
 	}
+	return container.Id, err
 }
 
+// Name returns the container name.
 func (c *Container) Name() string {
 	return c.name
 }
 
+// Pull pulls the image the container is based on.
 func (c *Container) Pull() error {
 	return c.pull(c.service.serviceConfig.Image)
 }
 
+// Restart restarts the container if existing, does nothing otherwise.
 func (c *Container) Restart() error {
 	container, err := c.findExisting()
 	if err != nil || container == nil {
@@ -344,6 +363,7 @@ func (c *Container) Restart() error {
 	return c.client.RestartContainer(container.Id, c.service.context.Timeout)
 }
 
+// Log forwards container logs to the project configured logger.
 func (c *Container) Log() error {
 	container, err := c.findExisting()
 	if container == nil || err != nil {
@@ -373,15 +393,14 @@ func (c *Container) Log() error {
 			l.Out([]byte(scanner.Text() + "\n"))
 		}
 		return scanner.Err()
-	} else {
-		_, err := stdcopy.StdCopy(&logger.Wrapper{
-			Logger: l,
-		}, &logger.Wrapper{
-			Err:    true,
-			Logger: l,
-		}, output)
-		return err
 	}
+	_, err = stdcopy.StdCopy(&logger.Wrapper{
+		Logger: l,
+	}, &logger.Wrapper{
+		Err:    true,
+		Logger: l,
+	}, output)
+	return err
 }
 
 func (c *Container) pull(image string) error {
@@ -426,6 +445,7 @@ func (c *Container) withContainer(action func(*dockerclient.Container) error) er
 	return nil
 }
 
+// Port returns the host port the specified port is mapped on.
 func (c *Container) Port(port string) (string, error) {
 	info, err := c.findInfo()
 	if err != nil {
@@ -439,7 +459,6 @@ func (c *Container) Port(port string) (string, error) {
 		}
 
 		return strings.Join(result, "\n"), nil
-	} else {
-		return "", nil
 	}
+	return "", nil
 }
