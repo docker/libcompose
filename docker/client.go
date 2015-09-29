@@ -31,6 +31,7 @@ func init() {
 	}
 }
 
+// ClientOpts holds docker client options (host, tls, ..)
 type ClientOpts struct {
 	TLS        bool
 	TLSVerify  bool
@@ -39,6 +40,7 @@ type ClientOpts struct {
 	Host       string
 }
 
+// CreateClient creates a docker client based on the specified options.
 func CreateClient(c ClientOpts) (dockerclient.Client, error) {
 	if c.TLSOptions.CAFile == "" {
 		c.TLSOptions.CAFile = filepath.Join(dockerCertPath, defaultCaFile)

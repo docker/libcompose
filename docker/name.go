@@ -10,6 +10,7 @@ import (
 
 const format = "%s_%s_%d"
 
+// Namer defines method to provide container name.
 type Namer interface {
 	io.Closer
 	Next() string
@@ -24,17 +25,13 @@ type singleNamer struct {
 	name string
 }
 
-func OneName(client dockerclient.Client, project, service string) (string, error) {
-	namer := NewNamer(client, project, service)
-	defer namer.Close()
-
-	return namer.Next(), nil
-}
-
+// NewSingleNamer returns a namer that only allows a single name.
 func NewSingleNamer(name string) Namer {
 	return &singleNamer{name}
 }
 
+// NewNamer returns a namer that returns names based on the specified project and
+// service name and an inner counter, e.g. project_service_1, project_service_2…
 func NewNamer(client dockerclient.Client, project, service string) Namer {
 	namer := &inOrderNamer{
 		names: make(chan string),

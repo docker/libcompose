@@ -6,8 +6,10 @@ import (
 	"github.com/docker/libcompose/utils"
 )
 
+// Label represents a docker label.
 type Label string
 
+// Libcompose default labels.
 const (
 	NAME    = Label("io.docker.compose.name")
 	PROJECT = Label("io.docker.compose.project")
@@ -15,10 +17,12 @@ const (
 	HASH    = Label("io.docker.compose.config-hash")
 )
 
+// Eq returns a label json representation with the specified value.
 func (f Label) Eq(value string) string {
 	return utils.LabelFilter(string(f), value)
 }
 
+// And returns a json list of label by merging the two specified values (left and right).
 func And(left, right string) string {
 	leftMap := map[string][]string{}
 	rightMap := map[string][]string{}
@@ -41,6 +45,7 @@ func And(left, right string) string {
 	return string(result)
 }
 
+// Str returns the label name.
 func (f Label) Str() string {
 	return string(f)
 }

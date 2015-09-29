@@ -11,6 +11,7 @@ packages=(
     cli/docker/app
     cli/logger
     cli/main
+    docker
     lookup
     logger
     version

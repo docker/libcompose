@@ -6,6 +6,7 @@ import (
 	"github.com/docker/libcompose/utils"
 )
 
+// Service is a project.Service implementations.
 type Service struct {
 	name          string
 	serviceConfig *project.ServiceConfig
@@ -13,18 +14,22 @@ type Service struct {
 	imageName     string
 }
 
+// Name returns the service name.
 func (s *Service) Name() string {
 	return s.name
 }
 
+// Config returns the configuration of the service (project.ServiceConfig).
 func (s *Service) Config() *project.ServiceConfig {
 	return s.serviceConfig
 }
 
+// DependentServices returns the dependent services (as an array of ServiceRelationship) of the service.
 func (s *Service) DependentServices() []project.ServiceRelationship {
 	return project.DefaultDependentServices(s.context.Project, s)
 }
 
+// Create implements Service.Create.
 func (s *Service) Create() error {
 	_, err := s.createOne()
 	return err
@@ -55,6 +60,9 @@ func (s *Service) createOne() (*Container, error) {
 	return containers[0], err
 }
 
+// Build implements Service.Build. If an imageName is specified or if the context has
+// no build to work with it will do nothing. Otherwise it will try to build
+// the image and returns an error if any.
 func (s *Service) Build() error {
 	_, err := s.build()
 	return err
@@ -123,6 +131,8 @@ func (s *Service) constructContainers(create bool, count int) ([]*Container, err
 	return result, nil
 }
 
+// Up implements Service.Up. It builds the image if needed, creates a container
+// and start it.
 func (s *Service) Up() error {
 	imageName, err := s.build()
 	if err != nil {
@@ -132,6 +142,8 @@ func (s *Service) Up() error {
 	return s.up(imageName, true)
 }
 
+// Info implements Service.Info. It returns an project.InfoSet with the containers
+// related to this service (can be multiple if using the scale command).
 func (s *Service) Info() (project.InfoSet, error) {
 	result := project.InfoSet{}
 	containers, err := s.collectContainers()
@@ -140,16 +152,17 @@ func (s *Service) Info() (project.InfoSet, error) {
 	}
 
 	for _, c := range containers {
-		if info, err := c.Info(); err != nil {
+		info, err := c.Info()
+		if err != nil {
 			return nil, err
-		} else {
-			result = append(result, info)
 		}
+		result = append(result, info)
 	}
 
 	return result, nil
 }
 
+// Start implements Service.Start. It tries to start a container without creating it.
 func (s *Service) Start() error {
 	return s.up("", false)
 }
@@ -200,36 +213,43 @@ func (s *Service) eachContainer(action func(*Container) error) error {
 	return tasks.Wait()
 }
 
+// Down implements Service.Down. It stops any containers related to the service.
 func (s *Service) Down() error {
 	return s.eachContainer(func(c *Container) error {
 		return c.Down()
 	})
 }
 
+// Restart implements Service.Restart. It restarts any containers related to the service.
 func (s *Service) Restart() error {
 	return s.eachContainer(func(c *Container) error {
 		return c.Restart()
 	})
 }
 
+// Kill implements Service.Kill. It kills any containers related to the service.
 func (s *Service) Kill() error {
 	return s.eachContainer(func(c *Container) error {
 		return c.Kill()
 	})
 }
 
+// Delete implements Service.Delete. It removes any containers related to the service.
 func (s *Service) Delete() error {
 	return s.eachContainer(func(c *Container) error {
 		return c.Delete()
 	})
 }
 
+// Log implements Service.Log. It returns the docker logs for each container related to the service.
 func (s *Service) Log() error {
 	return s.eachContainer(func(c *Container) error {
 		return c.Log()
 	})
 }
 
+// Scale implements Service.Scale. It creates or removes containers to have the specified number
+// of related container to the service to run.
 func (s *Service) Scale(scale int) error {
 	foundCount := 0
 	err := s.eachContainer(func(c *Container) error {
@@ -260,6 +280,7 @@ func (s *Service) Scale(scale int) error {
 	return s.up("", false)
 }
 
+// Pull implements Service.Pull. It pulls or build the image of the service.
 func (s *Service) Pull() error {
 	containers, err := s.constructContainers(false, 1)
 	if err != nil {
@@ -269,6 +290,8 @@ func (s *Service) Pull() error {
 	return containers[0].Pull()
 }
 
+// Containers implements Service.Containers. It returns the list of containers
+// that are related to the service.
 func (s *Service) Containers() ([]project.Container, error) {
 	result := []project.Container{}
 	containers, err := s.collectContainers()

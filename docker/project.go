@@ -7,6 +7,7 @@ import (
 	"github.com/docker/libcompose/project"
 )
 
+// NewProject creates a Project with the specified context.
 func NewProject(context *Context) (*project.Project, error) {
 	if context.ConfigLookup == nil {
 		context.ConfigLookup = &lookup.FileConfigLookup{}
@@ -27,11 +28,11 @@ func NewProject(context *Context) (*project.Project, error) {
 	}
 
 	if context.ClientFactory == nil {
-		if factory, err := NewDefaultClientFactory(ClientOpts{}); err != nil {
+		factory, err := NewDefaultClientFactory(ClientOpts{})
+		if err != nil {
 			return nil, err
-		} else {
-			context.ClientFactory = factory
 		}
+		context.ClientFactory = factory
 	}
 
 	p := project.NewProject(&context.Context)

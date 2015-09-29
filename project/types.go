@@ -240,7 +240,7 @@ type Service interface {
 }
 
 type Container interface {
-	Id() (string, error)
+	ID() (string, error)
 	Name() string
 	Port(port string) (string, error)
 }
