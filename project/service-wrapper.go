@@ -20,7 +20,7 @@ type serviceWrapper struct {
 func newServiceWrapper(name string, p *Project) (*serviceWrapper, error) {
 	wrapper := &serviceWrapper{
 		name:    name,
-		state:   UNKNOWN,
+		state:   StateUnknown,
 		project: p,
 		ignored: map[string]bool{},
 	}
@@ -33,7 +33,7 @@ func (s *serviceWrapper) IgnoreDep(name string) {
 }
 
 func (s *serviceWrapper) Reset() error {
-	if s.state != EXECUTED {
+	if s.state != StateExecuted {
 		service, err := s.project.CreateService(s.name)
 		if err != nil {
 			log.Errorf("Failed to create service for %s : %v", s.name, err)
@@ -54,8 +54,8 @@ func (s *serviceWrapper) Reset() error {
 func (s *serviceWrapper) Ignore() {
 	defer s.done.Done()
 
-	s.state = EXECUTED
-	s.project.Notify(SERVICE_UP_IGNORED, s.service.Name(), nil)
+	s.state = StateExecuted
+	s.project.Notify(EventServiceUpIgnored, s.service.Name(), nil)
 }
 
 func (s *serviceWrapper) waitForDeps(wrappers map[string]*serviceWrapper) bool {
@@ -70,7 +70,7 @@ func (s *serviceWrapper) waitForDeps(wrappers map[string]*serviceWrapper) bool {
 
 		if wrapper, ok := wrappers[dep.Target]; ok {
 			if wrapper.Wait() == ErrRestart {
-				s.project.Notify(PROJECT_RELOAD, wrapper.service.Name(), nil)
+				s.project.Notify(EventProjectReload, wrapper.service.Name(), nil)
 				s.err = ErrRestart
 				return false
 			}
@@ -82,10 +82,10 @@ func (s *serviceWrapper) waitForDeps(wrappers map[string]*serviceWrapper) bool {
 	return true
 }
 
-func (s *serviceWrapper) Do(wrappers map[string]*serviceWrapper, start, done Event, action func(service Service) error) {
+func (s *serviceWrapper) Do(wrappers map[string]*serviceWrapper, start, done EventType, action func(service Service) error) {
 	defer s.done.Done()
 
-	if s.state == EXECUTED {
+	if s.state == StateExecuted {
 		return
 	}
 
@@ -93,14 +93,14 @@ func (s *serviceWrapper) Do(wrappers map[string]*serviceWrapper, start, done Eve
 		return
 	}
 
-	s.state = EXECUTED
+	s.state = StateExecuted
 
 	s.project.Notify(start, s.service.Name(), nil)
 
 	s.err = action(s.service)
 	if s.err == ErrRestart {
 		s.project.Notify(done, s.service.Name(), nil)
-		s.project.Notify(PROJECT_RELOAD_TRIGGER, s.service.Name(), nil)
+		s.project.Notify(EventProjectReloadTrigger, s.service.Name(), nil)
 	} else if s.err != nil {
 		log.Errorf("Failed %s %s : %v", start, s.name, s.err)
 	} else {

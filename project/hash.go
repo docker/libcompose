@@ -9,6 +9,9 @@ import (
 	"sort"
 )
 
+// GetServiceHash computes and returns a hash that will identify a service.
+// This hash will be then used to detect if the service definition/configuration
+// have changed and needs to be rebuild.
 func GetServiceHash(service Service) string {
 	hash := sha1.New()
 

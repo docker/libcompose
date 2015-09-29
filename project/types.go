@@ -2,169 +2,174 @@ package project
 
 import "fmt"
 
-type Event int
+// EventType defines a type of libcompose event.
+type EventType int
 
+// Definitions of libcompose events
 const (
-	CONTAINER_ID = "container_id"
+	NoEvent = EventType(iota)
 
-	NO_EVENT = Event(iota)
+	EventContainerCreated = EventType(iota)
+	EventContainerStarted = EventType(iota)
 
-	CONTAINER_CREATED = Event(iota)
-	CONTAINER_STARTED = Event(iota)
+	EventServiceAdd          = EventType(iota)
+	EventServiceUpStart      = EventType(iota)
+	EventServiceUpIgnored    = EventType(iota)
+	EventServiceUp           = EventType(iota)
+	EventServiceCreateStart  = EventType(iota)
+	EventServiceCreate       = EventType(iota)
+	EventServiceDeleteStart  = EventType(iota)
+	EventServiceDelete       = EventType(iota)
+	EventServiceDownStart    = EventType(iota)
+	EventServiceDown         = EventType(iota)
+	EventServiceRestartStart = EventType(iota)
+	EventServiceRestart      = EventType(iota)
+	EventServicePullStart    = EventType(iota)
+	EventServicePull         = EventType(iota)
+	EventServiceKillStart    = EventType(iota)
+	EventServiceKill         = EventType(iota)
+	EventServiceStartStart   = EventType(iota)
+	EventServiceStart        = EventType(iota)
+	EventServiceBuildStart   = EventType(iota)
+	EventServiceBuild        = EventType(iota)
 
-	SERVICE_ADD           = Event(iota)
-	SERVICE_UP_START      = Event(iota)
-	SERVICE_UP_IGNORED    = Event(iota)
-	SERVICE_UP            = Event(iota)
-	SERVICE_CREATE_START  = Event(iota)
-	SERVICE_CREATE        = Event(iota)
-	SERVICE_DELETE_START  = Event(iota)
-	SERVICE_DELETE        = Event(iota)
-	SERVICE_DOWN_START    = Event(iota)
-	SERVICE_DOWN          = Event(iota)
-	SERVICE_RESTART_START = Event(iota)
-	SERVICE_RESTART       = Event(iota)
-	SERVICE_PULL_START    = Event(iota)
-	SERVICE_PULL          = Event(iota)
-	SERVICE_KILL_START    = Event(iota)
-	SERVICE_KILL          = Event(iota)
-	SERVICE_START_START   = Event(iota)
-	SERVICE_START         = Event(iota)
-	SERVICE_BUILD_START   = Event(iota)
-	SERVICE_BUILD         = Event(iota)
-
-	PROJECT_DOWN_START     = Event(iota)
-	PROJECT_DOWN_DONE      = Event(iota)
-	PROJECT_CREATE_START   = Event(iota)
-	PROJECT_CREATE_DONE    = Event(iota)
-	PROJECT_UP_START       = Event(iota)
-	PROJECT_UP_DONE        = Event(iota)
-	PROJECT_DELETE_START   = Event(iota)
-	PROJECT_DELETE_DONE    = Event(iota)
-	PROJECT_RESTART_START  = Event(iota)
-	PROJECT_RESTART_DONE   = Event(iota)
-	PROJECT_RELOAD         = Event(iota)
-	PROJECT_RELOAD_TRIGGER = Event(iota)
-	PROJECT_KILL_START     = Event(iota)
-	PROJECT_KILL_DONE      = Event(iota)
-	PROJECT_START_START    = Event(iota)
-	PROJECT_START_DONE     = Event(iota)
-	PROJECT_BUILD_START    = Event(iota)
-	PROJECT_BUILD_DONE     = Event(iota)
+	EventProjectDownStart     = EventType(iota)
+	EventProjectDownDone      = EventType(iota)
+	EventProjectCreateStart   = EventType(iota)
+	EventProjectCreateDone    = EventType(iota)
+	EventProjectUpStart       = EventType(iota)
+	EventProjectUpDone        = EventType(iota)
+	EventProjectDeleteStart   = EventType(iota)
+	EventProjectDeleteDone    = EventType(iota)
+	EventProjectRestartStart  = EventType(iota)
+	EventProjectRestartDone   = EventType(iota)
+	EventProjectReload        = EventType(iota)
+	EventProjectReloadTrigger = EventType(iota)
+	EventProjectKillStart     = EventType(iota)
+	EventProjectKillDone      = EventType(iota)
+	EventProjectStartStart    = EventType(iota)
+	EventProjectStartDone     = EventType(iota)
+	EventProjectBuildStart    = EventType(iota)
+	EventProjectBuildDone     = EventType(iota)
 )
 
-func (e Event) String() string {
+func (e EventType) String() string {
 	var m string
 	switch e {
-	case CONTAINER_CREATED:
+	case EventContainerCreated:
 		m = "Created container"
-	case CONTAINER_STARTED:
+	case EventContainerStarted:
 		m = "Started container"
 
-	case SERVICE_ADD:
+	case EventServiceAdd:
 		m = "Adding"
-	case SERVICE_UP_START:
+	case EventServiceUpStart:
 		m = "Starting"
-	case SERVICE_UP_IGNORED:
+	case EventServiceUpIgnored:
 		m = "Ignoring"
-	case SERVICE_UP:
+	case EventServiceUp:
 		m = "Started"
-	case SERVICE_CREATE_START:
+	case EventServiceCreateStart:
 		m = "Creating"
-	case SERVICE_CREATE:
+	case EventServiceCreate:
 		m = "Created"
-	case SERVICE_DELETE_START:
+	case EventServiceDeleteStart:
 		m = "Deleting"
-	case SERVICE_DELETE:
+	case EventServiceDelete:
 		m = "Deleted"
-	case SERVICE_DOWN_START:
+	case EventServiceDownStart:
 		m = "Stopping"
-	case SERVICE_DOWN:
+	case EventServiceDown:
 		m = "Stopped"
-	case SERVICE_RESTART_START:
+	case EventServiceRestartStart:
 		m = "Restarting"
-	case SERVICE_RESTART:
+	case EventServiceRestart:
 		m = "Restarted"
-	case SERVICE_PULL_START:
+	case EventServicePullStart:
 		m = "Pulling"
-	case SERVICE_PULL:
+	case EventServicePull:
 		m = "Pulled"
-	case SERVICE_KILL_START:
+	case EventServiceKillStart:
 		m = "Killing"
-	case SERVICE_KILL:
+	case EventServiceKill:
 		m = "Killed"
-	case SERVICE_START_START:
+	case EventServiceStartStart:
 		m = "Starting"
-	case SERVICE_START:
+	case EventServiceStart:
 		m = "Started"
-	case SERVICE_BUILD_START:
+	case EventServiceBuildStart:
 		m = "Building"
-	case SERVICE_BUILD:
+	case EventServiceBuild:
 		m = "Built"
 
-	case PROJECT_DOWN_START:
+	case EventProjectDownStart:
 		m = "Stopping project"
-	case PROJECT_DOWN_DONE:
+	case EventProjectDownDone:
 		m = "Project stopped"
-	case PROJECT_CREATE_START:
+	case EventProjectCreateStart:
 		m = "Creating project"
-	case PROJECT_CREATE_DONE:
+	case EventProjectCreateDone:
 		m = "Project created"
-	case PROJECT_UP_START:
+	case EventProjectUpStart:
 		m = "Starting project"
-	case PROJECT_UP_DONE:
+	case EventProjectUpDone:
 		m = "Project started"
-	case PROJECT_DELETE_START:
+	case EventProjectDeleteStart:
 		m = "Deleting project"
-	case PROJECT_DELETE_DONE:
+	case EventProjectDeleteDone:
 		m = "Project deleted"
-	case PROJECT_RESTART_START:
+	case EventProjectRestartStart:
 		m = "Restarting project"
-	case PROJECT_RESTART_DONE:
+	case EventProjectRestartDone:
 		m = "Project restarted"
-	case PROJECT_RELOAD:
+	case EventProjectReload:
 		m = "Reloading project"
-	case PROJECT_RELOAD_TRIGGER:
+	case EventProjectReloadTrigger:
 		m = "Triggering project reload"
-	case PROJECT_KILL_START:
+	case EventProjectKillStart:
 		m = "Killing project"
-	case PROJECT_KILL_DONE:
+	case EventProjectKillDone:
 		m = "Project killed"
-	case PROJECT_START_START:
+	case EventProjectStartStart:
 		m = "Starting project"
-	case PROJECT_START_DONE:
+	case EventProjectStartDone:
 		m = "Project started"
-	case PROJECT_BUILD_START:
+	case EventProjectBuildStart:
 		m = "Building project"
-	case PROJECT_BUILD_DONE:
+	case EventProjectBuildDone:
 		m = "Project built"
 	}
 
 	if m == "" {
-		m = fmt.Sprintf("Event: %d", int(e))
+		m = fmt.Sprintf("EventType: %d", int(e))
 	}
 
 	return m
 }
 
+// InfoPart holds key/value strings.
 type InfoPart struct {
 	Key, Value string
 }
 
+// InfoSet holds a list of Info.
 type InfoSet []Info
+
+// Info holds a list of InfoPart.
 type Info []InfoPart
 
+// ServiceConfig holds libcompose service configuration
 type ServiceConfig struct {
 	Build         string            `yaml:"build,omitempty"`
 	CapAdd        []string          `yaml:"cap_add,omitempty"`
 	CapDrop       []string          `yaml:"cap_drop,omitempty"`
-	CpuSet        string            `yaml:"cpuset,omitempty"`
-	CpuShares     int64             `yaml:"cpu_shares,omitempty"`
+	CPUSet        string            `yaml:"cpuset,omitempty"`
+	CPUShares     int64             `yaml:"cpu_shares,omitempty"`
 	Command       Command           `yaml:"command"` // omitempty breaks serialization!
 	ContainerName string            `yaml:"container_name,omitempty"`
 	Devices       []string          `yaml:"devices,omitempty"`
-	Dns           Stringorslice     `yaml:"dns"`        // omitempty breaks serialization!
-	DnsSearch     Stringorslice     `yaml:"dns_search"` // omitempty breaks serialization!
+	DNS           Stringorslice     `yaml:"dns"`        // omitempty breaks serialization!
+	DNSSearch     Stringorslice     `yaml:"dns_search"` // omitempty breaks serialization!
 	Dockerfile    string            `yaml:"dockerfile,omitempty"`
 	DomainName    string            `yaml:"domainname,omitempty"`
 	Entrypoint    Command           `yaml:"entrypoint"`  // omitempty breaks serialization!
@@ -200,14 +205,17 @@ type ServiceConfig struct {
 	ExtraHosts    []string          `yaml:"extra_hosts,omitempty"`
 }
 
+// EnvironmentLookup defines methods to provides environment variable loading.
 type EnvironmentLookup interface {
 	Lookup(key, serviceName string, config *ServiceConfig) []string
 }
 
+// ConfigLookup defines methods to provides file loading.
 type ConfigLookup interface {
 	Lookup(file, relativeTo string) ([]byte, string, error)
 }
 
+// Project holds libcompose project information.
 type Project struct {
 	Name           string
 	Configs        map[string]*ServiceConfig
@@ -216,10 +224,11 @@ type Project struct {
 	context        *Context
 	reload         []string
 	upCount        int
-	listeners      []chan<- ProjectEvent
+	listeners      []chan<- Event
 	hasListeners   bool
 }
 
+// Service defines what a libcompose service provides.
 type Service interface {
 	Info() (InfoSet, error)
 	Name() string
@@ -239,29 +248,43 @@ type Service interface {
 	Scale(count int) error
 }
 
+// Container defines what a libcompose container provides.
 type Container interface {
 	ID() (string, error)
 	Name() string
 	Port(port string) (string, error)
 }
 
+// ServiceFactory is an interface factory to create Service object for the specified
+// project, with the specified name and service configuration.
 type ServiceFactory interface {
 	Create(project *Project, name string, serviceConfig *ServiceConfig) (Service, error)
 }
 
+// ServiceRelationshipType defines the type of service relationship.
 type ServiceRelationshipType string
 
-const REL_TYPE_LINK = ServiceRelationshipType("")
-const REL_TYPE_NET_NAMESPACE = ServiceRelationshipType("netns")
-const REL_TYPE_IPC_NAMESPACE = ServiceRelationshipType("ipc")
-const REL_TYPE_VOLUMES_FROM = ServiceRelationshipType("volumesFrom")
+// RelTypeLink means the services are linked (docker links).
+const RelTypeLink = ServiceRelationshipType("")
 
+// RelTypeNetNamespace means the services share the same network namespace.
+const RelTypeNetNamespace = ServiceRelationshipType("netns")
+
+// RelTypeIpcNamespace means the service share the same ipc namespace.
+const RelTypeIpcNamespace = ServiceRelationshipType("ipc")
+
+// RelTypeVolumesFrom means the services share some volumes.
+const RelTypeVolumesFrom = ServiceRelationshipType("volumesFrom")
+
+// ServiceRelationship holds the relationship information between two services.
 type ServiceRelationship struct {
 	Target, Alias string
 	Type          ServiceRelationshipType
 	Optional      bool
 }
 
+// NewServiceRelationship creates a new Relationship based on the specified alias
+// and relationship type.
 func NewServiceRelationship(nameAlias string, relType ServiceRelationshipType) ServiceRelationship {
 	name, alias := NameAlias(nameAlias)
 	return ServiceRelationship{

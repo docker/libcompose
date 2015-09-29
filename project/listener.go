@@ -7,35 +7,36 @@ import (
 )
 
 var (
-	infoEvents = map[Event]bool{
-		PROJECT_DELETE_DONE:   true,
-		PROJECT_DELETE_START:  true,
-		PROJECT_DOWN_DONE:     true,
-		PROJECT_DOWN_START:    true,
-		PROJECT_RESTART_DONE:  true,
-		PROJECT_RESTART_START: true,
-		PROJECT_UP_DONE:       true,
-		PROJECT_UP_START:      true,
-		SERVICE_DELETE_START:  true,
-		SERVICE_DELETE:        true,
-		SERVICE_DOWN_START:    true,
-		SERVICE_DOWN:          true,
-		SERVICE_RESTART_START: true,
-		SERVICE_RESTART:       true,
-		SERVICE_UP_START:      true,
-		SERVICE_UP:            true,
+	infoEvents = map[EventType]bool{
+		EventProjectDeleteDone:   true,
+		EventProjectDeleteStart:  true,
+		EventProjectDownDone:     true,
+		EventProjectDownStart:    true,
+		EventProjectRestartDone:  true,
+		EventProjectRestartStart: true,
+		EventProjectUpDone:       true,
+		EventProjectUpStart:      true,
+		EventServiceDeleteStart:  true,
+		EventServiceDelete:       true,
+		EventServiceDownStart:    true,
+		EventServiceDown:         true,
+		EventServiceRestartStart: true,
+		EventServiceRestart:      true,
+		EventServiceUpStart:      true,
+		EventServiceUp:           true,
 	}
 )
 
 type defaultListener struct {
 	project    *Project
-	listenChan chan ProjectEvent
+	listenChan chan Event
 	upCount    int
 }
 
-func NewDefaultListener(p *Project) chan<- ProjectEvent {
+// NewDefaultListener create a default listener for the specified project.
+func NewDefaultListener(p *Project) chan<- Event {
 	l := defaultListener{
-		listenChan: make(chan ProjectEvent),
+		listenChan: make(chan Event),
 		project:    p,
 	}
 	go l.start()
@@ -56,20 +57,20 @@ func (d *defaultListener) start() {
 			}
 		}
 
-		if event.Event == SERVICE_UP {
+		if event.EventType == EventServiceUp {
 			d.upCount++
 		}
 
 		logf := logrus.Debugf
 
-		if infoEvents[event.Event] {
+		if infoEvents[event.EventType] {
 			logf = logrus.Infof
 		}
 
 		if event.ServiceName == "" {
-			logf("Project [%s]: %s %s", d.project.Name, event.Event, buffer.Bytes())
+			logf("Project [%s]: %s %s", d.project.Name, event.EventType, buffer.Bytes())
 		} else {
-			logf("[%d/%d] [%s]: %s %s", d.upCount, len(d.project.Configs), event.ServiceName, event.Event, buffer.Bytes())
+			logf("[%d/%d] [%s]: %s %s", d.upCount, len(d.project.Configs), event.ServiceName, event.EventType, buffer.Bytes())
 		}
 	}
 }

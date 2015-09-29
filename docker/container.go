@@ -109,7 +109,7 @@ func (c *Container) Create(imageName string) (*dockerclient.Container, error) {
 		if err != nil {
 			return nil, err
 		}
-		c.service.context.Project.Notify(project.CONTAINER_CREATED, c.service.Name(), map[string]string{
+		c.service.context.Project.Notify(project.EventContainerCreated, c.service.Name(), map[string]string{
 			"name": c.Name(),
 		})
 	}
@@ -187,7 +187,7 @@ func (c *Container) Up(imageName string) error {
 			return err
 		}
 
-		c.service.context.Project.Notify(project.CONTAINER_STARTED, c.service.Name(), map[string]string{
+		c.service.context.Project.Notify(project.EventContainerStarted, c.service.Name(), map[string]string{
 			"name": c.Name(),
 		})
 	}
@@ -272,11 +272,11 @@ func (c *Container) populateAdditionalHostConfig(hostConfig *dockerclient.HostCo
 			return err
 		}
 
-		if link.Type == project.REL_TYPE_LINK {
+		if link.Type == project.RelTypeLink {
 			c.addLinks(links, service, link, containers)
-		} else if link.Type == project.REL_TYPE_IPC_NAMESPACE {
+		} else if link.Type == project.RelTypeIpcNamespace {
 			hostConfig, err = c.addIpc(hostConfig, service, containers)
-		} else if link.Type == project.REL_TYPE_NET_NAMESPACE {
+		} else if link.Type == project.RelTypeNetNamespace {
 			hostConfig, err = c.addNetNs(hostConfig, service, containers)
 		}
 

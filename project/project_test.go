@@ -6,16 +6,16 @@ import (
 )
 
 func TestEventEquality(t *testing.T) {
-	if fmt.Sprintf("%s", SERVICE_START) != "Started" ||
-		fmt.Sprintf("%v", SERVICE_START) != "Started" {
-		t.Fatalf("SERVICE_START String() doesn't work: %s %v", SERVICE_START, SERVICE_START)
+	if fmt.Sprintf("%s", EventServiceStart) != "Started" ||
+		fmt.Sprintf("%v", EventServiceStart) != "Started" {
+		t.Fatalf("EventServiceStart String() doesn't work: %s %v", EventServiceStart, EventServiceStart)
 	}
 
-	if fmt.Sprintf("%s", SERVICE_START) != fmt.Sprintf("%s", SERVICE_UP) {
+	if fmt.Sprintf("%s", EventServiceStart) != fmt.Sprintf("%s", EventServiceUp) {
 		t.Fatal("Event messages do not match")
 	}
 
-	if SERVICE_START == SERVICE_UP {
+	if EventServiceStart == EventServiceUp {
 		t.Fatal("Events match")
 	}
 }

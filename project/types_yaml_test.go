@@ -26,8 +26,8 @@ func newTestConfig() TestConfig {
 				Restart:    "always",
 				Net:        "host",
 				Privileged: true,
-				Dns:        Stringorslice{[]string{"8.8.8.8", "8.8.4.4"}},
-				DnsSearch:  Stringorslice{[]string{}},
+				DNS:        Stringorslice{[]string{"8.8.8.8", "8.8.4.4"}},
+				DNSSearch:  Stringorslice{[]string{}},
 				EnvFile:    Stringorslice{[]string{}},
 				Environment: MaporEqualSlice{[]string{
 					"DAEMON=true",
@@ -48,8 +48,8 @@ func newTestConfig() TestConfig {
 				Net:         "none",
 				ReadOnly:    true,
 				Privileged:  true,
-				Dns:         Stringorslice{[]string{}},
-				DnsSearch:   Stringorslice{[]string{}},
+				DNS:         Stringorslice{[]string{}},
+				DNSSearch:   Stringorslice{[]string{}},
 				EnvFile:     Stringorslice{[]string{}},
 				Environment: MaporEqualSlice{[]string{}},
 				Labels: SliceorMap{map[string]string{
