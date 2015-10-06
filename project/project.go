@@ -121,9 +121,10 @@ func (p *Project) AddConfig(name string, config *ServiceConfig) error {
 // service configuration to the project.
 func (p *Project) Load(bytes []byte) error {
 	configs := make(map[string]*ServiceConfig)
-	configs, err := Merge(p, bytes)
+	configs, err := mergeProject(p, bytes)
 	if err != nil {
-		log.Fatalf("Could not parse config for project %s : %v", p.Name, err)
+		log.Errorf("Could not parse config for project %s : %v", p.Name, err)
+		return err
 	}
 
 	for name, config := range configs {
