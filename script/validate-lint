@@ -1,29 +1,18 @@
 #!/bin/bash
 
+source "$(dirname "$BASH_SOURCE")/.validate"
+
 # We will eventually get to the point where packages should be the complete list
 # of subpackages, vendoring excluded, as given by:
 #
-# packages=( $(go list ./... 2> /dev/null | grep -vE "^github.com/docker/libcompose/Godeps" || true ) )
-
-packages=(
-    cli/app
-    cli/command
-    cli/docker/app
-    cli/logger
-    cli/main
-    docker
-    lookup
-    logger
-    project
-    version
-    utils
-)
+IFS=$'\n'
+files=( $(validate_diff --diff-filter=ACMR --name-only -- '*.go' | grep -v '^Godeps/|integration' || true) )
+unset IFS
 
 errors=()
-for p in "${packages[@]}"; do
-	# Run golint on package/*.go file explicitly to validate all go files
-	# and not just the ones for the current platform.
-	failedLint=$(golint "$p"/*.go)
+for f in "${files[@]}"; do
+	# we use "git show" here to validate that what's committed passes go lint
+	failedLint=$(golint "$f")
 	if [ "$failedLint" ]; then
 		errors+=( "$failedLint" )
 	fi
