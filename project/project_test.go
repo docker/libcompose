@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -17,5 +18,31 @@ func TestEventEquality(t *testing.T) {
 
 	if EventServiceStart == EventServiceUp {
 		t.Fatal("Events match")
+	}
+}
+
+func TestParseWithBadContent(t *testing.T) {
+	p := NewProject(&Context{
+		ComposeBytes: []byte("garbage"),
+	})
+
+	err := p.Parse()
+	if err == nil {
+		t.Fatal("Should have failed parse")
+	}
+
+	if !strings.HasPrefix(err.Error(), "yaml: unmarshal errors") {
+		t.Fatal("Should have failed parse", err)
+	}
+}
+
+func TestParseWithGoodContent(t *testing.T) {
+	p := NewProject(&Context{
+		ComposeBytes: []byte("not-garbage:\n  image: foo"),
+	})
+
+	err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
 	}
 }

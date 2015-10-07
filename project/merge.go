@@ -29,15 +29,12 @@ var (
 type rawService map[string]interface{}
 type rawServiceMap map[string]rawService
 
-// Merge read the specified byte array, which is the content of a yaml composefile,
-// and merge it into the current project.
-func Merge(p *Project, bytes []byte) (map[string]*ServiceConfig, error) {
+func mergeProject(p *Project, bytes []byte) (map[string]*ServiceConfig, error) {
 	configs := make(map[string]*ServiceConfig)
 
 	datas := make(rawServiceMap)
-	err := yaml.Unmarshal(bytes, &datas)
-	if err != nil {
-		logrus.Fatalf("Could not parse config for project %s : %v", p.Name, err)
+	if err := yaml.Unmarshal(bytes, &datas); err != nil {
+		return nil, err
 	}
 
 	err = interpolate(p.context.EnvironmentLookup, &datas)
@@ -55,7 +52,7 @@ func Merge(p *Project, bytes []byte) (map[string]*ServiceConfig, error) {
 		datas[name] = data
 	}
 
-	err = utils.Convert(datas, &configs)
+	err := utils.Convert(datas, &configs)
 	return configs, err
 }
 
