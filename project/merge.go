@@ -217,6 +217,12 @@ func parse(configLookup ConfigLookup, inFile string, serviceData rawService, dat
 	}
 
 	for k, v := range serviceData {
+		// Image and build are mutually exclusive in merge
+		if k == "image" {
+			delete(baseService, "build")
+		} else if k == "build" {
+			delete(baseService, "image")
+		}
 		existing, ok := baseService[k]
 		if ok {
 			baseService[k] = merge(existing, v)
