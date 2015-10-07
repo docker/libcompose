@@ -37,8 +37,7 @@ func mergeProject(p *Project, bytes []byte) (map[string]*ServiceConfig, error) {
 		return nil, err
 	}
 
-	err = interpolate(p.context.EnvironmentLookup, &datas)
-	if err != nil {
+	if err := interpolate(p.context.EnvironmentLookup, &datas); err != nil {
 		return nil, err
 	}
 
