@@ -2,10 +2,11 @@ package project
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
 )
 
 func testInterpolatedLine(t *testing.T, expectedLine, interpolatedLine string, envVariables map[string]string) {
@@ -26,10 +27,22 @@ func testInvalidInterpolatedLine(t *testing.T, line string) {
 
 func TestParseLine(t *testing.T) {
 	variables := map[string]string{
-		"A": "ABC",
-		"X": "XYZ",
-		"E": "",
+		"A":           "ABC",
+		"X":           "XYZ",
+		"E":           "",
+		"lower":       "WORKED",
+		"MiXeD":       "WORKED",
+		"split_VaLue": "WORKED",
+		"9aNumber":    "WORKED",
+		"a9Number":    "WORKED",
 	}
+
+	testInterpolatedLine(t, "WORKED", "$lower", variables)
+	testInterpolatedLine(t, "WORKED", "${MiXeD}", variables)
+	testInterpolatedLine(t, "WORKED", "${split_VaLue}", variables)
+	// Starting with a number isn't valid
+	testInterpolatedLine(t, "", "$9aNumber", variables)
+	testInterpolatedLine(t, "WORKED", "$a9Number", variables)
 
 	testInterpolatedLine(t, "ABC", "$A", variables)
 	testInterpolatedLine(t, "ABC", "${A}", variables)
