@@ -136,16 +136,14 @@ func (p *Project) Load(bytes []byte) error {
 	return nil
 }
 
-func (p *Project) loadWrappers(wrappers map[string]*serviceWrapper) error {
-	for _, name := range p.reload {
+func (p *Project) loadWrappers(wrappers map[string]*serviceWrapper, servicesToConstruct []string) error {
+	for _, name := range servicesToConstruct {
 		wrapper, err := newServiceWrapper(name, p)
 		if err != nil {
 			return err
 		}
 		wrappers[name] = wrapper
 	}
-
-	p.reload = []string{}
 
 	return nil
 }
@@ -263,7 +261,7 @@ func (p *Project) forEach(services []string, action wrapperAction, cycleAction s
 		selected[s] = true
 	}
 
-	return p.traverse(selected, wrappers, action, cycleAction)
+	return p.traverse(true, selected, wrappers, action, cycleAction)
 }
 
 func (p *Project) startService(wrappers map[string]*serviceWrapper, history []string, selected, launched map[string]bool, wrapper *serviceWrapper, action wrapperAction, cycleAction serviceAction) error {
@@ -317,16 +315,25 @@ func (p *Project) startService(wrappers map[string]*serviceWrapper, history []st
 	return nil
 }
 
-func (p *Project) traverse(selected map[string]bool, wrappers map[string]*serviceWrapper, action wrapperAction, cycleAction serviceAction) error {
+func (p *Project) traverse(start bool, selected map[string]bool, wrappers map[string]*serviceWrapper, action wrapperAction, cycleAction serviceAction) error {
 	restart := false
+	wrapperList := []string{}
 
-	for _, wrapper := range wrappers {
-		if err := wrapper.Reset(); err != nil {
-			return err
+	if start {
+		for name := range p.Configs {
+			wrapperList = append(wrapperList, name)
 		}
+	} else {
+		for _, wrapper := range wrappers {
+			if err := wrapper.Reset(); err != nil {
+				return err
+			}
+		}
+		wrapperList = p.reload
 	}
 
-	p.loadWrappers(wrappers)
+	p.loadWrappers(wrappers, wrapperList)
+	p.reload = []string{}
 
 	launched := map[string]bool{}
 
@@ -356,7 +363,7 @@ func (p *Project) traverse(selected map[string]bool, wrappers map[string]*servic
 				log.Errorf("Failed calling callback: %v", err)
 			}
 		}
-		return p.traverse(selected, wrappers, action, cycleAction)
+		return p.traverse(false, selected, wrappers, action, cycleAction)
 	}
 	return firstError
 }
