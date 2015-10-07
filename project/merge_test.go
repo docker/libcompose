@@ -146,3 +146,47 @@ child:
 		t.Fatal("Invalid image", child.Image)
 	}
 }
+
+func TestRestartNo(t *testing.T) {
+	p := NewProject(&Context{
+		ConfigLookup: &NullLookup{},
+	})
+
+	config, err := mergeProject(p, []byte(`
+test:
+  restart: no
+  image: foo
+`))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	test := config["test"]
+
+	if test.Restart != "no" {
+		t.Fatal("Invalid restart policy", test.Restart)
+	}
+}
+
+func TestRestartAlways(t *testing.T) {
+	p := NewProject(&Context{
+		ConfigLookup: &NullLookup{},
+	})
+
+	config, err := mergeProject(p, []byte(`
+test:
+  restart: always
+  image: foo
+`))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	test := config["test"]
+
+	if test.Restart != "always" {
+		t.Fatal("Invalid restart policy", test.Restart)
+	}
+}

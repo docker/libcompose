@@ -51,8 +51,21 @@ func mergeProject(p *Project, bytes []byte) (map[string]*ServiceConfig, error) {
 		datas[name] = data
 	}
 
-	err := utils.Convert(datas, &configs)
-	return configs, err
+	if err := utils.Convert(datas, &configs); err != nil {
+		return nil, err
+	}
+
+	adjustValues(configs)
+	return configs, nil
+}
+
+func adjustValues(configs map[string]*ServiceConfig) {
+	// yaml parser turns "no" into "false" but that is not valid for a restart policy
+	for _, v := range configs {
+		if v.Restart == "false" {
+			v.Restart = "no"
+		}
+	}
 }
 
 func readEnvFile(configLookup ConfigLookup, inFile string, serviceData rawService) (rawService, error) {
