@@ -8,6 +8,17 @@ import (
 	"github.com/Sirupsen/logrus"
 )
 
+func isNum(c uint8) bool {
+	return c >= '0' && c <= '9'
+}
+
+func validVariableNameChar(c uint8) bool {
+	return c == '_' ||
+		c >= 'A' && c <= 'Z' ||
+		c >= 'a' && c <= 'z' ||
+		isNum(c)
+}
+
 func parseVariable(line string, pos int, mapping func(string) string) (string, int, bool) {
 	var buffer bytes.Buffer
 
@@ -15,7 +26,7 @@ func parseVariable(line string, pos int, mapping func(string) string) (string, i
 		c := line[pos]
 
 		switch {
-		case c == '_' || (c >= 'A' && c <= 'Z'):
+		case validVariableNameChar(c):
 			buffer.WriteByte(c)
 		default:
 			return mapping(buffer.String()), pos - 1, true
@@ -40,7 +51,7 @@ func parseVariableWithBraces(line string, pos int, mapping func(string) string) 
 			}
 
 			return mapping(buffer.String()), pos, true
-		case c == '_' || (c >= 'A' && c <= 'Z'):
+		case validVariableNameChar(c):
 			buffer.WriteByte(c)
 		default:
 			return "", 0, false
@@ -58,7 +69,8 @@ func parseInterpolationExpression(line string, pos int, mapping func(string) str
 		return "$", pos, true
 	case c == '{':
 		return parseVariableWithBraces(line, pos+1, mapping)
-	case c >= 'A' && c <= 'Z':
+	case !isNum(c) && validVariableNameChar(c):
+		// Variables can't start with a number
 		return parseVariable(line, pos, mapping)
 	default:
 		return "", 0, false
