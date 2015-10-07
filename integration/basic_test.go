@@ -49,6 +49,66 @@ func (s *RunSuite) TestHelloWorld(c *C) {
 	c.Assert(cn.Name, Equals, "/"+name)
 }
 
+func (s *RunSuite) TestInterpolation(c *C) {
+	os.Setenv("IMAGE", "tianon/true")
+
+	p := s.CreateProjectFromText(c, `
+	test:
+	  image: $IMAGE
+	`)
+
+	name := fmt.Sprintf("%s_%s_1", p, "test")
+	testContainer := s.GetContainerByName(c, name)
+
+	p = s.CreateProjectFromText(c, `
+	reference:
+	  image: tianon/true
+	`)
+
+	name = fmt.Sprintf("%s_%s_1", p, "reference")
+	referenceContainer := s.GetContainerByName(c, name)
+
+	c.Assert(testContainer, NotNil)
+
+	c.Assert(referenceContainer.Image, Equals, testContainer.Image)
+
+	os.Unsetenv("IMAGE")
+}
+
+func (s *RunSuite) TestInterpolationWithExtends(c *C) {
+	os.Setenv("IMAGE", "tianon/true")
+	os.Setenv("TEST_PORT", "8000")
+
+	p := s.CreateProjectFromText(c, `
+	test:
+		extends:
+			file: ./assets/interpolation/docker-compose.yml
+			service: base
+		ports:
+			- ${TEST_PORT}
+	`)
+
+	name := fmt.Sprintf("%s_%s_1", p, "test")
+	testContainer := s.GetContainerByName(c, name)
+
+	p = s.CreateProjectFromText(c, `
+	reference:
+	  image: tianon/true
+		ports:
+		  - 8000
+	`)
+
+	name = fmt.Sprintf("%s_%s_1", p, "reference")
+	referenceContainer := s.GetContainerByName(c, name)
+
+	c.Assert(testContainer, NotNil)
+
+	c.Assert(referenceContainer.Image, Equals, testContainer.Image)
+
+	os.Unsetenv("TEST_PORT")
+	os.Unsetenv("IMAGE")
+}
+
 func (s *RunSuite) TestUp(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 

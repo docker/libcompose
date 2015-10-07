@@ -40,8 +40,13 @@ func Merge(p *Project, bytes []byte) (map[string]*ServiceConfig, error) {
 		logrus.Fatalf("Could not parse config for project %s : %v", p.Name, err)
 	}
 
+	err = interpolate(p.context.EnvironmentLookup, &datas)
+	if err != nil {
+		return nil, err
+	}
+
 	for name, data := range datas {
-		data, err := parse(p.context.ConfigLookup, p.File, data, datas)
+		data, err := parse(p.context.ConfigLookup, p.context.EnvironmentLookup, p.File, data, datas)
 		if err != nil {
 			logrus.Errorf("Failed to parse service %s: %v", name, err)
 			return nil, err
@@ -138,7 +143,7 @@ func resolveBuild(inFile string, serviceData rawService) (rawService, error) {
 	return serviceData, nil
 }
 
-func parse(configLookup ConfigLookup, inFile string, serviceData rawService, datas rawServiceMap) (rawService, error) {
+func parse(configLookup ConfigLookup, environmentLookup EnvironmentLookup, inFile string, serviceData rawService, datas rawServiceMap) (rawService, error) {
 	serviceData, err := readEnvFile(configLookup, inFile, serviceData)
 	if err != nil {
 		return nil, err
@@ -174,7 +179,7 @@ func parse(configLookup ConfigLookup, inFile string, serviceData rawService, dat
 
 	if file == "" {
 		if serviceData, ok := datas[service]; ok {
-			baseService, err = parse(configLookup, inFile, serviceData, datas)
+			baseService, err = parse(configLookup, environmentLookup, inFile, serviceData, datas)
 		} else {
 			return nil, fmt.Errorf("Failed to find service %s to extend", service)
 		}
@@ -190,12 +195,17 @@ func parse(configLookup ConfigLookup, inFile string, serviceData rawService, dat
 			return nil, err
 		}
 
+		err = interpolate(environmentLookup, &baseRawServices)
+		if err != nil {
+			return nil, err
+		}
+
 		baseService, ok = baseRawServices[service]
 		if !ok {
 			return nil, fmt.Errorf("Failed to find service %s in file %s", service, file)
 		}
 
-		baseService, err = parse(configLookup, resolved, baseService, baseRawServices)
+		baseService, err = parse(configLookup, environmentLookup, resolved, baseService, baseRawServices)
 	}
 
 	if err != nil {
