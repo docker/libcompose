@@ -15,6 +15,7 @@ const (
 	PROJECT = Label("io.docker.compose.project")
 	SERVICE = Label("io.docker.compose.service")
 	HASH    = Label("io.docker.compose.config-hash")
+	REBUILD = Label("io.docker.compose.rebuild")
 )
 
 // Eq returns a label json representation with the specified value.
