@@ -91,9 +91,12 @@ func (p *Project) CreateService(name string) (Service, error) {
 		parsedEnv := make([]string, 0, len(config.Environment.Slice()))
 
 		for _, env := range config.Environment.Slice() {
-			if strings.IndexRune(env, '=') != -1 {
+			parts := strings.SplitN(env, "=", 2)
+			if len(parts) > 1 && parts[1] != "" {
 				parsedEnv = append(parsedEnv, env)
 				continue
+			} else {
+				env = parts[0]
 			}
 
 			for _, value := range p.context.EnvironmentLookup.Lookup(env, name, &config) {

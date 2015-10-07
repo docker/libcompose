@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -80,5 +81,41 @@ func TestEventEquality(t *testing.T) {
 
 	if EventServiceStart == EventServiceUp {
 		t.Fatal("Events match")
+	}
+}
+
+type TestEnvironmentLookup struct {
+}
+
+func (t *TestEnvironmentLookup) Lookup(key, serviceName string, config *ServiceConfig) []string {
+	return []string{fmt.Sprintf("%s=X", key)}
+}
+
+func TestEnvironmentResolve(t *testing.T) {
+	factory := &TestServiceFactory{
+		Counts: map[string]int{},
+	}
+
+	p := NewProject(&Context{
+		ServiceFactory:    factory,
+		EnvironmentLookup: &TestEnvironmentLookup{},
+	})
+	p.Configs = map[string]*ServiceConfig{
+		"foo": {
+			Environment: NewMaporEqualSlice([]string{
+				"A",
+				"A=",
+				"A=B",
+			}),
+		},
+	}
+
+	service, err := p.CreateService("foo")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(service.Config().Environment.Slice(), []string{"A=X", "A=X", "A=B"}) {
+		t.Fatal("Invalid environment", service.Config().Environment.Slice())
 	}
 }
