@@ -14,7 +14,7 @@ func TestExtendsInheritImage(t *testing.T) {
 		ConfigLookup: &NullLookup{},
 	})
 
-	config, err := Merge(p, []byte(`
+	config, err := mergeProject(p, []byte(`
 parent:
   image: foo
 child:
@@ -47,7 +47,7 @@ func TestExtendsInheritBuild(t *testing.T) {
 		ConfigLookup: &NullLookup{},
 	})
 
-	config, err := Merge(p, []byte(`
+	config, err := mergeProject(p, []byte(`
 parent:
   build: .
 child:
@@ -80,7 +80,7 @@ func TestExtendBuildOverImage(t *testing.T) {
 		ConfigLookup: &NullLookup{},
 	})
 
-	config, err := Merge(p, []byte(`
+	config, err := mergeProject(p, []byte(`
 parent:
   image: foo
 child:
@@ -114,7 +114,7 @@ func TestExtendImageOverBuild(t *testing.T) {
 		ConfigLookup: &NullLookup{},
 	})
 
-	config, err := Merge(p, []byte(`
+	config, err := mergeProject(p, []byte(`
 parent:
   build: .
 child:
