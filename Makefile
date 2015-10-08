@@ -18,6 +18,7 @@ DOCKER_RUN_LIBCOMPOSE := docker run --rm -it --privileged $(LIBCOMPOSE_ENVS) $(L
 default: binary
 
 all: build
+	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh
 
 binary: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary
