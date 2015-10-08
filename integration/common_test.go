@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -14,6 +15,23 @@ import (
 
 	. "gopkg.in/check.v1"
 )
+
+const SimpleTemplate = `
+        hello:
+          image: busybox
+          stdin_open: true
+          tty: true
+        `
+
+func Test(t *testing.T) { TestingT(t) }
+
+func asMap(items []string) map[string]bool {
+	result := map[string]bool{}
+	for _, item := range items {
+		result[item] = true
+	}
+	return result
+}
 
 var random = rand.New(rand.NewSource(time.Now().Unix()))
 
@@ -31,7 +49,7 @@ type RunSuite struct {
 	projects []string
 }
 
-func (r *RunSuite) TearDownTest(c *C) {
+func (s *RunSuite) TearDownTest(c *C) {
 	// Delete all containers
 	client := GetClient(c)
 	containers, err := client.ListContainers(true, false, "")
