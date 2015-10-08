@@ -228,7 +228,7 @@ func TestLabelFilter(t *testing.T) {
 		},
 	}
 	for _, filter := range filters {
-		actual := LabelFilter(filter.key, filter.value)
+		actual := LabelFilterString(filter.key, filter.value)
 		if actual != filter.expected {
 			t.Fatalf("Expected '%s for key=%s and value=%s, got %s", filter.expected, filter.key, filter.value, actual)
 		}

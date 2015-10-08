@@ -3,6 +3,7 @@ package integration
 import (
 	"fmt"
 
+	dockerclient "github.com/fsouza/go-dockerclient"
 	. "gopkg.in/check.v1"
 )
 
@@ -35,7 +36,7 @@ func (s *RunSuite) TestLink(c *C) {
 
 	cn := s.GetContainerByName(c, serverName)
 	c.Assert(cn, NotNil)
-	c.Assert(cn.Config.ExposedPorts, DeepEquals, map[string]struct{}{
+	c.Assert(cn.Config.ExposedPorts, DeepEquals, map[dockerclient.Port]struct{}{
 		"80/tcp": {},
 	})
 

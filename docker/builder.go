@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,7 +14,7 @@ import (
 	"github.com/docker/docker/pkg/fileutils"
 	"github.com/docker/docker/utils"
 	"github.com/docker/libcompose/project"
-	"github.com/samalba/dockerclient"
+	dockerclient "github.com/fsouza/go-dockerclient"
 )
 
 // DefaultDockerfileName is the default name of a Dockerfile
@@ -39,6 +38,19 @@ func NewDaemonBuilder(context *Context) *DaemonBuilder {
 	}
 }
 
+type builderWriter struct {
+	out io.Writer
+}
+
+func (w *builderWriter) Write(bytes []byte) (int, error) {
+	data := map[string]interface{}{}
+	err := json.Unmarshal(bytes, &data)
+	if stream, ok := data["stream"]; err == nil && ok {
+		fmt.Fprint(w.out, stream)
+	}
+	return len(bytes), nil
+}
+
 // Build implements Builder. It consumes the docker build API endpoint and sends
 // a tar of the specified service build context.
 func (d *DaemonBuilder) Build(p *project.Project, service project.Service) (string, error) {
@@ -57,27 +69,16 @@ func (d *DaemonBuilder) Build(p *project.Project, service project.Service) (stri
 	client := d.context.ClientFactory.Create(service)
 
 	logrus.Infof("Building %s...", tag)
-	output, err := client.BuildImage(&dockerclient.BuildImage{
-		Context:        context,
-		RepoName:       tag,
-		Remove:         true,
-		DockerfileName: service.Config().Dockerfile,
+	err = client.BuildImage(dockerclient.BuildImageOptions{
+		InputStream:    context,
+		OutputStream:   &builderWriter{out: os.Stderr},
+		RawJSONStream:  true,
+		Name:           tag,
+		RmTmpContainer: true,
+		Dockerfile:     service.Config().Dockerfile,
 	})
 	if err != nil {
 		return "", err
-	}
-
-	defer output.Close()
-
-	// Don't really care about errors in the scanner
-	scanner := bufio.NewScanner(output)
-	for scanner.Scan() {
-		text := scanner.Text()
-		data := map[string]interface{}{}
-		err := json.Unmarshal([]byte(text), &data)
-		if stream, ok := data["stream"]; ok && err == nil {
-			fmt.Print(stream)
-		}
 	}
 
 	return tag, nil

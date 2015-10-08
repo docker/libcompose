@@ -19,7 +19,8 @@ func (s *RunSuite) TestFields(c *C) {
 	cn := s.GetContainerByName(c, name)
 	c.Assert(cn, NotNil)
 
-	c.Assert(cn.Config.Cpuset, Equals, "1,2")
+	c.Assert(cn.Config.Image, Equals, "tianon/true")
+	c.Assert(cn.HostConfig.CPUSetCPUs, Equals, "1,2")
 	c.Assert(cn.HostConfig.Memory, Equals, int64(4194304))
 	c.Assert(cn.HostConfig.MemorySwap, Equals, int64(8388608))
 }

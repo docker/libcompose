@@ -122,7 +122,7 @@ func (s *Service) constructContainers(create bool, count int) ([]*Container, err
 			if err != nil {
 				return nil, err
 			}
-			logrus.Debugf("Created container %s: %v", dockerContainer.Id, dockerContainer.Names)
+			logrus.Debugf("Created container %s: %v", dockerContainer.ID, dockerContainer.Names)
 		}
 
 		result = append(result, c)

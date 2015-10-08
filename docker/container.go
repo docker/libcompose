@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"bufio"
 	"fmt"
 	"math"
 	"strings"
@@ -9,12 +8,12 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/cliconfig"
 	"github.com/docker/docker/pkg/parsers"
-	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/docker/registry"
 	"github.com/docker/docker/utils"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project"
-	"github.com/samalba/dockerclient"
+	dockerclient "github.com/fsouza/go-dockerclient"
+	"os"
 )
 
 // DefaultTag is the name of the default tag of an image.
@@ -27,11 +26,11 @@ type Container struct {
 
 	name    string
 	service *Service
-	client  dockerclient.Client
+	client  *dockerclient.Client
 }
 
 // NewContainer creates a container struct with the specified docker client, name and service.
-func NewContainer(client dockerclient.Client, name string, service *Service) *Container {
+func NewContainer(client *dockerclient.Client, name string, service *Service) *Container {
 	return &Container{
 		client:  client,
 		name:    name,
@@ -39,17 +38,17 @@ func NewContainer(client dockerclient.Client, name string, service *Service) *Co
 	}
 }
 
-func (c *Container) findExisting() (*dockerclient.Container, error) {
+func (c *Container) findExisting() (*dockerclient.APIContainers, error) {
 	return GetContainerByName(c.client, c.name)
 }
 
-func (c *Container) findInfo() (*dockerclient.ContainerInfo, error) {
+func (c *Container) findInfo() (*dockerclient.Container, error) {
 	container, err := c.findExisting()
 	if err != nil {
 		return nil, err
 	}
 
-	return c.client.InspectContainer(container.Id)
+	return c.client.InspectContainer(container.ID)
 }
 
 // Info returns info about the container, like name, command, state or ports.
@@ -69,7 +68,7 @@ func (c *Container) Info() (project.Info, error) {
 	return result, nil
 }
 
-func portString(ports []dockerclient.Port) string {
+func portString(ports []dockerclient.APIPort) string {
 	result := []string{}
 
 	for _, port := range ports {
@@ -100,7 +99,7 @@ func name(names []string) string {
 // Create creates the container based on the specified image name and send an event
 // to notify the container has been created. If the container already exists, does
 // nothing.
-func (c *Container) Create(imageName string) (*dockerclient.Container, error) {
+func (c *Container) Create(imageName string) (*dockerclient.APIContainers, error) {
 	container, err := c.findExisting()
 	if err != nil {
 		return nil, err
@@ -121,15 +120,15 @@ func (c *Container) Create(imageName string) (*dockerclient.Container, error) {
 
 // Down stops the container.
 func (c *Container) Down() error {
-	return c.withContainer(func(container *dockerclient.Container) error {
-		return c.client.StopContainer(container.Id, c.service.context.Timeout)
+	return c.withContainer(func(container *dockerclient.APIContainers) error {
+		return c.client.StopContainer(container.ID, c.service.context.Timeout)
 	})
 }
 
 // Kill kill the container.
 func (c *Container) Kill() error {
-	return c.withContainer(func(container *dockerclient.Container) error {
-		return c.client.KillContainer(container.Id, c.service.context.Signal)
+	return c.withContainer(func(container *dockerclient.APIContainers) error {
+		return c.client.KillContainer(dockerclient.KillContainerOptions{ID: container.ID, Signal: dockerclient.Signal(c.service.context.Signal)})
 	})
 }
 
@@ -141,19 +140,19 @@ func (c *Container) Delete() error {
 		return err
 	}
 
-	info, err := c.client.InspectContainer(container.Id)
+	info, err := c.client.InspectContainer(container.ID)
 	if err != nil {
 		return err
 	}
 
 	if info.State.Running {
-		err := c.client.StopContainer(container.Id, c.service.context.Timeout)
+		err := c.client.StopContainer(container.ID, c.service.context.Timeout)
 		if err != nil {
 			return err
 		}
 	}
 
-	return c.client.RemoveContainer(container.Id, true, false)
+	return c.client.RemoveContainer(dockerclient.RemoveContainerOptions{ID: container.ID, Force: true, RemoveVolumes: false})
 }
 
 // Up creates and start the container based on the image name and send an event
@@ -173,19 +172,19 @@ func (c *Container) Up(imageName string) error {
 		return err
 	}
 
-	info, err := c.client.InspectContainer(container.Id)
+	info, err := c.client.InspectContainer(container.ID)
 	if err != nil {
 		return err
 	}
 
 	if !info.State.Running {
-		logrus.Debugf("Starting container: %s: %#v", container.Id, info.HostConfig)
+		logrus.Debugf("Starting container: %s: %#v", container.ID, info.HostConfig)
 		err = c.populateAdditionalHostConfig(info.HostConfig)
 		if err != nil {
 			return err
 		}
 
-		if err := c.client.StartContainer(container.Id, info.HostConfig); err != nil {
+		if err := c.client.StartContainer(container.ID, info.HostConfig); err != nil {
 			return err
 		}
 
@@ -205,7 +204,7 @@ func (c *Container) OutOfSync() (bool, error) {
 		return false, err
 	}
 
-	info, err := c.client.InspectContainer(container.Id)
+	info, err := c.client.InspectContainer(container.ID)
 	if err != nil {
 		return false, err
 	}
@@ -213,37 +212,37 @@ func (c *Container) OutOfSync() (bool, error) {
 	return info.Config.Labels[HASH.Str()] != project.GetServiceHash(c.service), nil
 }
 
-func (c *Container) createContainer(imageName string) (*dockerclient.Container, error) {
-	config, err := ConvertToAPI(c.service.serviceConfig)
+func (c *Container) createContainer(imageName string) (*dockerclient.APIContainers, error) {
+	createOpts, err := ConvertToAPI(c.service.serviceConfig, c.name)
 	if err != nil {
 		return nil, err
 	}
 
-	config.Image = imageName
+	createOpts.Config.Image = imageName
 
-	if config.Labels == nil {
-		config.Labels = map[string]string{}
+	if createOpts.Config.Labels == nil {
+		createOpts.Config.Labels = map[string]string{}
 	}
 
-	config.Labels[NAME.Str()] = c.name
-	config.Labels[SERVICE.Str()] = c.service.name
-	config.Labels[PROJECT.Str()] = c.service.context.Project.Name
-	config.Labels[HASH.Str()] = project.GetServiceHash(c.service)
+	createOpts.Config.Labels[NAME.Str()] = c.name
+	createOpts.Config.Labels[SERVICE.Str()] = c.service.name
+	createOpts.Config.Labels[PROJECT.Str()] = c.service.context.Project.Name
+	createOpts.Config.Labels[HASH.Str()] = project.GetServiceHash(c.service)
 
-	err = c.populateAdditionalHostConfig(&config.HostConfig)
+	err = c.populateAdditionalHostConfig(createOpts.HostConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Debugf("Creating container %s %#v", c.name, config)
+	logrus.Debugf("Creating container %s %#v", c.name, createOpts)
 
-	_, err = c.client.CreateContainer(config, c.name)
-	if err != nil && err.Error() == "Not found" {
-		logrus.Debugf("Not Found, pulling image %s", config.Image)
-		if err = c.pull(config.Image); err != nil {
+	_, err = c.client.CreateContainer(*createOpts)
+	if err != nil && err == dockerclient.ErrNoSuchImage {
+		logrus.Debugf("Not Found, pulling image %s", createOpts.Config.Image)
+		if err = c.pull(createOpts.Config.Image); err != nil {
 			return nil, err
 		}
-		if _, err = c.client.CreateContainer(config, c.name); err != nil {
+		if _, err = c.client.CreateContainer(*createOpts); err != nil {
 			return nil, err
 		}
 	}
@@ -342,7 +341,7 @@ func (c *Container) ID() (string, error) {
 	if container == nil {
 		return "", err
 	}
-	return container.Id, err
+	return container.ID, err
 }
 
 // Name returns the container name.
@@ -362,7 +361,7 @@ func (c *Container) Restart() error {
 		return err
 	}
 
-	return c.client.RestartContainer(container.Id, c.service.context.Timeout)
+	return c.client.RestartContainer(container.ID, c.service.context.Timeout)
 }
 
 // Log forwards container logs to the project configured logger.
@@ -372,36 +371,23 @@ func (c *Container) Log() error {
 		return err
 	}
 
-	info, err := c.client.InspectContainer(container.Id)
+	info, err := c.client.InspectContainer(container.ID)
 	if info == nil || err != nil {
 		return err
 	}
 
 	l := c.service.context.LoggerFactory.Create(c.name)
 
-	output, err := c.client.ContainerLogs(container.Id, &dockerclient.LogOptions{
-		Follow: true,
-		Stdout: true,
-		Stderr: true,
-		Tail:   10,
+	err = c.client.Logs(dockerclient.LogsOptions{
+		Follow:       true,
+		Stdout:       true,
+		Stderr:       true,
+		Tail:         "0",
+		OutputStream: &logger.Wrapper{Logger: l},
+		ErrorStream:  &logger.Wrapper{Logger: l, Err: true},
+		RawTerminal:  info.Config.Tty,
 	})
-	if err != nil {
-		return err
-	}
 
-	if info.Config.Tty {
-		scanner := bufio.NewScanner(output)
-		for scanner.Scan() {
-			l.Out([]byte(scanner.Text() + "\n"))
-		}
-		return scanner.Err()
-	}
-	_, err = stdcopy.StdCopy(&logger.Wrapper{
-		Logger: l,
-	}, &logger.Wrapper{
-		Err:    true,
-		Logger: l,
-	}, output)
 	return err
 }
 
@@ -421,11 +407,17 @@ func (c *Container) pull(image string) error {
 		authConfig = registry.ResolveAuthConfig(c.service.context.ConfigFile, repoInfo.Index)
 	}
 
-	err = c.client.PullImage(image, &dockerclient.AuthConfig{
-		Username: authConfig.Username,
-		Password: authConfig.Password,
-		Email:    authConfig.Email,
-	})
+	err = c.client.PullImage(
+		dockerclient.PullImageOptions{
+			Repository:   image,
+			OutputStream: os.Stderr, // TODO maybe get the stream from some configured place
+		},
+		dockerclient.AuthConfiguration{
+			Username: authConfig.Username,
+			Password: authConfig.Password,
+			Email:    authConfig.Email,
+		},
+	)
 
 	if err != nil {
 		logrus.Errorf("Failed to pull image %s: %v", image, err)
@@ -434,7 +426,7 @@ func (c *Container) pull(image string) error {
 	return err
 }
 
-func (c *Container) withContainer(action func(*dockerclient.Container) error) error {
+func (c *Container) withContainer(action func(*dockerclient.APIContainers) error) error {
 	container, err := c.findExisting()
 	if err != nil {
 		return err
@@ -454,10 +446,10 @@ func (c *Container) Port(port string) (string, error) {
 		return "", err
 	}
 
-	if bindings, ok := info.NetworkSettings.Ports[port]; ok {
+	if bindings, ok := info.NetworkSettings.Ports[dockerclient.Port(port)]; ok {
 		result := []string{}
 		for _, binding := range bindings {
-			result = append(result, binding.HostIp+":"+binding.HostPort)
+			result = append(result, binding.HostIP+":"+binding.HostPort)
 		}
 
 		return strings.Join(result, "\n"), nil

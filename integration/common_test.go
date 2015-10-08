@@ -11,7 +11,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/docker"
-	"github.com/samalba/dockerclient"
+	dockerclient "github.com/fsouza/go-dockerclient"
 
 	. "gopkg.in/check.v1"
 )
@@ -52,10 +52,10 @@ type RunSuite struct {
 func (s *RunSuite) TearDownTest(c *C) {
 	// Delete all containers
 	client := GetClient(c)
-	containers, err := client.ListContainers(true, false, "")
+	containers, err := client.ListContainers(dockerclient.ListContainersOptions{All: true})
 	c.Assert(err, IsNil)
 	for _, container := range containers {
-		err := client.RemoveContainer(container.Id, true, true)
+		err := client.RemoveContainer(dockerclient.RemoveContainerOptions{ID: container.ID, Force: true, RemoveVolumes: true})
 		c.Assert(err, IsNil)
 	}
 }
@@ -110,7 +110,7 @@ func (s *RunSuite) FromText(c *C, projectName, command string, argsAndInput ...s
 	return projectName
 }
 
-func GetClient(c *C) dockerclient.Client {
+func GetClient(c *C) *dockerclient.Client {
 	client, err := docker.CreateClient(docker.ClientOpts{})
 
 	c.Assert(err, IsNil)
@@ -118,7 +118,7 @@ func GetClient(c *C) dockerclient.Client {
 	return client
 }
 
-func (s *RunSuite) GetContainerByName(c *C, name string) *dockerclient.ContainerInfo {
+func (s *RunSuite) GetContainerByName(c *C, name string) *dockerclient.Container {
 	client := GetClient(c)
 	container, err := docker.GetContainerByName(client, name)
 
@@ -128,14 +128,14 @@ func (s *RunSuite) GetContainerByName(c *C, name string) *dockerclient.Container
 		return nil
 	}
 
-	info, err := client.InspectContainer(container.Id)
+	info, err := client.InspectContainer(container.ID)
 
 	c.Assert(err, IsNil)
 
 	return info
 }
 
-func (s *RunSuite) GetContainersByProject(c *C, project string) []dockerclient.Container {
+func (s *RunSuite) GetContainersByProject(c *C, project string) []dockerclient.APIContainers {
 	client := GetClient(c)
 	containers, err := docker.GetContainersByFilter(client, docker.PROJECT.Eq(project))
 
