@@ -9,9 +9,13 @@ func (n *NullLookup) Lookup(file, relativeTo string) ([]byte, string, error) {
 	return nil, "", nil
 }
 
+func (n *NullLookup) ResolvePath(path, inFile string) string {
+	return ""
+}
+
 func TestExtendsInheritImage(t *testing.T) {
 	p := NewProject(&Context{
-		ConfigLookup: &NullLookup{},
+		ResourceLookup: &NullLookup{},
 	})
 
 	config, err := mergeProject(p, []byte(`
@@ -44,7 +48,7 @@ child:
 
 func TestExtendsInheritBuild(t *testing.T) {
 	p := NewProject(&Context{
-		ConfigLookup: &NullLookup{},
+		ResourceLookup: &NullLookup{},
 	})
 
 	config, err := mergeProject(p, []byte(`
@@ -77,7 +81,7 @@ child:
 
 func TestExtendBuildOverImage(t *testing.T) {
 	p := NewProject(&Context{
-		ConfigLookup: &NullLookup{},
+		ResourceLookup: &NullLookup{},
 	})
 
 	config, err := mergeProject(p, []byte(`
@@ -111,7 +115,7 @@ child:
 
 func TestExtendImageOverBuild(t *testing.T) {
 	p := NewProject(&Context{
-		ConfigLookup: &NullLookup{},
+		ResourceLookup: &NullLookup{},
 	})
 
 	config, err := mergeProject(p, []byte(`
@@ -149,7 +153,7 @@ child:
 
 func TestRestartNo(t *testing.T) {
 	p := NewProject(&Context{
-		ConfigLookup: &NullLookup{},
+		ResourceLookup: &NullLookup{},
 	})
 
 	config, err := mergeProject(p, []byte(`
@@ -171,7 +175,7 @@ test:
 
 func TestRestartAlways(t *testing.T) {
 	p := NewProject(&Context{
-		ConfigLookup: &NullLookup{},
+		ResourceLookup: &NullLookup{},
 	})
 
 	config, err := mergeProject(p, []byte(`

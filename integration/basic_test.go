@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 
 	. "gopkg.in/check.v1"
@@ -253,6 +254,24 @@ func (s *RunSuite) TestLink(c *C) {
 		fmt.Sprintf("/%s:/%s/%s", serverName, clientName, "server"),
 		fmt.Sprintf("/%s:/%s/%s", serverName, clientName, serverName),
 	}))
+}
+
+func (s *RunSuite) TestRelativeVolume(c *C) {
+	p := s.ProjectFromText(c, "up", `
+	server:
+	  image: busybox
+	  volumes:
+	    - .:/path
+	`)
+
+	absPath, err := filepath.Abs(".")
+	c.Assert(err, IsNil)
+	serverName := fmt.Sprintf("%s_%s_1", p, "server")
+	cn := s.GetContainerByName(c, serverName)
+
+	c.Assert(cn, NotNil)
+	c.Assert(len(cn.Volumes), DeepEquals, 1)
+	c.Assert(cn.Volumes["/path"], DeepEquals, absPath)
 }
 
 func (s *RunSuite) TestScale(c *C) {

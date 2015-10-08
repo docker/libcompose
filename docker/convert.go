@@ -31,8 +31,8 @@ func isVolume(s string) bool {
 }
 
 // ConvertToAPI converts a service configuration to a docker API container configuration.
-func ConvertToAPI(c *project.ServiceConfig) (*dockerclient.ContainerConfig, error) {
-	config, hostConfig, err := Convert(c)
+func ConvertToAPI(s *Service) (*dockerclient.ContainerConfig, error) {
+	config, hostConfig, err := Convert(s.serviceConfig, s.context)
 	if err != nil {
 		return nil, err
 	}
@@ -52,12 +52,15 @@ func ConvertToAPI(c *project.ServiceConfig) (*dockerclient.ContainerConfig, erro
 }
 
 // Convert converts a service configuration to an docker inner representation (using runconfig structures)
-func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig, error) {
-	vs := Filter(c.Volumes, isVolume)
+func Convert(c *project.ServiceConfig, ctx *Context) (*runconfig.Config, *runconfig.HostConfig, error) {
+	volumes := make(map[string]struct{}, len(c.Volumes))
+	for k, v := range c.Volumes {
+		vol := ctx.ResourceLookup.ResolvePath(v, ctx.ComposeFile)
 
-	volumes := make(map[string]struct{}, len(vs))
-	for _, v := range vs {
-		volumes[v] = struct{}{}
+		c.Volumes[k] = vol
+		if isVolume(vol) {
+			volumes[vol] = struct{}{}
+		}
 	}
 
 	ports, binding, err := nat.ParsePortSpecs(c.Ports)
