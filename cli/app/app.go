@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -36,7 +35,7 @@ func WithProject(factory ProjectFactory, action ProjectAction) func(context *cli
 	return func(context *cli.Context) {
 		p, err := factory.Create(context)
 		if err != nil {
-			log.Fatalf("Failed to read project: %v", err)
+			logrus.Fatalf("Failed to read project: %v", err)
 		}
 		action(p, context)
 	}
