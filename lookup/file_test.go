@@ -1,6 +1,7 @@
 package lookup
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
@@ -12,8 +13,12 @@ type input struct {
 }
 
 func TestLookupError(t *testing.T) {
+	abs, err := filepath.Abs(".")
+	if err != nil {
+		t.Fatalf("Failed to get absolute directory: %s", err)
+	}
 	invalids := map[input]string{
-		input{"", ""}:                             "read .: is a directory",
+		input{"", ""}:                             fmt.Sprintf("read %s: is a directory", abs),
 		input{"", "/tmp/"}:                        "read /tmp: is a directory",
 		input{"file", "/does/not/exists/"}:        "open /does/not/exists/file: no such file or directory",
 		input{"file", "/does/not/something"}:      "open /does/not/file: no such file or directory",

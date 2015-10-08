@@ -27,7 +27,7 @@ type Context struct {
 	isOpen              bool
 	ServiceFactory      ServiceFactory
 	EnvironmentLookup   EnvironmentLookup
-	ConfigLookup        ConfigLookup
+	ResourceLookup      ResourceLookup
 	LoggerFactory       logger.Factory
 	IgnoreMissingConfig bool
 	Project             *Project

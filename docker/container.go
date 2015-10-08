@@ -212,7 +212,7 @@ func (c *Container) OutOfSync() (bool, error) {
 }
 
 func (c *Container) createContainer(imageName string) (*dockerclient.Container, error) {
-	config, err := ConvertToAPI(c.service.serviceConfig)
+	config, err := ConvertToAPI(c.service)
 	if err != nil {
 		return nil, err
 	}
