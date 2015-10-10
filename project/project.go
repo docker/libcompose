@@ -388,10 +388,6 @@ func (p *Project) Notify(eventType EventType, serviceName string, data map[strin
 	}
 
 	for _, l := range p.listeners {
-		// Don't ever block
-		select {
-		case l <- event:
-		default:
-		}
+		l <- event
 	}
 }
