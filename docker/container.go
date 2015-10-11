@@ -8,7 +8,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/cliconfig"
-	"github.com/docker/docker/graph/tags"
 	"github.com/docker/docker/pkg/parsers"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/docker/registry"
@@ -17,6 +16,9 @@ import (
 	"github.com/docker/libcompose/project"
 	"github.com/samalba/dockerclient"
 )
+
+// DefaultTag is the name of the default tag of an image.
+const DefaultTag = "latest"
 
 // Container holds information about a docker container and the service it is tied on.
 // It implements Service interface by encapsulating a EmptyService.
@@ -406,7 +408,7 @@ func (c *Container) Log() error {
 func (c *Container) pull(image string) error {
 	taglessRemote, tag := parsers.ParseRepositoryTag(image)
 	if tag == "" {
-		image = utils.ImageReference(taglessRemote, tags.DEFAULTTAG)
+		image = utils.ImageReference(taglessRemote, DefaultTag)
 	}
 
 	repoInfo, err := registry.ParseRepositoryInfo(taglessRemote)

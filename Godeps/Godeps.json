@@ -21,11 +21,6 @@
 			"Rev": "9038e48c3b982f8e82281ea486f078a73731ac4e"
 		},
 		{
-			"ImportPath": "github.com/docker/docker/api",
-			"Comment": "v1.4.1-5200-gf39987a",
-			"Rev": "f39987afe8d611407887b3094c03d6ba6a766a67"
-		},
-		{
 			"ImportPath": "github.com/docker/docker/autogen/dockerversion",
 			"Comment": "v1.4.1-5200-gf39987a",
 			"Rev": "f39987afe8d611407887b3094c03d6ba6a766a67"
@@ -37,11 +32,6 @@
 		},
 		{
 			"ImportPath": "github.com/docker/docker/daemon/network",
-			"Comment": "v1.4.1-5200-gf39987a",
-			"Rev": "f39987afe8d611407887b3094c03d6ba6a766a67"
-		},
-		{
-			"ImportPath": "github.com/docker/docker/graph/tags",
 			"Comment": "v1.4.1-5200-gf39987a",
 			"Rev": "f39987afe8d611407887b3094c03d6ba6a766a67"
 		},
