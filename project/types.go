@@ -230,7 +230,7 @@ type Project struct {
 
 // Service defines what a libcompose service provides.
 type Service interface {
-	Info() (InfoSet, error)
+	Info(qFlag bool) (InfoSet, error)
 	Name() string
 	Build() error
 	Create() error
