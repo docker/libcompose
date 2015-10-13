@@ -11,13 +11,15 @@ import (
 	"strings"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/docker/api"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/fileutils"
 	"github.com/docker/docker/utils"
 	"github.com/docker/libcompose/project"
 	"github.com/samalba/dockerclient"
 )
+
+// DefaultDockerfileName is the default name of a Dockerfile
+const DefaultDockerfileName = "Dockerfile"
 
 // Builder defines methods to provide a docker builder. This makes libcompose
 // not tied up to the docker daemon builder.
@@ -98,7 +100,7 @@ func CreateTar(p *project.Project, name string) (io.ReadCloser, error) {
 
 	if dockerfileName == "" {
 		// No -f/--file was specified so use the default
-		dockerfileName = api.DefaultDockerfileName
+		dockerfileName = DefaultDockerfileName
 		filename = filepath.Join(absRoot, dockerfileName)
 
 		// Just to be nice ;-) look for 'dockerfile' too but only
