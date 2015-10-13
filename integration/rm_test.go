@@ -25,3 +25,23 @@ func (s *RunSuite) TestDelete(c *C) {
 	cn = s.GetContainerByName(c, name)
 	c.Assert(cn, IsNil)
 }
+
+func (s *RunSuite) TestDeleteWithVol(c *C) {
+	p := s.ProjectFromText(c, "up", SimpleTemplate)
+
+	name := fmt.Sprintf("%s_%s_1", p, "hello")
+
+	cn := s.GetContainerByName(c, name)
+	c.Assert(cn, NotNil)
+	c.Assert(cn.State.Running, Equals, true)
+
+	s.FromText(c, p, "rm", "--force", "-v", `
+	hello:
+	  image: busybox
+	  stdin_open: true
+	  tty: true
+	`)
+
+	cn = s.GetContainerByName(c, name)
+	c.Assert(cn, IsNil)
+}
