@@ -153,7 +153,7 @@ func (c *Container) Delete() error {
 		}
 	}
 
-	return c.client.RemoveContainer(container.Id, true, false)
+	return c.client.RemoveContainer(container.Id, true, c.service.context.Volume)
 }
 
 // Up creates and start the container based on the image name and send an event
