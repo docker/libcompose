@@ -218,8 +218,8 @@ func Populate(context *project.Context, c *cli.Context) {
 	} else if c.Command.Name == "up" {
 		context.Log = !c.Bool("d")
 	} else if c.Command.Name == "stop" || c.Command.Name == "restart" || c.Command.Name == "scale" {
-		context.Timeout = c.Int("timeout")
+		context.Timeout = uint(c.Int("timeout"))
 	} else if c.Command.Name == "kill" {
-		context.Signal = c.String("signal")
+		context.Signal = c.Int("signal")
 	}
 }

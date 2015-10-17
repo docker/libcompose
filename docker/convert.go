@@ -3,12 +3,10 @@ package docker
 import (
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/pkg/nat"
 	"github.com/docker/docker/runconfig"
 	"github.com/docker/libcompose/project"
-	"github.com/docker/libcompose/utils"
-	"github.com/samalba/dockerclient"
+	dockerclient "github.com/fsouza/go-dockerclient"
 )
 
 // Filter filters the specified string slice with the specified function.
@@ -31,51 +29,79 @@ func isVolume(s string) bool {
 }
 
 // ConvertToAPI converts a service configuration to a docker API container configuration.
-func ConvertToAPI(c *project.ServiceConfig) (*dockerclient.ContainerConfig, error) {
+func ConvertToAPI(c *project.ServiceConfig, name string) (*dockerclient.CreateContainerOptions, error) {
 	config, hostConfig, err := Convert(c)
 	if err != nil {
 		return nil, err
 	}
 
-	var result dockerclient.ContainerConfig
-	err = utils.ConvertByJSON(config, &result)
-	if err != nil {
-		logrus.Errorf("Failed to convert config to API structure: %v\n%#v", err, config)
-		return nil, err
+	result := dockerclient.CreateContainerOptions{
+		Name:       name,
+		Config:     config,
+		HostConfig: hostConfig,
 	}
-
-	err = utils.ConvertByJSON(hostConfig, &result.HostConfig)
-	if err != nil {
-		logrus.Errorf("Failed to convert hostConfig to API structure: %v\n%#v", err, hostConfig)
-	}
-	return &result, err
+	return &result, nil
 }
 
-// Convert converts a service configuration to an docker inner representation (using runconfig structures)
-func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig, error) {
+func volumes(c *project.ServiceConfig) map[string]struct{} {
 	vs := Filter(c.Volumes, isVolume)
 
 	volumes := make(map[string]struct{}, len(vs))
 	for _, v := range vs {
 		volumes[v] = struct{}{}
 	}
+	return volumes
+}
 
+func restartPolicy(c *project.ServiceConfig) (*dockerclient.RestartPolicy, error) {
+	restart, err := runconfig.ParseRestartPolicy(c.Restart)
+	if err != nil {
+		return nil, err
+	}
+	return &dockerclient.RestartPolicy{Name: restart.Name, MaximumRetryCount: restart.MaximumRetryCount}, nil
+}
+
+func ports(c *project.ServiceConfig) (map[dockerclient.Port]struct{}, map[dockerclient.Port][]dockerclient.PortBinding, error) {
 	ports, binding, err := nat.ParsePortSpecs(c.Ports)
 	if err != nil {
 		return nil, nil, err
 	}
-	restart, err := runconfig.ParseRestartPolicy(c.Restart)
+
+	exPorts, _, err := nat.ParsePortSpecs(c.Expose)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	exposedPorts, _, err := nat.ParsePortSpecs(c.Expose)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	for k, v := range exposedPorts {
+	for k, v := range exPorts {
 		ports[k] = v
+	}
+
+	exposedPorts := map[dockerclient.Port]struct{}{}
+	for k, v := range ports {
+		exposedPorts[dockerclient.Port(k)] = v
+	}
+
+	portBindings := map[dockerclient.Port][]dockerclient.PortBinding{}
+	for k, bv := range binding {
+		dcbs := make([]dockerclient.PortBinding, len(bv))
+		for k, v := range bv {
+			dcbs[k] = dockerclient.PortBinding{HostIP: v.HostIP, HostPort: v.HostPort}
+		}
+		portBindings[dockerclient.Port(k)] = dcbs
+	}
+	return exposedPorts, portBindings, nil
+}
+
+// Convert converts a service configuration to an docker API structures (Config and HostConfig)
+func Convert(c *project.ServiceConfig) (*dockerclient.Config, *dockerclient.HostConfig, error) {
+	restartPolicy, err := restartPolicy(c)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	exposedPorts, portBindings, err := ports(c)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	deviceMappings, err := parseDevices(c.Devices)
@@ -83,62 +109,66 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		return nil, nil, err
 	}
 
-	config := &runconfig.Config{
-		Entrypoint:   runconfig.NewEntrypoint(c.Entrypoint.Slice()...),
+	config := &dockerclient.Config{
+		Entrypoint:   c.Entrypoint.Slice(),
 		Hostname:     c.Hostname,
 		Domainname:   c.DomainName,
 		User:         c.User,
 		Env:          c.Environment.Slice(),
-		Cmd:          runconfig.NewCommand(c.Command.Slice()...),
+		Cmd:          c.Command.Slice(),
 		Image:        c.Image,
 		Labels:       c.Labels.MapParts(),
-		ExposedPorts: ports,
+		ExposedPorts: exposedPorts,
 		Tty:          c.Tty,
 		OpenStdin:    c.StdinOpen,
 		WorkingDir:   c.WorkingDir,
 		VolumeDriver: c.VolumeDriver,
-		Volumes:      volumes,
+		Volumes:      volumes(c),
 	}
-	hostConfig := &runconfig.HostConfig{
+	hostConfig := &dockerclient.HostConfig{
 		VolumesFrom: c.VolumesFrom,
-		CapAdd:      runconfig.NewCapList(c.CapAdd),
-		CapDrop:     runconfig.NewCapList(c.CapDrop),
+		CapAdd:      c.CapAdd,
+		CapDrop:     c.CapDrop,
 		CPUShares:   c.CPUShares,
-		CpusetCpus:  c.CPUSet,
+		CPUSetCPUs:  c.CPUSet,
 		ExtraHosts:  c.ExtraHosts,
 		Privileged:  c.Privileged,
 		Binds:       Filter(c.Volumes, isBind),
 		Devices:     deviceMappings,
 		DNS:         c.DNS.Slice(),
 		DNSSearch:   c.DNSSearch.Slice(),
-		LogConfig: runconfig.LogConfig{
+		LogConfig: dockerclient.LogConfig{
 			Type:   c.LogDriver,
 			Config: c.LogOpt,
 		},
 		Memory:         c.MemLimit,
 		MemorySwap:     c.MemSwapLimit,
-		NetworkMode:    runconfig.NetworkMode(c.Net),
+		NetworkMode:    c.Net,
 		ReadonlyRootfs: c.ReadOnly,
-		PidMode:        runconfig.PidMode(c.Pid),
-		UTSMode:        runconfig.UTSMode(c.Uts),
-		IpcMode:        runconfig.IpcMode(c.Ipc),
-		PortBindings:   binding,
-		RestartPolicy:  restart,
+		PidMode:        c.Pid,
+		UTSMode:        c.Uts,
+		IpcMode:        c.Ipc,
+		PortBindings:   portBindings,
+		RestartPolicy:  *restartPolicy,
 		SecurityOpt:    c.SecurityOpt,
 	}
 
 	return config, hostConfig, nil
 }
 
-func parseDevices(devices []string) ([]runconfig.DeviceMapping, error) {
+func parseDevices(devices []string) ([]dockerclient.Device, error) {
 	// parse device mappings
-	deviceMappings := []runconfig.DeviceMapping{}
+	deviceMappings := []dockerclient.Device{}
 	for _, device := range devices {
-		deviceMapping, err := runconfig.ParseDevice(device)
+		v, err := runconfig.ParseDevice(device)
 		if err != nil {
 			return nil, err
 		}
-		deviceMappings = append(deviceMappings, deviceMapping)
+		deviceMappings = append(deviceMappings, dockerclient.Device{
+			PathOnHost:        v.PathOnHost,
+			PathInContainer:   v.PathInContainer,
+			CgroupPermissions: v.CgroupPermissions,
+		})
 	}
 
 	return deviceMappings, nil

@@ -18,9 +18,9 @@ var projectRegexp = regexp.MustCompile("[^a-zA-Z0-9_.-]")
 // Context holds context meta information about a libcompose project, like
 // the project name, the compose file, etc.
 type Context struct {
-	Timeout             int
+	Timeout             uint
 	Log                 bool
-	Signal              string
+	Signal              int
 	ComposeFile         string
 	ComposeBytes        []byte
 	ProjectName         string

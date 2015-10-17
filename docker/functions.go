@@ -1,27 +1,29 @@
 package docker
 
-import "github.com/samalba/dockerclient"
+import (
+	dockerclient "github.com/fsouza/go-dockerclient"
+)
 
 // GetContainersByFilter looks up the hosts containers with the specified filters and
 // returns a list of container matching it, or an error.
-func GetContainersByFilter(client dockerclient.Client, filter ...string) ([]dockerclient.Container, error) {
-	filterResult := ""
+func GetContainersByFilter(client *dockerclient.Client, filters ...map[string][]string) ([]dockerclient.APIContainers, error) {
+	var filterResult map[string][]string
 
-	for _, value := range filter {
-		if filterResult == "" {
-			filterResult = value
+	for _, filter := range filters {
+		if filterResult == nil {
+			filterResult = filter
 		} else {
-			filterResult = And(filterResult, value)
+			filterResult = And(filterResult, filter)
 		}
 	}
 
-	return client.ListContainers(true, false, filterResult)
+	return client.ListContainers(dockerclient.ListContainersOptions{All: true, Filters: filterResult})
 }
 
 // GetContainerByName looks up the hosts containers with the specified name and
 // returns it, or an error.
-func GetContainerByName(client dockerclient.Client, name string) (*dockerclient.Container, error) {
-	containers, err := client.ListContainers(true, false, NAME.Eq(name))
+func GetContainerByName(client *dockerclient.Client, name string) (*dockerclient.APIContainers, error) {
+	containers, err := client.ListContainers(dockerclient.ListContainersOptions{All: true, Filters: NAME.Eq(name)})
 	if err != nil {
 		return nil, err
 	}

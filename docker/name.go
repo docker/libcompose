@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/samalba/dockerclient"
+	dockerclient "github.com/fsouza/go-dockerclient"
 )
 
 const format = "%s_%s_%d"
@@ -32,7 +32,7 @@ func NewSingleNamer(name string) Namer {
 
 // NewNamer returns a namer that returns names based on the specified project and
 // service name and an inner counter, e.g. project_service_1, project_service_2…
-func NewNamer(client dockerclient.Client, project, service string) Namer {
+func NewNamer(client *dockerclient.Client, project, service string) Namer {
 	namer := &inOrderNamer{
 		names: make(chan string),
 		done:  make(chan bool),

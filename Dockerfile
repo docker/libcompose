@@ -15,7 +15,7 @@ RUN go get github.com/golang/lint/golint
 RUN go get golang.org/x/tools/cmd/vet
 
 # Which docker version to test on
-ENV DOCKER_VERSION 1.7.1
+ENV DOCKER_VERSION 1.8.3
 
 # Download docker
 RUN set -ex; \
