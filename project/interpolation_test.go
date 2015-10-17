@@ -159,6 +159,47 @@ func TestInterpolate(t *testing.T) {
 			"LABEL_VALUE": "myvalue",
 		})
 
+	// Same as above, but testing with equal signs in variables
+	testInterpolatedConfig(t,
+		`web:
+  # unbracketed name
+  image: =busybox
+
+  # array element
+  ports:
+    - "=:8000"
+
+  # dictionary item value
+  labels:
+    mylabel: "myvalue=="
+
+  # unset value
+  hostname: "host-"
+
+  # escaped interpolation
+  command: "${ESCAPED}"`,
+		`web:
+  # unbracketed name
+  image: $IMAGE
+
+  # array element
+  ports:
+    - "${HOST_PORT}:8000"
+
+  # dictionary item value
+  labels:
+    mylabel: "${LABEL_VALUE}"
+
+  # unset value
+  hostname: "host-${UNSET_VALUE}"
+
+  # escaped interpolation
+  command: "$${ESCAPED}"`, map[string]string{
+			"IMAGE":       "=busybox",
+			"HOST_PORT":   "=",
+			"LABEL_VALUE": "myvalue==",
+		})
+
 	testInvalidInterpolatedConfig(t,
 		`web:
   image: "${"`)
