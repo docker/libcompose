@@ -2,8 +2,9 @@ package integration
 
 import (
 	"fmt"
-	. "gopkg.in/check.v1"
 	"os"
+
+	. "gopkg.in/check.v1"
 )
 
 func (s *RunSuite) TestFields(c *C) {
@@ -123,4 +124,36 @@ func (s *RunSuite) TestInterpolationWithExtends(c *C) {
 
 	os.Unsetenv("TEST_PORT")
 	os.Unsetenv("IMAGE")
+}
+
+func (s *RunSuite) TestFieldTypeConversions(c *C) {
+	os.Setenv("LIMIT", "40000000")
+
+	p := s.CreateProjectFromText(c, `
+        test:
+          image: tianon/true
+          mem_limit: $LIMIT
+          memswap_limit: "40000000"
+          hostname: 100
+        `)
+
+	name := fmt.Sprintf("%s_%s_1", p, "test")
+	testContainer := s.GetContainerByName(c, name)
+
+	p = s.CreateProjectFromText(c, `
+        reference:
+          image: tianon/true
+          mem_limit: 40000000
+          memswap_limit: 40000000
+          hostname: "100"
+        `)
+
+	name = fmt.Sprintf("%s_%s_1", p, "reference")
+	referenceContainer := s.GetContainerByName(c, name)
+
+	c.Assert(testContainer, NotNil)
+
+	c.Assert(referenceContainer.Image, Equals, testContainer.Image)
+
+	os.Unsetenv("LIMIT")
 }
