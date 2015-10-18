@@ -97,8 +97,10 @@ func (s *RunSuite) FromText(c *C, projectName, command string, argsAndInput ...s
 
 	cmd := exec.Command(s.command, args...)
 	cmd.Stdin = bytes.NewBufferString(strings.Replace(input, "\t", "  ", -1))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stdout
+	if os.Getenv("TESTVERBOSE") != "" {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stdout
+	}
 
 	err := cmd.Run()
 	if err != nil {
