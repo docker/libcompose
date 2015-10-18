@@ -5,8 +5,10 @@ export DEST=.
 
 bundle .integration-daemon-start
 
-TESTFLAGS="$TESTFLAGS -check.v"
-#godep go test -v ./_integration-test
-godep go test -v ./integration
+TESTFLAGS="$TESTFLAGS -test.timeout=30m -check.v"
+
+cd integration
+TESTVERBOSE=$TESTVERBOSE go test $TESTFLAGS
+cd ..
 
 bundle .integration-daemon-stop

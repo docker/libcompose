@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+export LIBCOMPOSE_PKG='github.com/docker/libcompose'
+
 # List of bundles to create when no argument is passed
 DEFAULT_BUNDLES=(
 	validate-gofmt

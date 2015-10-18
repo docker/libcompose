@@ -4,7 +4,9 @@ LIBCOMPOSE_ENVS := \
 	-e OS_PLATFORM_ARG \
 	-e OS_ARCH_ARG \
 	-e DOCKER_TEST_HOST \
-	-e TESTFLAGS
+	-e TESTDIRS \
+	-e TESTFLAGS \
+	-e TESTVERBOSE
 
 # (default to no bind mount if DOCKER_HOST is set)
 BIND_DIR := $(if $(DOCKER_HOST),,bundles)
@@ -27,7 +29,7 @@ test: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-unit test-integration
 
 test-unit: build
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-unit
+	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh test-unit
 
 test-integration: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-integration
