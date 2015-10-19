@@ -3,6 +3,8 @@ package utils
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type jsonfrom struct {
@@ -263,4 +265,16 @@ func TestContains(t *testing.T) {
 			t.Fatalf("Expected contains to be %v for %v in %v, but was %v", element.contains, element.key, element.collection, actual)
 		}
 	}
+}
+
+func TestMerge(t *testing.T) {
+	a := []string{"a", "b", "c"}
+	b := []string{"b", "c", "d", "e"}
+	expected := []string{"a", "b", "c", "d", "e"}
+	r := Merge(a, b)
+	assert.Equal(t, len(expected), len(r))
+	for _, v := range expected {
+		assert.True(t, Contains(r, v))
+	}
+	assert.Equal(t, "a:b", fmt.Sprint("a", ":", "b"))
 }

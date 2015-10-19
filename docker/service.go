@@ -13,10 +13,9 @@ type Service struct {
 	name          string
 	serviceConfig *project.ServiceConfig
 	context       *Context
-	imageName     string
 }
 
-// NewService constructs a new Service
+// NewService creates a service
 func NewService(name string, serviceConfig *project.ServiceConfig, context *Context) *Service {
 	return &Service{
 		name:          name,
@@ -189,7 +188,7 @@ func (s *Service) up(imageName string, create bool) error {
 	}
 
 	return s.eachContainer(func(c *Container) error {
-		if s.context.Rebuild && create {
+		if create {
 			if err := s.rebuildIfNeeded(imageName, c); err != nil {
 				return err
 			}
@@ -200,6 +199,9 @@ func (s *Service) up(imageName string, create bool) error {
 }
 
 func (s *Service) rebuildIfNeeded(imageName string, c *Container) error {
+	if s.context.NoRecreate {
+		return nil
+	}
 	outOfSync, err := c.OutOfSync(imageName)
 	if err != nil {
 		return err
@@ -217,10 +219,11 @@ func (s *Service) rebuildIfNeeded(imageName string, c *Container) error {
 	logrus.WithFields(logrus.Fields{
 		"origRebuildLabel":    origRebuildLabel,
 		"newRebuildLabel":     newRebuildLabel,
-		"rebuildLabelChanged": rebuildLabelChanged,
-		"outOfSync":           outOfSync}).Debug("Rebuild values")
+		"outOfSync":           outOfSync,
+		"ForceRecreate":       s.context.ForceRecreate,
+		"rebuildLabelChanged": rebuildLabelChanged}).Debug("Rebuild values")
 
-	if origRebuildLabel == "always" || rebuildLabelChanged || origRebuildLabel != "false" && outOfSync {
+	if s.context.ForceRecreate || origRebuildLabel == "always" || rebuildLabelChanged || origRebuildLabel != "false" && outOfSync {
 		logrus.Infof("Rebuilding %s", name)
 		if _, err := c.Rebuild(imageName); err != nil {
 			return err
@@ -332,7 +335,7 @@ func (s *Service) Pull() error {
 		return nil
 	}
 
-	return PullImage(s.context.ClientFactory.Create(s), s, s.Config().Image)
+	return pullImage(s.context.ClientFactory.Create(s), s, s.Config().Image)
 }
 
 // Containers implements Service.Containers. It returns the list of containers

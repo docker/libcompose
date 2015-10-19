@@ -16,12 +16,38 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-const SimpleTemplate = `
+const (
+	SimpleTemplate = `
         hello:
           image: busybox
           stdin_open: true
           tty: true
         `
+	SimpleTemplateWithVols = `
+        hello:
+          image: busybox
+          stdin_open: true
+          tty: true
+          volumes:
+          - /root:/root
+          - /home:/home
+          - /var/lib/vol1
+          - /var/lib/vol2
+          - /var/lib/vol4
+        `
+
+	SimpleTemplateWithVols2 = `
+        hello:
+          image: busybox
+          stdin_open: true
+          tty: true
+          volumes:
+          - /tmp/tmp-root:/root
+          - /var/lib/vol1
+          - /var/lib/vol3
+          - /var/lib/vol4
+        `
+)
 
 func Test(t *testing.T) { TestingT(t) }
 

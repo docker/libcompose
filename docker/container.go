@@ -13,6 +13,7 @@ import (
 	"github.com/docker/docker/utils"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project"
+	util "github.com/docker/libcompose/utils"
 	dockerclient "github.com/fsouza/go-dockerclient"
 )
 
@@ -100,7 +101,8 @@ func name(names []string) string {
 	return current[1:]
 }
 
-func (c *Container) Rebuild(imageName string) (*dockerclient.Container, error) {
+// Rebuild will delete the container and create a new one with the current configuration
+func (c *Container) Rebuild(imageName string) (*dockerclient.APIContainers, error) {
 	info, err := c.findInfo()
 	if err != nil {
 		return nil, err
@@ -114,15 +116,11 @@ func (c *Container) Rebuild(imageName string) (*dockerclient.Container, error) {
 	}
 
 	name := info.Name[1:]
-	new_name := fmt.Sprintf("%s_%s", name, info.ID[:12])
-	deleted := false
-	logrus.Debugf("Renaming %s => %s", name, new_name)
-	if err := c.client.RenameContainer(name, new_name); err != nil {
-		logrus.Errorf("Rename failed, deleting %s", name)
-		if err := c.client.RemoveContainer(info.ID, true, false); err != nil {
-			return nil, err
-		}
-		deleted = true
+	newName := fmt.Sprintf("%s_%s", name, info.ID[:12])
+	logrus.Debugf("Renaming %s => %s", name, newName)
+	if err := c.client.RenameContainer(dockerclient.RenameContainerOptions{ID: info.ID, Name: newName}); err != nil {
+		logrus.Errorf("Failed to rename old container %s", c.name)
+		return nil, err
 	}
 
 	newContainer, err := c.createContainer(imageName, info.ID)
@@ -131,13 +129,13 @@ func (c *Container) Rebuild(imageName string) (*dockerclient.Container, error) {
 	}
 	logrus.Debugf("Created replacement container %s", newContainer.ID)
 
-	if !deleted {
-		if err := c.client.RemoveContainer(info.ID, true, false); err != nil {
-			logrus.Errorf("Failed to remove old container %s", c.name)
-			return nil, err
-		}
-		logrus.Debugf("Removed old container %s %s", c.name, info.ID)
+	if err := c.client.RemoveContainer(
+		dockerclient.RemoveContainerOptions{ID: info.ID, Force: true, RemoveVolumes: false}); err != nil {
+
+		logrus.Errorf("Failed to remove old container %s", c.name)
+		return nil, err
 	}
+	logrus.Debugf("Removed old container %s %s", c.name, info.ID)
 
 	return newContainer, nil
 }
@@ -224,13 +222,9 @@ func (c *Container) Up(imageName string) error {
 	}
 
 	if !info.State.Running {
-		logrus.Debugf("Starting container: %s: %#v", container.ID, info.HostConfig)
-		err = c.populateAdditionalHostConfig(info.HostConfig)
-		if err != nil {
-			return err
-		}
-
-		if err := c.client.StartContainer(container.ID, info.HostConfig); err != nil {
+		logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Starting container")
+		if err = c.client.StartContainer(container.ID, nil); err != nil {
+			logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
 			return err
 		}
 
@@ -273,7 +267,17 @@ func (c *Container) OutOfSync(imageName string) (bool, error) {
 }
 
 func (c *Container) getHash() string {
-	return project.GetServiceHash(c.service.Name(), *c.service.Config())
+	return project.GetServiceHash(c.service.Name(), c.service.Config())
+}
+
+func volumeBinds(volumes map[string]struct{}, container *dockerclient.Container) []string {
+	result := make([]string, 0, len(container.Mounts))
+	for _, mount := range container.Mounts {
+		if _, ok := volumes[mount.Destination]; ok {
+			result = append(result, fmt.Sprint(mount.Source, ":", mount.Destination))
+		}
+	}
+	return result
 }
 
 func (c *Container) createContainer(imageName, oldContainer string) (*dockerclient.APIContainers, error) {
@@ -299,18 +303,22 @@ func (c *Container) createContainer(imageName, oldContainer string) (*dockerclie
 	}
 
 	if oldContainer != "" {
-		createOpts.HostConfig.VolumesFrom = append(createOpts.HostConfig.VolumesFrom, oldContainer)
+		info, err := c.client.InspectContainer(oldContainer)
+		if err != nil {
+			return nil, err
+		}
+		createOpts.HostConfig.Binds = util.Merge(createOpts.HostConfig.Binds, volumeBinds(createOpts.Config.Volumes, info))
 	}
 
 	logrus.Debugf("Creating container %s %#v", c.name, createOpts)
 
-	id, err := c.client.CreateContainer(*createOpts)
+	container, err := c.client.CreateContainer(*createOpts)
 	if err != nil && err == dockerclient.ErrNoSuchImage {
 		logrus.Debugf("Not Found, pulling image %s", createOpts.Config.Image)
 		if err = c.pull(createOpts.Config.Image); err != nil {
 			return nil, err
 		}
-		if id, err = c.client.CreateContainer(*createOpts); err != nil {
+		if container, err = c.client.CreateContainer(*createOpts); err != nil {
 			return nil, err
 		}
 	}
@@ -320,7 +328,7 @@ func (c *Container) createContainer(imageName, oldContainer string) (*dockerclie
 		return nil, err
 	}
 
-	return GetContainerById(c.client, id)
+	return GetContainerByID(c.client, container.ID)
 }
 
 func (c *Container) populateAdditionalHostConfig(hostConfig *dockerclient.HostConfig) error {
@@ -460,10 +468,10 @@ func (c *Container) Log() error {
 }
 
 func (c *Container) pull(image string) error {
-	return PullImage(c.client, c.service, image)
+	return pullImage(c.client, c.service, image)
 }
 
-func PullImage(client dockerclient.Client, service *Service, image string) error {
+func pullImage(client *dockerclient.Client, service *Service, image string) error {
 	taglessRemote, tag := parsers.ParseRepositoryTag(image)
 	if tag == "" {
 		image = utils.ImageReference(taglessRemote, DefaultTag)

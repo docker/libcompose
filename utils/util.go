@@ -104,3 +104,17 @@ func Contains(collection []string, key string) bool {
 
 	return false
 }
+
+// Merge performs a union of two string slices: the result is an unordered slice
+// that includes every item from either argument exactly once
+func Merge(coll1, coll2 []string) []string {
+	m := map[string]struct{}{}
+	for _, v := range append(coll1, coll2...) {
+		m[v] = struct{}{}
+	}
+	r := make([]string, 0, len(m))
+	for k := range m {
+		r = append(r, k)
+	}
+	return r
+}
