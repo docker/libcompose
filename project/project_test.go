@@ -95,8 +95,8 @@ func TestParseWithBadContent(t *testing.T) {
 		t.Fatal("Should have failed parse")
 	}
 
-	if !strings.HasPrefix(err.Error(), "yaml: unmarshal errors") {
-		t.Fatal("Should have failed parse", err)
+	if !strings.HasPrefix(err.Error(), "Unknown resolution for 'garbage'") {
+		t.Fatalf("Should have failed parse: %#v", err)
 	}
 }
 

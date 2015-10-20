@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/Sirupsen/logrus"
+	yaml "github.com/cloudfoundry-incubator/candiedyaml"
 	"github.com/docker/libcompose/utils"
-	"gopkg.in/yaml.v2"
 )
 
 var (

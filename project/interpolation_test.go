@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
+	yaml "github.com/cloudfoundry-incubator/candiedyaml"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
 )
 
 func testInterpolatedLine(t *testing.T, expectedLine, interpolatedLine string, envVariables map[string]string) {
