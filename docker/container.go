@@ -152,7 +152,7 @@ func (c *Container) Delete() error {
 		}
 	}
 
-	return c.client.RemoveContainer(dockerclient.RemoveContainerOptions{ID: container.ID, Force: true, RemoveVolumes: false})
+	return c.client.RemoveContainer(dockerclient.RemoveContainerOptions{ID: container.ID, Force: true, RemoveVolumes: c.service.context.Volume})
 }
 
 // Up creates and start the container based on the image name and send an event

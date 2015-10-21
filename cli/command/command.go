@@ -169,6 +169,10 @@ func RmCommand(factory app.ProjectFactory) cli.Command {
 				Name:  "force,f",
 				Usage: "Allow deletion of all services",
 			},
+			cli.BoolFlag{
+				Name:  "v",
+				Usage: "Remove volumes associated with containers",
+			},
 		},
 	}
 }
@@ -221,5 +225,7 @@ func Populate(context *project.Context, c *cli.Context) {
 		context.Timeout = uint(c.Int("timeout"))
 	} else if c.Command.Name == "kill" {
 		context.Signal = c.Int("signal")
+	} else if c.Command.Name == "rm" {
+		context.Volume = c.Bool("v")
 	}
 }
