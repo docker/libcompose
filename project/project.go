@@ -336,6 +336,13 @@ func (p *Project) traverse(start bool, selected map[string]bool, wrappers map[st
 	p.loadWrappers(wrappers, wrapperList)
 	p.reload = []string{}
 
+	// check service name
+	for s := range selected {
+		if wrappers[s] == nil {
+			return errors.New("No such service: " + s)
+		}
+	}
+
 	launched := map[string]bool{}
 
 	for _, wrapper := range wrappers {

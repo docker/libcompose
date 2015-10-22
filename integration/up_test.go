@@ -17,6 +17,14 @@ func (s *RunSuite) TestUp(c *C) {
 	c.Assert(cn.State.Running, Equals, true)
 }
 
+func (s *RunSuite) TestUpNotExistService(c *C) {
+	p := s.ProjectFromText(c, "up", SimpleTemplate)
+
+	name := fmt.Sprintf("%s_%s_1", p, "not_exist")
+	cn := s.GetContainerByName(c, name)
+	c.Assert(cn, IsNil)
+}
+
 func (s *RunSuite) TestLink(c *C) {
 	p := s.ProjectFromText(c, "up", `
         server:
