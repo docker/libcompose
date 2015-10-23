@@ -65,6 +65,6 @@ func (e *EmptyService) Scale(count int) error {
 }
 
 // Info implements Service.Info but does nothing.
-func (e *EmptyService) Info() (InfoSet, error) {
+func (e *EmptyService) Info(qFlag bool) (InfoSet, error) {
 	return InfoSet{}, nil
 }
