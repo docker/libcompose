@@ -13,7 +13,9 @@ import (
 )
 
 var (
-	validRemotes = []string{
+	// ValidRemotes list the of valid prefixes that can be sent to Docker as a build remote location
+	// This is public for consumers of libcompose to use
+	ValidRemotes = []string{
 		"git://",
 		"git@github.com:",
 		"github.com",
@@ -133,7 +135,7 @@ func resolveBuild(inFile string, serviceData rawService) (rawService, error) {
 		return serviceData, nil
 	}
 
-	for _, remote := range validRemotes {
+	for _, remote := range ValidRemotes {
 		if strings.HasPrefix(build, remote) {
 			return serviceData, nil
 		}
