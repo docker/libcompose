@@ -27,6 +27,10 @@ func (t *TestService) Name() string {
 	return t.name
 }
 
+func (t *TestService) Run(commandPats []string) (int, error) {
+	return 0, nil
+}
+
 func (t *TestService) Create() error {
 	key := t.name + ".create"
 	t.factory.Counts[key] = t.factory.Counts[key] + 1
