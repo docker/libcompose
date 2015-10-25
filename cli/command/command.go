@@ -21,6 +21,12 @@ func BuildCommand(factory app.ProjectFactory) cli.Command {
 		Name:   "build",
 		Usage:  "Build or rebuild services.",
 		Action: app.WithProject(factory, app.ProjectBuild),
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "no-cache",
+				Usage: "Do not use cache when building the image",
+			},
+		},
 	}
 }
 
@@ -30,6 +36,12 @@ func PsCommand(factory app.ProjectFactory) cli.Command {
 		Name:   "ps",
 		Usage:  "List containers",
 		Action: app.WithProject(factory, app.ProjectPs),
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "q",
+				Usage: "Only display IDs",
+			},
+		},
 	}
 }
 
@@ -227,5 +239,7 @@ func Populate(context *project.Context, c *cli.Context) {
 		context.Signal = c.Int("signal")
 	} else if c.Command.Name == "rm" {
 		context.Volume = c.Bool("v")
+	} else if c.Command.Name == "build" {
+		context.NoCache = c.Bool("no-cache")
 	}
 }
