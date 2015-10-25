@@ -44,13 +44,14 @@ func WithProject(factory ProjectFactory, action ProjectAction) func(context *cli
 // ProjectPs lists the containers.
 func ProjectPs(p *project.Project, c *cli.Context) {
 	allInfo := project.InfoSet{}
+	qFlag := c.Bool("q")
 	for name := range p.Configs {
 		service, err := p.CreateService(name)
 		if err != nil {
 			logrus.Fatal(err)
 		}
 
-		info, err := service.Info()
+		info, err := service.Info(qFlag)
 		if err != nil {
 			logrus.Fatal(err)
 		}
@@ -58,7 +59,7 @@ func ProjectPs(p *project.Project, c *cli.Context) {
 		allInfo = append(allInfo, info...)
 	}
 
-	os.Stdout.WriteString(allInfo.String())
+	os.Stdout.WriteString(allInfo.String(!qFlag))
 }
 
 // ProjectPort prints the public port for a port binding.
@@ -163,7 +164,7 @@ func ProjectPull(p *project.Project, c *cli.Context) {
 // ProjectDelete delete services.
 func ProjectDelete(p *project.Project, c *cli.Context) {
 	if !c.Bool("force") && len(c.Args()) == 0 {
-		logrus.Fatal("Will not remove all services with out --force")
+		logrus.Fatal("Will not remove all services without --force")
 	}
 	err := p.Delete(c.Args()...)
 	if err != nil {
