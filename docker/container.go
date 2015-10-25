@@ -61,7 +61,7 @@ func (c *Container) Info(qFlag bool) (project.Info, error) {
 	result := project.Info{}
 
 	if qFlag {
-		result = append(result, project.InfoPart{Key: "Id", Value: container.Id})
+		result = append(result, project.InfoPart{Key: "Id", Value: container.ID})
 	} else {
 		result = append(result, project.InfoPart{Key: "Name", Value: name(container.Names)})
 		result = append(result, project.InfoPart{Key: "Command", Value: container.Command})
