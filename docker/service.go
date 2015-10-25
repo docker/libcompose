@@ -146,7 +146,7 @@ func (s *Service) Up() error {
 
 // Info implements Service.Info. It returns an project.InfoSet with the containers
 // related to this service (can be multiple if using the scale command).
-func (s *Service) Info() (project.InfoSet, error) {
+func (s *Service) Info(qFlag bool) (project.InfoSet, error) {
 	result := project.InfoSet{}
 	containers, err := s.collectContainers()
 	if err != nil {
@@ -154,7 +154,7 @@ func (s *Service) Info() (project.InfoSet, error) {
 	}
 
 	for _, c := range containers {
-		info, err := c.Info()
+		info, err := c.Info(qFlag)
 		if err != nil {
 			return nil, err
 		}
