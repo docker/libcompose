@@ -63,6 +63,7 @@ func (d *DaemonBuilder) Build(p *project.Project, service project.Service) (stri
 		Name:           tag,
 		RmTmpContainer: true,
 		Dockerfile:     service.Config().Dockerfile,
+		NoCache:        d.context.NoCache,
 	})
 
 	if err != nil {
