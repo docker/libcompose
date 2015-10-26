@@ -189,7 +189,7 @@ func (s *Service) up(imageName string, create bool) error {
 
 	return s.eachContainer(func(c *Container) error {
 		if create {
-			if err := s.rebuildIfNeeded(imageName, c); err != nil {
+			if err := s.recreateIfNeeded(imageName, c); err != nil {
 				return err
 			}
 		}
@@ -198,7 +198,7 @@ func (s *Service) up(imageName string, create bool) error {
 	})
 }
 
-func (s *Service) rebuildIfNeeded(imageName string, c *Container) error {
+func (s *Service) recreateIfNeeded(imageName string, c *Container) error {
 	if s.context.NoRecreate {
 		return nil
 	}
@@ -213,23 +213,23 @@ func (s *Service) rebuildIfNeeded(imageName string, c *Container) error {
 	}
 	name := containerInfo.Name[1:]
 
-	origRebuildLabel := containerInfo.Config.Labels[REBUILD.Str()]
-	newRebuildLabel := s.Config().Labels.MapParts()[REBUILD.Str()]
-	rebuildLabelChanged := newRebuildLabel != origRebuildLabel
+	origRecreateLabel := containerInfo.Config.Labels[RECREATE.Str()]
+	newRecreateLabel := s.Config().Labels.MapParts()[RECREATE.Str()]
+	recreateLabelChanged := newRecreateLabel != origRecreateLabel
 	logrus.WithFields(logrus.Fields{
-		"origRebuildLabel":    origRebuildLabel,
-		"newRebuildLabel":     newRebuildLabel,
-		"outOfSync":           outOfSync,
-		"ForceRecreate":       s.context.ForceRecreate,
-		"rebuildLabelChanged": rebuildLabelChanged}).Debug("Rebuild values")
+		"origRecreateLabel":    origRecreateLabel,
+		"newRecreateLabel":     newRecreateLabel,
+		"outOfSync":            outOfSync,
+		"ForceRecreate":        s.context.ForceRecreate,
+		"recreateLabelChanged": recreateLabelChanged}).Debug("Going to decide if recreate is needed")
 
-	if s.context.ForceRecreate || origRebuildLabel == "always" || rebuildLabelChanged || origRebuildLabel != "false" && outOfSync {
-		logrus.Infof("Rebuilding %s", name)
-		if _, err := c.Rebuild(imageName); err != nil {
+	if s.context.ForceRecreate || origRecreateLabel == "always" || recreateLabelChanged || origRecreateLabel != "false" && outOfSync {
+		logrus.Infof("Recreating %s", name)
+		if _, err := c.Recreate(imageName); err != nil {
 			return err
 		}
 	} else if outOfSync {
-		logrus.Warnf("%s needs rebuilding", name)
+		logrus.Warnf("%s needs recreating", name)
 	}
 
 	return nil

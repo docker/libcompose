@@ -101,13 +101,14 @@ func name(names []string) string {
 	return current[1:]
 }
 
-// Rebuild will delete the container and create a new one with the current configuration
-func (c *Container) Rebuild(imageName string) (*dockerclient.APIContainers, error) {
+// Recreate will not refresh the container by means of relaxation and enjoyment,
+// just delete it and create a new one with the current configuration
+func (c *Container) Recreate(imageName string) (*dockerclient.APIContainers, error) {
 	info, err := c.findInfo()
 	if err != nil {
 		return nil, err
 	} else if info == nil {
-		return nil, fmt.Errorf("Can not find container to rebuild for service: %s", c.service.Name())
+		return nil, fmt.Errorf("Can not find container to recreate for service: %s", c.service.Name())
 	}
 
 	hash := info.Config.Labels[HASH.Str()]

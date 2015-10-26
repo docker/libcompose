@@ -26,7 +26,7 @@ func (s *RunSuite) TestUpNotExistService(c *C) {
 	c.Assert(cn, IsNil)
 }
 
-func (s *RunSuite) TestRebuildForceRecreate(c *C) {
+func (s *RunSuite) TestRecreateForceRecreate(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -56,7 +56,7 @@ func filter(s map[string]bool, f func(x string) bool) map[string]bool {
 	return result
 }
 
-func (s *RunSuite) TestRebuildVols(c *C) {
+func (s *RunSuite) TestRecreateVols(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplateWithVols)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -87,7 +87,7 @@ func (s *RunSuite) TestRebuildVols(c *C) {
 	c.Assert(cn2Mounts["/root:/root"], Equals, false)
 }
 
-func (s *RunSuite) TestRebuildNoRecreate(c *C) {
+func (s *RunSuite) TestRecreateNoRecreate(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -106,7 +106,7 @@ func (s *RunSuite) TestRebuildNoRecreate(c *C) {
 	c.Assert(cn.ID, Equals, cn2.ID)
 }
 
-func (s *RunSuite) TestRebuild(c *C) {
+func (s *RunSuite) TestRecreate(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -128,11 +128,11 @@ func (s *RunSuite) TestRebuild(c *C) {
 	cn3 := s.GetContainerByName(c, name)
 	c.Assert(cn2.ID, Not(Equals), cn3.ID)
 
-	// Should still rebuild because old has a different label
+	// Should still recreate because old has a different label
 	p = s.FromText(c, p, "up", `
 	hello:
 	  labels:
-	    io.docker.compose.rebuild: false
+	    io.docker.compose.recreate: false
 	  image: busybox
 	  stdin_open: true
 	  tty: true
@@ -143,7 +143,7 @@ func (s *RunSuite) TestRebuild(c *C) {
 	p = s.FromText(c, p, "up", `
 	hello:
 	  labels:
-	    io.docker.compose.rebuild: false
+	    io.docker.compose.recreate: false
 	  image: busybox
 	  stdin_open: true
 	  tty: true
@@ -154,7 +154,7 @@ func (s *RunSuite) TestRebuild(c *C) {
 	p = s.FromText(c, p, "up", `
 	hello:
 	  labels:
-	    io.docker.compose.rebuild: always
+	    io.docker.compose.recreate: always
 	  image: busybox
 	  stdin_open: true
 	  tty: true
@@ -165,7 +165,7 @@ func (s *RunSuite) TestRebuild(c *C) {
 	p = s.FromText(c, p, "up", `
 	hello:
 	  labels:
-	    io.docker.compose.rebuild: always
+	    io.docker.compose.recreate: always
 	  image: busybox
 	  stdin_open: true
 	  tty: true
