@@ -164,7 +164,7 @@ func ProjectPull(p *project.Project, c *cli.Context) {
 // ProjectDelete delete services.
 func ProjectDelete(p *project.Project, c *cli.Context) {
 	if !c.Bool("force") && len(c.Args()) == 0 {
-		logrus.Fatal("Will not remove all services with out --force")
+		logrus.Fatal("Will not remove all services without --force")
 	}
 	err := p.Delete(c.Args()...)
 	if err != nil {
