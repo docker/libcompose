@@ -131,8 +131,6 @@ func (s *RunSuite) TestRecreate(c *C) {
 	// Should still recreate because old has a different label
 	p = s.FromText(c, p, "up", `
 	hello:
-	  labels:
-	    io.docker.compose.recreate: false
 	  image: busybox
 	  stdin_open: true
 	  tty: true
@@ -142,8 +140,6 @@ func (s *RunSuite) TestRecreate(c *C) {
 
 	p = s.FromText(c, p, "up", `
 	hello:
-	  labels:
-	    io.docker.compose.recreate: false
 	  image: busybox
 	  stdin_open: true
 	  tty: true
@@ -151,10 +147,8 @@ func (s *RunSuite) TestRecreate(c *C) {
 	cn5 := s.GetContainerByName(c, name)
 	c.Assert(cn4.ID, Equals, cn5.ID)
 
-	p = s.FromText(c, p, "up", `
+	p = s.FromText(c, p, "up", "--force-recreate", `
 	hello:
-	  labels:
-	    io.docker.compose.recreate: always
 	  image: busybox
 	  stdin_open: true
 	  tty: true
@@ -162,10 +156,8 @@ func (s *RunSuite) TestRecreate(c *C) {
 	cn6 := s.GetContainerByName(c, name)
 	c.Assert(cn5.ID, Not(Equals), cn6.ID)
 
-	p = s.FromText(c, p, "up", `
+	p = s.FromText(c, p, "up", "--force-recreate", `
 	hello:
-	  labels:
-	    io.docker.compose.recreate: always
 	  image: busybox
 	  stdin_open: true
 	  tty: true

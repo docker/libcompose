@@ -213,17 +213,12 @@ func (s *Service) recreateIfNeeded(imageName string, c *Container) error {
 	}
 	name := containerInfo.Name[1:]
 
-	origRecreateLabel := containerInfo.Config.Labels[RECREATE.Str()]
-	newRecreateLabel := s.Config().Labels.MapParts()[RECREATE.Str()]
-	recreateLabelChanged := newRecreateLabel != origRecreateLabel
 	logrus.WithFields(logrus.Fields{
-		"origRecreateLabel":    origRecreateLabel,
-		"newRecreateLabel":     newRecreateLabel,
-		"outOfSync":            outOfSync,
-		"ForceRecreate":        s.context.ForceRecreate,
-		"recreateLabelChanged": recreateLabelChanged}).Debug("Going to decide if recreate is needed")
+		"outOfSync":     outOfSync,
+		"ForceRecreate": s.context.ForceRecreate,
+		"NoRecreate":    s.context.NoRecreate}).Debug("Going to decide if recreate is needed")
 
-	if s.context.ForceRecreate || origRecreateLabel == "always" || recreateLabelChanged || origRecreateLabel != "false" && outOfSync {
+	if s.context.ForceRecreate || outOfSync {
 		logrus.Infof("Recreating %s", name)
 		if _, err := c.Recreate(imageName); err != nil {
 			return err
