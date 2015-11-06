@@ -5,3 +5,4 @@
 *.log
 *.swp
 bundles
+.gopath

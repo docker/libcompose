@@ -13,7 +13,7 @@ find_dirs() {
          \( \
          -path './integration/*' \
          -o -path './.git/*' \
-         -o -path './Godeps/*' \
+         -o -path './vendor/*' \
          -o -path './bundles/*' \
          \) \
          -prune \
@@ -30,7 +30,7 @@ TESTS_FAILED=()
 
 for dir in $TESTDIRS; do
     echo '+ go test' $TESTFLAGS "${LIBCOMPOSE_PKG}/${dir#./}"
-    godep go test ${TESTFLAGS} "${LIBCOMPOSE_PKG}/${dir#./}"
+    go test ${TESTFLAGS} "${LIBCOMPOSE_PKG}/${dir#./}"
     if [ $? != 0 ]; then
         TESTS_FAILED+=("$dir")
         echo
