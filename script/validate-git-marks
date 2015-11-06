@@ -5,7 +5,7 @@ source "$(dirname "$BASH_SOURCE")/.validate"
 # folders=$(find * -type d | egrep -v '^Godeps|bundles|.git')
 
 IFS=$'\n'
-files=( $(validate_diff --diff-filter=ACMR --name-only -- '*' | grep -v '^Godeps/' || true) )
+files=( $(validate_diff --diff-filter=ACMR --name-only -- '*' | grep -v '^vendor/' || true) )
 unset IFS
 
 badFiles=()

@@ -1,5 +1,5 @@
 # This file describes the standard way to build libcompose, using docker
-FROM golang:1.4.2-cross
+FROM golang:1.5.1
 
 RUN apt-get update && apt-get install -y \
     iptables \
@@ -9,13 +9,22 @@ RUN apt-get update && apt-get install -y \
 # Install build dependencies
 RUN go get github.com/mitchellh/gox
 RUN go get github.com/aktau/github-release
-RUN go get github.com/tools/godep
 RUN go get golang.org/x/tools/cmd/cover
 RUN go get github.com/golang/lint/golint
 RUN go get golang.org/x/tools/cmd/vet
 
+# Compile Go for cross compilation
+ENV DOCKER_CROSSPLATFORMS \
+	linux/386 linux/arm \
+	darwin/amd64 darwin/386 \
+	freebsd/amd64 freebsd/386 freebsd/arm \
+	windows/amd64 windows/386
+
 # Which docker version to test on
 ENV DOCKER_VERSION 1.8.3
+
+# enable GO15VENDOREXPERIMENT
+ENV GO15VENDOREXPERIMENT 1
 
 # Download docker
 RUN set -ex; \
@@ -25,7 +34,6 @@ RUN set -ex; \
 # Set the default Docker to be run
 RUN ln -s /usr/local/bin/docker-${DOCKER_VERSION} /usr/local/bin/docker
 
-ENV GOPATH /go/src/github.com/docker/libcompose/Godeps/_workspace:/go
 ENV COMPOSE_BINARY /go/src/github.com/docker/libcompose/libcompose-cli
 ENV USER root
 
