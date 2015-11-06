@@ -1,9 +1,10 @@
 package command
 
 import (
-	"github.com/codegangsta/cli"
 	"os"
 	"path"
+
+	"github.com/codegangsta/cli"
 )
 
 func init() {
@@ -25,10 +26,10 @@ Commands:
   {{end}}
 Run '{{.Name}} COMMAND --help' for more information on a command.
 `
-	cli.CommandHelpTemplate = `Usage: ` + path.Base(os.Args[0]) + ` {{.Name}}{{if .Flags}} [OPTIONS]
+	cli.CommandHelpTemplate = `Usage: ` + path.Base(os.Args[0]) + ` {{.Name}}{{if .Flags}} [OPTIONS]{{end}}{{if .ArgsUsage}} {{.ArgsUsage}} {{end}}
 
 {{.Usage}}
-
+{{if .Flags}}
 Options:
    {{range .Flags}}{{.}}
    {{end}}{{end}}

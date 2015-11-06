@@ -9,18 +9,20 @@ import (
 // CreateCommand defines the libcompose create subcommand.
 func CreateCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
-		Name:   "create",
-		Usage:  "Create all services but do not start",
-		Action: app.WithProject(factory, app.ProjectCreate),
+		Name:      "create",
+		Usage:     "Create all services but do not start",
+		ArgsUsage: "[SERVICE...]",
+		Action:    app.WithProject(factory, app.ProjectCreate),
 	}
 }
 
 // BuildCommand defines the libcompose build subcommand.
 func BuildCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
-		Name:   "build",
-		Usage:  "Build or rebuild services.",
-		Action: app.WithProject(factory, app.ProjectBuild),
+		Name:      "build",
+		Usage:     "Build or rebuild services.",
+		ArgsUsage: "[SERVICE...]",
+		Action:    app.WithProject(factory, app.ProjectBuild),
 	}
 }
 
@@ -42,9 +44,10 @@ func PsCommand(factory app.ProjectFactory) cli.Command {
 // PortCommand defines the libcompose port subcommand.
 func PortCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
-		Name:   "port",
-		Usage:  "Print the public port for a port binding",
-		Action: app.WithProject(factory, app.ProjectPort),
+		Name:      "port",
+		Usage:     "Print the public port for a port binding",
+		ArgsUsage: "SERVICE PORT",
+		Action:    app.WithProject(factory, app.ProjectPort),
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "protocol",
@@ -63,9 +66,10 @@ func PortCommand(factory app.ProjectFactory) cli.Command {
 // UpCommand defines the libcompose up subcommand.
 func UpCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
-		Name:   "up",
-		Usage:  "Bring all services up",
-		Action: app.WithProject(factory, app.ProjectUp),
+		Name:      "up",
+		Usage:     "Bring all services up",
+		ArgsUsage: "[SERVICE...]",
+		Action:    app.WithProject(factory, app.ProjectUp),
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "d",
@@ -78,9 +82,10 @@ func UpCommand(factory app.ProjectFactory) cli.Command {
 // StartCommand defines the libcompose start subcommand.
 func StartCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
-		Name:   "start",
-		Usage:  "Start services",
-		Action: app.WithProject(factory, app.ProjectStart),
+		Name:      "start",
+		Usage:     "Start services",
+		ArgsUsage: "[SERVICE...]",
+		Action:    app.WithProject(factory, app.ProjectStart),
 		Flags: []cli.Flag{
 			cli.BoolTFlag{
 				Name:  "d",
@@ -93,18 +98,20 @@ func StartCommand(factory app.ProjectFactory) cli.Command {
 // PullCommand defines the libcompose pull subcommand.
 func PullCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
-		Name:   "pull",
-		Usage:  "Pulls images for services",
-		Action: app.WithProject(factory, app.ProjectPull),
+		Name:      "pull",
+		Usage:     "Pulls images for services",
+		ArgsUsage: "[SERVICE...]",
+		Action:    app.WithProject(factory, app.ProjectPull),
 	}
 }
 
 // LogsCommand defines the libcompose logs subcommand.
 func LogsCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
-		Name:   "logs",
-		Usage:  "Get service logs",
-		Action: app.WithProject(factory, app.ProjectLog),
+		Name:      "logs",
+		Usage:     "Get service logs",
+		ArgsUsage: "[SERVICE...]",
+		Action:    app.WithProject(factory, app.ProjectLog),
 		Flags: []cli.Flag{
 			cli.IntFlag{
 				Name:  "lines",
@@ -118,9 +125,10 @@ func LogsCommand(factory app.ProjectFactory) cli.Command {
 // RestartCommand defines the libcompose restart subcommand.
 func RestartCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
-		Name:   "restart",
-		Usage:  "Restart services",
-		Action: app.WithProject(factory, app.ProjectRestart),
+		Name:      "restart",
+		Usage:     "Restart services",
+		ArgsUsage: "[SERVICE...]",
+		Action:    app.WithProject(factory, app.ProjectRestart),
 		Flags: []cli.Flag{
 			cli.IntFlag{
 				Name:  "timeout,t",
@@ -137,6 +145,7 @@ func StopCommand(factory app.ProjectFactory) cli.Command {
 		Name:      "stop",
 		ShortName: "down",
 		Usage:     "Stop services",
+		ArgsUsage: "[SERVICE...]",
 		Action:    app.WithProject(factory, app.ProjectDown),
 		Flags: []cli.Flag{
 			cli.IntFlag{
@@ -151,9 +160,10 @@ func StopCommand(factory app.ProjectFactory) cli.Command {
 // ScaleCommand defines the libcompose scale subcommand.
 func ScaleCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
-		Name:   "scale",
-		Usage:  "Scale services",
-		Action: app.WithProject(factory, app.ProjectScale),
+		Name:      "scale",
+		Usage:     "Scale services",
+		ArgsUsage: "[SERVICE=NUM...]",
+		Action:    app.WithProject(factory, app.ProjectScale),
 		Flags: []cli.Flag{
 			cli.IntFlag{
 				Name:  "timeout,t",
@@ -167,9 +177,10 @@ func ScaleCommand(factory app.ProjectFactory) cli.Command {
 // RmCommand defines the libcompose rm subcommand.
 func RmCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
-		Name:   "rm",
-		Usage:  "Delete services",
-		Action: app.WithProject(factory, app.ProjectDelete),
+		Name:      "rm",
+		Usage:     "Delete services",
+		ArgsUsage: "[SERVICE...]",
+		Action:    app.WithProject(factory, app.ProjectDelete),
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "force,f",
@@ -186,9 +197,10 @@ func RmCommand(factory app.ProjectFactory) cli.Command {
 // KillCommand defines the libcompose kill subcommand.
 func KillCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
-		Name:   "kill",
-		Usage:  "Force stop service containers",
-		Action: app.WithProject(factory, app.ProjectKill),
+		Name:      "kill",
+		Usage:     "Force stop service containers",
+		ArgsUsage: "[SERVICE...]",
+		Action:    app.WithProject(factory, app.ProjectKill),
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "signal,s",
