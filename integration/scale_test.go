@@ -36,13 +36,11 @@ func (s *RunSuite) TestScale(c *C) {
 	c.Assert(1, Equals, len(containers))
 
 	cn = s.GetContainerByName(c, name2)
-	c.Assert(cn, NotNil)
-	c.Assert(cn.State.Running, Equals, true)
+	c.Assert(cn, IsNil)
 
 	cn = s.GetContainerByName(c, name)
-	c.Assert(cn, IsNil)
-	cn = s.GetContainerByName(c, name)
-	c.Assert(cn, IsNil)
+	c.Assert(cn, NotNil)
+	c.Assert(cn.State.Running, Equals, true)
 }
 
 func (s *RunSuite) TestScaleWithHostPortWarning(c *C) {
