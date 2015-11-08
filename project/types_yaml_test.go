@@ -3,7 +3,7 @@ package project
 import (
 	"testing"
 
-	"gopkg.in/yaml.v2"
+	yaml "github.com/cloudfoundry-incubator/candiedyaml"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -116,8 +116,8 @@ func TestStringorsliceYaml(t *testing.T) {
 }
 
 type StructSliceorMap struct {
-	Foos SliceorMap //`yaml:",omitempty"` /*uncomment that `yaml` nonsense to crash the tests*/
-	Bars []string
+	Foos SliceorMap `yaml:"foos,omitempty"`
+	Bars []string   `yaml:"bars"`
 }
 
 func TestSliceOrMapYaml(t *testing.T) {
