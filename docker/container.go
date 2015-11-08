@@ -104,13 +104,20 @@ func name(names []string) string {
 // to notify the container has been created. If the container already exists, does
 // nothing.
 func (c *Container) Create(imageName string) (*dockerclient.APIContainers, error) {
+	return c.CreateWithOverride(imageName, nil)
+}
+
+// CreateWithOverride create container and override parts of the config to
+// allow special situations to override the config generated from the compose
+// file
+func (c *Container) CreateWithOverride(imageName string, configOverride *project.ServiceConfig) (*dockerclient.APIContainers, error) {
 	container, err := c.findExisting()
 	if err != nil {
 		return nil, err
 	}
 
 	if container == nil {
-		container, err = c.createContainer(imageName)
+		container, err = c.createContainer(imageName, configOverride)
 		if err != nil {
 			return nil, err
 		}
@@ -182,22 +189,43 @@ func (c *Container) Up(imageName string) error {
 	}
 
 	if !info.State.Running {
-		logrus.Debugf("Starting container: %s: %#v", container.ID, info.HostConfig)
-		err = c.populateAdditionalHostConfig(info.HostConfig)
-		if err != nil {
-			return err
-		}
-
-		if err := c.client.StartContainer(container.ID, info.HostConfig); err != nil {
-			return err
-		}
-
-		c.service.context.Project.Notify(project.EventContainerStarted, c.service.Name(), map[string]string{
-			"name": c.Name(),
-		})
+		c.Start(container, info.HostConfig)
 	}
 
 	return nil
+}
+
+// Start the specified container with the specified host config
+func (c *Container) Start(container *dockerclient.APIContainers, hostConfig *dockerclient.HostConfig) error {
+	logrus.Debugf("Starting container: %s: %#v", container.ID, hostConfig)
+	err := c.populateAdditionalHostConfig(hostConfig)
+	if err != nil {
+		return err
+	}
+
+	if err := c.client.StartContainer(container.ID, hostConfig); err != nil {
+		return err
+	}
+
+	c.service.context.Project.Notify(project.EventContainerStarted, c.service.Name(), map[string]string{
+		"name": c.Name(),
+	})
+
+	return nil
+}
+
+// Attach the containers tty to the systems tty
+func (c *Container) Attach(container *dockerclient.APIContainers) error {
+	return c.client.AttachToContainer(dockerclient.AttachToContainerOptions{
+		Container:    container.ID,
+		Stream:       true,
+		Stdin:        false, // when attaching stdin it doesn't know when to stop streaming
+		Stdout:       true,
+		Stderr:       true,
+		RawTerminal:  true,
+		OutputStream: os.Stdout,
+		ErrorStream:  os.Stderr,
+	})
 }
 
 // OutOfSync checks if the container is out of sync with the service definition.
@@ -216,8 +244,14 @@ func (c *Container) OutOfSync() (bool, error) {
 	return info.Config.Labels[HASH.Str()] != project.GetServiceHash(c.service), nil
 }
 
-func (c *Container) createContainer(imageName string) (*dockerclient.APIContainers, error) {
-	createOpts, err := ConvertToAPI(c.service.serviceConfig, c.name)
+func (c *Container) createContainer(imageName string, configOverride *project.ServiceConfig) (*dockerclient.APIContainers, error) {
+	serviceConfig := c.service.serviceConfig
+	if configOverride != nil {
+		serviceConfig.Command = configOverride.Command
+		serviceConfig.Tty = configOverride.Tty
+	}
+
+	createOpts, err := ConvertToAPI(serviceConfig, c.name)
 	if err != nil {
 		return nil, err
 	}

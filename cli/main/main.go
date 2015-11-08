@@ -30,6 +30,7 @@ func main() {
 		command.RestartCommand(factory),
 		command.StopCommand(factory),
 		command.ScaleCommand(factory),
+		command.RunCommand(factory),
 		command.RmCommand(factory),
 		command.PullCommand(factory),
 		command.KillCommand(factory),

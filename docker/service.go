@@ -229,6 +229,51 @@ func (s *Service) Restart() error {
 	})
 }
 
+// Run implements Service.Run. It runs a one of command within the service container.
+func (s *Service) Run(commandParts []string) (int, error) {
+	var err error
+	client := s.context.ClientFactory.Create(s)
+
+	namer := NewNamer(client, s.context.Project.Name, s.name+"_run")
+	defer namer.Close()
+
+	containerName := namer.Next()
+
+	c := NewContainer(client, containerName, s)
+
+	imageName, err := s.build()
+	if err != nil {
+		return 1, err
+	}
+
+	container, err := c.CreateWithOverride(imageName, &project.ServiceConfig{Command: project.NewCommand(commandParts...), Tty: true})
+	if err != nil {
+		return 1, err
+	}
+
+	info, err := c.client.InspectContainer(container.ID)
+	if err != nil {
+		return 1, err
+	}
+
+	err = c.Start(container, info.HostConfig)
+	if err != nil {
+		return 1, err
+	}
+
+	err = c.Attach(container)
+	if err != nil {
+		return 1, err
+	}
+
+	info, err = c.client.InspectContainer(container.ID)
+	if err != nil {
+		return 1, err
+	}
+
+	return info.State.ExitCode, nil
+}
+
 // Kill implements Service.Kill. It kills any containers related to the service.
 func (s *Service) Kill() error {
 	return s.eachContainer(func(c *Container) error {
