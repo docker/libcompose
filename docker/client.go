@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"crypto/tls"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -85,27 +84,20 @@ func CreateClient(c ClientOpts) (*dockerclient.Client, error) {
 		c.TLSOptions.InsecureSkipVerify = !c.TLSVerify
 	}
 
-	var tlsConfig *tls.Config
-
-	if c.TLS {
-		var err error
-		tlsConfig, err = tlsconfig.Client(c.TLSOptions)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	apiVersion := c.APIVersion
 	if apiVersion == "" {
 		apiVersion = DefaultAPIVersion
 	}
-	client, err := dockerclient.NewVersionedClient(c.Host, apiVersion)
-	if err != nil {
-		return nil, err
+	if c.TLS {
+		client, err := dockerclient.NewVersionedTLSClient(c.Host, c.TLSOptions.CertFile, c.TLSOptions.KeyFile, c.TLSOptions.CAFile, apiVersion)
+		if err != nil {
+			return nil, err
+		}
+		if c.TLSOptions.InsecureSkipVerify {
+			client.TLSConfig.InsecureSkipVerify = true
+		}
+		return client, nil
+	} else {
+		return dockerclient.NewVersionedClient(c.Host, apiVersion)
 	}
-
-	if tlsConfig != nil {
-		client.TLSConfig = tlsConfig
-	}
-	return client, nil
 }
