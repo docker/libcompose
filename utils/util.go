@@ -70,6 +70,18 @@ func Convert(src, target interface{}) error {
 	return err
 }
 
+// FilterStringSet accepts a string set `s` (in the form of `map[string]bool`) and a filtering function `f`
+// and returns a string set containing only the strings `x` for which `f(x) == true`
+func FilterStringSet(s map[string]bool, f func(x string) bool) map[string]bool {
+	result := map[string]bool{}
+	for k := range s {
+		if f(k) {
+			result[k] = true
+		}
+	}
+	return result
+}
+
 // FilterString returns a json representation of the specified map
 // that is used as filter for docker.
 func FilterString(data map[string][]string) string {
@@ -103,4 +115,18 @@ func Contains(collection []string, key string) bool {
 	}
 
 	return false
+}
+
+// Merge performs a union of two string slices: the result is an unordered slice
+// that includes every item from either argument exactly once
+func Merge(coll1, coll2 []string) []string {
+	m := map[string]struct{}{}
+	for _, v := range append(coll1, coll2...) {
+		m[v] = struct{}{}
+	}
+	r := make([]string, 0, len(m))
+	for k := range m {
+		r = append(r, k)
+	}
+	return r
 }

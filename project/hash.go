@@ -11,13 +11,11 @@ import (
 
 // GetServiceHash computes and returns a hash that will identify a service.
 // This hash will be then used to detect if the service definition/configuration
-// have changed and needs to be rebuild.
-func GetServiceHash(service Service) string {
+// have changed and needs to be recreated.
+func GetServiceHash(name string, config *ServiceConfig) string {
 	hash := sha1.New()
 
-	io.WriteString(hash, fmt.Sprintln(service.Name()))
-
-	config := service.Config()
+	io.WriteString(hash, name)
 
 	//Get values of Service through reflection
 	val := reflect.ValueOf(config).Elem()

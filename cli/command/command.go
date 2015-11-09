@@ -71,6 +71,14 @@ func UpCommand(factory app.ProjectFactory) cli.Command {
 				Name:  "d",
 				Usage: "Do not block and log",
 			},
+			cli.BoolFlag{
+				Name:  "no-recreate",
+				Usage: "If containers already exist, don't recreate them. Incompatible with --force-recreate.",
+			},
+			cli.BoolFlag{
+				Name:  "force-recreate",
+				Usage: "Recreate containers even if their configuration and image haven't changed. Incompatible with --no-recreate.",
+			},
 		},
 	}
 }
@@ -227,6 +235,8 @@ func Populate(context *project.Context, c *cli.Context) {
 		context.Log = true
 	} else if c.Command.Name == "up" {
 		context.Log = !c.Bool("d")
+		context.NoRecreate = c.Bool("no-recreate")
+		context.ForceRecreate = c.Bool("force-recreate")
 	} else if c.Command.Name == "stop" || c.Command.Name == "restart" || c.Command.Name == "scale" {
 		context.Timeout = uint(c.Int("timeout"))
 	} else if c.Command.Name == "kill" {

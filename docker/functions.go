@@ -34,3 +34,19 @@ func GetContainerByName(client *dockerclient.Client, name string) (*dockerclient
 
 	return &containers[0], nil
 }
+
+// GetContainerByID looks up the hosts containers with the specified Id and
+// returns it, or an error.
+func GetContainerByID(client *dockerclient.Client, id string) (*dockerclient.APIContainers, error) {
+	containers, err := client.ListContainers(
+		dockerclient.ListContainersOptions{All: true, Filters: map[string][]string{"id": {id}}})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(containers) == 0 {
+		return nil, nil
+	}
+
+	return &containers[0], nil
+}
