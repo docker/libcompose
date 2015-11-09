@@ -178,6 +178,13 @@ func TestConvertInvalid(t *testing.T) {
 	}
 }
 
+func TestFilterStringSet(t *testing.T) {
+	s := map[string]bool{"abcd": true, "b": true, "cde": true, "d": true, "ef": true}
+	expected := map[string]bool{"abcd": true, "cde": true}
+	result := FilterStringSet(s, func(x string) bool { return len(x) > 2 })
+	assert.Equal(t, expected, result)
+}
+
 func TestFilterString(t *testing.T) {
 	datas := []struct {
 		value    map[string][]string

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/docker/libcompose/utils"
 	dockerclient "github.com/fsouza/go-dockerclient"
 	. "gopkg.in/check.v1"
 )
@@ -46,16 +47,6 @@ func mountSet(slice []dockerclient.Mount) map[string]bool {
 	return result
 }
 
-func filter(s map[string]bool, f func(x string) bool) map[string]bool {
-	result := map[string]bool{}
-	for k := range s {
-		if f(k) {
-			result[k] = true
-		}
-	}
-	return result
-}
-
 func (s *RunSuite) TestRecreateVols(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplateWithVols)
 
@@ -75,13 +66,13 @@ func (s *RunSuite) TestRecreateVols(c *C) {
 		return true
 	}
 
-	shouldMigrate := filter(mountSet(cn.Mounts), notHomeRootOrVol2)
+	shouldMigrate := utils.FilterStringSet(mountSet(cn.Mounts), notHomeRootOrVol2)
 	cn2Mounts := mountSet(cn2.Mounts)
 	for k := range shouldMigrate {
 		c.Assert(cn2Mounts[k], Equals, true)
 	}
 
-	almostTheSameButRoot := filter(cn2Mounts, notHomeRootOrVol2)
+	almostTheSameButRoot := utils.FilterStringSet(cn2Mounts, notHomeRootOrVol2)
 	c.Assert(len(almostTheSameButRoot), Equals, len(cn2Mounts)-1)
 	c.Assert(cn2Mounts["/tmp/tmp-root:/root"], Equals, true)
 	c.Assert(cn2Mounts["/root:/root"], Equals, false)
@@ -104,6 +95,8 @@ func (s *RunSuite) TestRecreateNoRecreate(c *C) {
 	`)
 	cn2 := s.GetContainerByName(c, name)
 	c.Assert(cn.ID, Equals, cn2.ID)
+	_, ok := cn2.Config.Labels["key"]
+	c.Assert(ok, Equals, false)
 }
 
 func (s *RunSuite) TestRecreate(c *C) {
@@ -127,6 +120,8 @@ func (s *RunSuite) TestRecreate(c *C) {
 	`)
 	cn3 := s.GetContainerByName(c, name)
 	c.Assert(cn2.ID, Not(Equals), cn3.ID)
+	key3 := cn3.Config.Labels["key"]
+	c.Assert(key3, Equals, "val")
 
 	// Should still recreate because old has a different label
 	p = s.FromText(c, p, "up", `
@@ -137,6 +132,8 @@ func (s *RunSuite) TestRecreate(c *C) {
 	`)
 	cn4 := s.GetContainerByName(c, name)
 	c.Assert(cn3.ID, Not(Equals), cn4.ID)
+	_, ok4 := cn4.Config.Labels["key"]
+	c.Assert(ok4, Equals, false)
 
 	p = s.FromText(c, p, "up", `
 	hello:
@@ -146,6 +143,8 @@ func (s *RunSuite) TestRecreate(c *C) {
 	`)
 	cn5 := s.GetContainerByName(c, name)
 	c.Assert(cn4.ID, Equals, cn5.ID)
+	_, ok5 := cn5.Config.Labels["key"]
+	c.Assert(ok5, Equals, false)
 
 	p = s.FromText(c, p, "up", "--force-recreate", `
 	hello:
@@ -155,6 +154,8 @@ func (s *RunSuite) TestRecreate(c *C) {
 	`)
 	cn6 := s.GetContainerByName(c, name)
 	c.Assert(cn5.ID, Not(Equals), cn6.ID)
+	_, ok6 := cn6.Config.Labels["key"]
+	c.Assert(ok6, Equals, false)
 
 	p = s.FromText(c, p, "up", "--force-recreate", `
 	hello:
@@ -164,6 +165,8 @@ func (s *RunSuite) TestRecreate(c *C) {
 	`)
 	cn7 := s.GetContainerByName(c, name)
 	c.Assert(cn6.ID, Not(Equals), cn7.ID)
+	_, ok7 := cn7.Config.Labels["key"]
+	c.Assert(ok7, Equals, false)
 
 	c.Assert(cn.State.Running, Equals, true)
 }

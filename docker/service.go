@@ -59,10 +59,6 @@ func (s *Service) collectContainers() ([]*Container, error) {
 
 	result := []*Container{}
 
-	if len(containers) == 0 {
-		return result, nil
-	}
-
 	for _, container := range containers {
 		name := container.Labels[NAME.Str()]
 		result = append(result, NewContainer(client, name, s))
@@ -207,24 +203,16 @@ func (s *Service) recreateIfNeeded(imageName string, c *Container) error {
 		return err
 	}
 
-	containerInfo, err := c.findInfo()
-	if containerInfo == nil || err != nil {
-		return err
-	}
-	name := containerInfo.Name[1:]
-
 	logrus.WithFields(logrus.Fields{
 		"outOfSync":     outOfSync,
 		"ForceRecreate": s.context.ForceRecreate,
 		"NoRecreate":    s.context.NoRecreate}).Debug("Going to decide if recreate is needed")
 
 	if s.context.ForceRecreate || outOfSync {
-		logrus.Infof("Recreating %s", name)
+		logrus.Infof("Recreating %s", s.name)
 		if _, err := c.Recreate(imageName); err != nil {
 			return err
 		}
-	} else if outOfSync {
-		logrus.Warnf("%s needs recreating", name)
 	}
 
 	return nil
