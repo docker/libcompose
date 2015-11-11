@@ -23,16 +23,16 @@ all: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh
 
 binary: build
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary
+	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh generate binary
 
 test: build
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-unit test-integration
+	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh generate binary test-unit test-integration
 
 test-unit: build
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh test-unit
+	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh generate test-unit
 
 test-integration: build
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-integration
+	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh generate binary test-integration
 
 validate-dco: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-dco

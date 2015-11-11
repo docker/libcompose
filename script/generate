@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+
+# Run go generate before building
+# FIXME Remove this at some point, this is a hack for docker/docker/autogen/dockerversion
+go generate
