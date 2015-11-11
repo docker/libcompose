@@ -5,10 +5,10 @@ cd "$(dirname "$BASH_SOURCE")/.."
 rm -rf vendor/
 source 'script/.vendor-helpers.sh'
 
-clone git github.com/Sirupsen/logrus 26709e2714106fb8ad40b773b711ebce25b78914
+clone git github.com/Sirupsen/logrus v0.8.2
 clone git github.com/codegangsta/cli 6086d7927ec35315964d9fea46df6c04e6d697c1
-clone git github.com/docker/distribution 9038e48c3b982f8e82281ea486f078a73731ac4e
-clone git github.com/docker/docker f39987afe8d611407887b3094c03d6ba6a766a67
+clone git github.com/docker/distribution c6c9194e9c6097f84b0ff468a741086ff7704aa3
+clone git github.com/docker/docker 58b270c338e831ac6668a29788c72d202f9fc251
 clone git github.com/docker/libtrust 9cbd2a1374f46905c68a4eb3694a130610adc62a
 clone git github.com/flynn/go-shlex 3f9db97f856818214da2e1057f8ad84803971cff
 clone git github.com/fsouza/go-dockerclient 39d9fefa6a7fd4ef5a4a02c5f566cb83b73c7293
