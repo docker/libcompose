@@ -48,9 +48,7 @@ func GetServiceHash(name string, config *ServiceConfig) string {
 		case SliceorMap:
 			sliceKeys := []string{}
 			for lkey := range s.MapParts() {
-				if lkey != "io.rancher.os.hash" {
-					sliceKeys = append(sliceKeys, lkey)
-				}
+				sliceKeys = append(sliceKeys, lkey)
 			}
 			sort.Strings(sliceKeys)
 
