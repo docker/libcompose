@@ -15,10 +15,25 @@ func TestParseCommand(t *testing.T) {
 }
 
 func TestParseBindsAndVolumes(t *testing.T) {
-	cfg, hostCfg, err := Convert(&project.ServiceConfig{
-		Volumes: []string{"/foo", "/home:/home", "/bar/baz", "/usr/lib:/usr/lib:ro"},
-	})
+	bashCmd := "bash"
+	fooLabel := "foo.label"
+	fooLabelValue := "service.config.value"
+	sc := &project.ServiceConfig{
+		Entrypoint: project.NewCommand(bashCmd),
+		Volumes:    []string{"/foo", "/home:/home", "/bar/baz", "/usr/lib:/usr/lib:ro"},
+		Labels:     project.NewSliceorMap(map[string]string{fooLabel: "service.config.value"}),
+	}
+	cfg, hostCfg, err := Convert(sc)
 	assert.Nil(t, err)
 	assert.Equal(t, map[string]struct{}{"/foo": {}, "/bar/baz": {}}, cfg.Volumes)
 	assert.Equal(t, []string{"/home:/home", "/usr/lib:/usr/lib:ro"}, hostCfg.Binds)
+
+	cfg.Labels[fooLabel] = "FUN"
+	cfg.Entrypoint[0] = "less"
+
+	assert.Equal(t, fooLabelValue, sc.Labels.MapParts()[fooLabel])
+	assert.Equal(t, "FUN", cfg.Labels[fooLabel])
+
+	assert.Equal(t, []string{bashCmd}, sc.Entrypoint.Slice())
+	assert.Equal(t, []string{"less"}, cfg.Entrypoint)
 }

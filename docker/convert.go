@@ -6,6 +6,8 @@ import (
 	"github.com/docker/docker/pkg/nat"
 	"github.com/docker/docker/runconfig"
 	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/utils"
+
 	dockerclient "github.com/fsouza/go-dockerclient"
 )
 
@@ -110,14 +112,14 @@ func Convert(c *project.ServiceConfig) (*dockerclient.Config, *dockerclient.Host
 	}
 
 	config := &dockerclient.Config{
-		Entrypoint:   c.Entrypoint.Slice(),
+		Entrypoint:   utils.CopySlice(c.Entrypoint.Slice()),
 		Hostname:     c.Hostname,
 		Domainname:   c.DomainName,
 		User:         c.User,
-		Env:          c.Environment.Slice(),
-		Cmd:          c.Command.Slice(),
+		Env:          utils.CopySlice(c.Environment.Slice()),
+		Cmd:          utils.CopySlice(c.Command.Slice()),
 		Image:        c.Image,
-		Labels:       c.Labels.MapParts(),
+		Labels:       utils.CopyMap(c.Labels.MapParts()),
 		ExposedPorts: exposedPorts,
 		Tty:          c.Tty,
 		OpenStdin:    c.StdinOpen,
@@ -126,20 +128,20 @@ func Convert(c *project.ServiceConfig) (*dockerclient.Config, *dockerclient.Host
 		Volumes:      volumes(c),
 	}
 	hostConfig := &dockerclient.HostConfig{
-		VolumesFrom: c.VolumesFrom,
-		CapAdd:      c.CapAdd,
-		CapDrop:     c.CapDrop,
+		VolumesFrom: utils.CopySlice(c.VolumesFrom),
+		CapAdd:      utils.CopySlice(c.CapAdd),
+		CapDrop:     utils.CopySlice(c.CapDrop),
 		CPUShares:   c.CPUShares,
 		CPUSetCPUs:  c.CPUSet,
-		ExtraHosts:  c.ExtraHosts,
+		ExtraHosts:  utils.CopySlice(c.ExtraHosts),
 		Privileged:  c.Privileged,
 		Binds:       Filter(c.Volumes, isBind),
 		Devices:     deviceMappings,
-		DNS:         c.DNS.Slice(),
-		DNSSearch:   c.DNSSearch.Slice(),
+		DNS:         utils.CopySlice(c.DNS.Slice()),
+		DNSSearch:   utils.CopySlice(c.DNSSearch.Slice()),
 		LogConfig: dockerclient.LogConfig{
 			Type:   c.LogDriver,
-			Config: c.LogOpt,
+			Config: utils.CopyMap(c.LogOpt),
 		},
 		Memory:         c.MemLimit,
 		MemorySwap:     c.MemSwapLimit,
@@ -150,7 +152,7 @@ func Convert(c *project.ServiceConfig) (*dockerclient.Config, *dockerclient.Host
 		IpcMode:        c.Ipc,
 		PortBindings:   portBindings,
 		RestartPolicy:  *restartPolicy,
-		SecurityOpt:    c.SecurityOpt,
+		SecurityOpt:    utils.CopySlice(c.SecurityOpt),
 	}
 
 	return config, hostConfig, nil

@@ -70,6 +70,28 @@ func Convert(src, target interface{}) error {
 	return err
 }
 
+// CopySlice creates an exact copy of the provided string slice
+func CopySlice(s []string) []string {
+	if s == nil {
+		return nil
+	}
+	r := make([]string, len(s))
+	copy(r, s)
+	return r
+}
+
+// CopyMap creates an exact copy of the provided string-to-string map
+func CopyMap(m map[string]string) map[string]string {
+	if m == nil {
+		return nil
+	}
+	r := map[string]string{}
+	for k, v := range m {
+		r[k] = v
+	}
+	return r
+}
+
 // FilterStringSet accepts a string set `s` (in the form of `map[string]bool`) and a filtering function `f`
 // and returns a string set containing only the strings `x` for which `f(x) == true`
 func FilterStringSet(s map[string]bool, f func(x string) bool) map[string]bool {
