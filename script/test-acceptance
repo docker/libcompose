@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+export SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export DEST=.
+
+bundle .integration-daemon-start
+trap "bundle .integration-daemon-stop" EXIT
+
+rm -rf venv
+virtualenv venv
+git clone https://github.com/docker/compose.git venv/compose
+venv/bin/pip install \
+    -r venv/compose/requirements.txt \
+    -r venv/compose/requirements-dev.txt
+
+cp bundles/libcompose-cli_linux-amd64 venv/bin/docker-compose
+. venv/bin/activate
+
+docker-compose --version
+cd venv/compose
+py.test -vs --tb=short tests/acceptance

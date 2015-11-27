@@ -34,6 +34,9 @@ test-unit: build
 test-integration: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-integration
 
+test-acceptance: build
+	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-acceptance
+
 validate-dco: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-dco
 
