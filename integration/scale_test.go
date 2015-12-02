@@ -47,8 +47,8 @@ func (s *RunSuite) TestScaleWithHostPortWarning(c *C) {
 	template := `
 	test:
 	  image: busybox
-		ports:
-			- 8001:8001
+	  ports:
+	  - 8001:8001
 	`
 	p := s.ProjectFromText(c, "up", template)
 
@@ -64,5 +64,5 @@ func (s *RunSuite) TestScaleWithHostPortWarning(c *C) {
 	_, output := s.FromTextCaptureOutput(c, p, "scale", "test=2", template)
 
 	// Assert warning is given when trying to scale a service that specifies a host port
-	c.Assert(strings.Contains(output, "If multiple containers for this service are created on a single host, the port will clash."), Equals, true)
+	c.Assert(strings.Contains(output, "If multiple containers for this service are created on a single host, the port will clash."), Equals, true, Commentf(output))
 }

@@ -130,7 +130,7 @@ func (s *RunSuite) FromTextCaptureOutput(c *C, projectName, command string, args
 	cmd := exec.Command(s.command, args...)
 	cmd.Stdin = bytes.NewBufferString(strings.Replace(input, "\t", "  ", -1))
 
-	output, err := cmd.Output()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		logrus.Errorf("Failed to run %s %v: %v\n with input:\n%s", s.command, err, args, input)
 	}
