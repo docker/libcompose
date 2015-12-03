@@ -224,13 +224,4 @@ func TestInterpolate(t *testing.T) {
   # dictionary item value
   labels:
     mylabel: "${ LABEL_VALUE}"`)
-
-	testInterpolatedConfig(t,
-		`web:
-  environment:
-    quoted_int_string: "1024"`,
-		`web:
-  environment:
-    quoted_int_string: "1024"`,
-		nil)
 }
