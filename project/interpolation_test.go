@@ -35,6 +35,7 @@ func TestParseLine(t *testing.T) {
 		"split_VaLue": "WORKED",
 		"9aNumber":    "WORKED",
 		"a9Number":    "WORKED",
+		"AnInt":       "99",
 	}
 
 	testInterpolatedLine(t, "WORKED", "$lower", variables)
@@ -223,4 +224,13 @@ func TestInterpolate(t *testing.T) {
   # dictionary item value
   labels:
     mylabel: "${ LABEL_VALUE}"`)
+
+	testInterpolatedConfig(t,
+		`web:
+  environment:
+    quoted_int_string: "1024"`,
+		`web:
+  environment:
+    quoted_int_string: "1024"`,
+		nil)
 }
