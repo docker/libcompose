@@ -239,10 +239,10 @@ func CommonFlags() []cli.Flag {
 		cli.BoolFlag{
 			Name: "verbose,debug",
 		},
-		cli.StringFlag{
+		cli.StringSliceFlag{
 			Name:   "file,f",
-			Usage:  "Specify an alternate compose file (default: docker-compose.yml)",
-			Value:  "docker-compose.yml",
+			Usage:  "Specify one or more alternate compose files (default: docker-compose.yml)",
+			Value:  &cli.StringSlice{},
 			EnvVar: "COMPOSE_FILE",
 		},
 		cli.StringFlag{
@@ -254,7 +254,12 @@ func CommonFlags() []cli.Flag {
 
 // Populate updates the specified project context based on command line arguments and subcommands.
 func Populate(context *project.Context, c *cli.Context) {
-	context.ComposeFile = c.GlobalString("file")
+	if len(c.GlobalStringSlice("file")) == 0 {
+		context.ComposeFiles = []string{"docker-compose.yml"}
+	} else {
+		context.ComposeFiles = c.GlobalStringSlice("file")
+	}
+
 	context.ProjectName = c.GlobalString("project-name")
 
 	if c.Command.Name == "logs" {

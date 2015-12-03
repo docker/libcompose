@@ -25,8 +25,8 @@ type Context struct {
 	NoRecreate          bool
 	NoCache             bool
 	Signal              int
-	ComposeFile         string
-	ComposeBytes        []byte
+	ComposeFiles        []string
+	ComposeBytes        [][]byte
 	ProjectName         string
 	isOpen              bool
 	ServiceFactory      ServiceFactory
@@ -37,32 +37,35 @@ type Context struct {
 	Project             *Project
 }
 
-func (c *Context) readComposeFile() error {
+func (c *Context) readComposeFiles() error {
 	if c.ComposeBytes != nil {
 		return nil
 	}
 
-	logrus.Debugf("Opening compose file: %s", c.ComposeFile)
+	logrus.Debugf("Opening compose files: %s", strings.Join(c.ComposeFiles, ","))
 
-	if c.ComposeFile == "-" {
+	if len(c.ComposeFiles) == 1 && c.ComposeFiles[0] == "-" {
 		composeBytes, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
 			logrus.Errorf("Failed to read compose file from stdin: %v", err)
 			return err
 		}
-		c.ComposeBytes = composeBytes
-	} else if c.ComposeFile != "" {
-		if composeBytes, err := ioutil.ReadFile(c.ComposeFile); os.IsNotExist(err) {
-			if c.IgnoreMissingConfig {
-				return nil
+		c.ComposeBytes = [][]byte{composeBytes}
+	} else {
+		for _, composeFile := range c.ComposeFiles {
+			if composeFile != "" {
+				if composeBytes, err := ioutil.ReadFile(composeFile); os.IsNotExist(err) {
+					if !c.IgnoreMissingConfig {
+						logrus.Errorf("Failed to find %s", composeFile)
+						return err
+					}
+				} else if err != nil {
+					logrus.Errorf("Failed to open %s", composeFile)
+					return err
+				} else {
+					c.ComposeBytes = append(c.ComposeBytes, composeBytes)
+				}
 			}
-			logrus.Errorf("Failed to find %s", c.ComposeFile)
-			return err
-		} else if err != nil {
-			logrus.Errorf("Failed to open %s", c.ComposeFile)
-			return err
-		} else {
-			c.ComposeBytes = composeBytes
 		}
 	}
 
@@ -97,9 +100,14 @@ func (c *Context) lookupProjectName() (string, error) {
 		return envProject, nil
 	}
 
-	f, err := filepath.Abs(c.ComposeFile)
+	file := ""
+	if len(c.ComposeFiles) > 0 {
+		file = c.ComposeFiles[0]
+	}
+
+	f, err := filepath.Abs(file)
 	if err != nil {
-		logrus.Errorf("Failed to get absolute directory for: %s", c.ComposeFile)
+		logrus.Errorf("Failed to get absolute directory for: %s", file)
 		return "", err
 	}
 
@@ -124,7 +132,7 @@ func (c *Context) open() error {
 		return nil
 	}
 
-	if err := c.readComposeFile(); err != nil {
+	if err := c.readComposeFiles(); err != nil {
 		return err
 	}
 

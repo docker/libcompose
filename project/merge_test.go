@@ -18,7 +18,7 @@ func TestExtendsInheritImage(t *testing.T) {
 		ResourceLookup: &NullLookup{},
 	})
 
-	config, err := mergeProject(p, []byte(`
+	config, err := mergeProject(p, "", []byte(`
 parent:
   image: foo
 child:
@@ -51,7 +51,7 @@ func TestExtendsInheritBuild(t *testing.T) {
 		ResourceLookup: &NullLookup{},
 	})
 
-	config, err := mergeProject(p, []byte(`
+	config, err := mergeProject(p, "", []byte(`
 parent:
   build: .
 child:
@@ -84,7 +84,7 @@ func TestExtendBuildOverImage(t *testing.T) {
 		ResourceLookup: &NullLookup{},
 	})
 
-	config, err := mergeProject(p, []byte(`
+	config, err := mergeProject(p, "", []byte(`
 parent:
   image: foo
 child:
@@ -118,7 +118,7 @@ func TestExtendImageOverBuild(t *testing.T) {
 		ResourceLookup: &NullLookup{},
 	})
 
-	config, err := mergeProject(p, []byte(`
+	config, err := mergeProject(p, "", []byte(`
 parent:
   build: .
 child:
@@ -156,7 +156,7 @@ func TestRestartNo(t *testing.T) {
 		ResourceLookup: &NullLookup{},
 	})
 
-	config, err := mergeProject(p, []byte(`
+	config, err := mergeProject(p, "", []byte(`
 test:
   restart: no
   image: foo
@@ -178,7 +178,7 @@ func TestRestartAlways(t *testing.T) {
 		ResourceLookup: &NullLookup{},
 	})
 
-	config, err := mergeProject(p, []byte(`
+	config, err := mergeProject(p, "", []byte(`
 test:
   restart: always
   image: foo
