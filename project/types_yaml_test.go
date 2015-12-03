@@ -98,6 +98,15 @@ func TestMarshalServiceConfig(t *testing.T) {
 	assert.Equal(t, configPtr, configPtr2)
 }
 
+func TestStringorsliceStringersTypes(t *testing.T) {
+	str := `{foo: [false, 1024]}`
+
+	s := StructStringorslice{}
+	yaml.Unmarshal([]byte(str), &s)
+
+	assert.Equal(t, []string{"false", "1024"}, s.Foo.parts)
+}
+
 func TestStringorsliceYaml(t *testing.T) {
 	str := `{foo: [bar, baz]}`
 
@@ -175,6 +184,17 @@ func contains(list []string, item string) bool {
 		}
 	}
 	return false
+}
+
+func TestMaporsliceStringersTypes(t *testing.T) {
+	str := `{foo: {bar: false, far: 1024}}`
+
+	s := StructMaporslice{}
+	yaml.Unmarshal([]byte(str), &s)
+
+	assert.Equal(t, 2, len(s.Foo.parts))
+	assert.True(t, contains(s.Foo.parts, "bar=false"))
+	assert.True(t, contains(s.Foo.parts, "far=1024"))
 }
 
 func TestMaporsliceYaml(t *testing.T) {
