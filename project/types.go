@@ -219,7 +219,7 @@ type ConfigLookup interface {
 type Project struct {
 	Name           string
 	Configs        map[string]*ServiceConfig
-	File           string
+	Files          []string
 	ReloadCallback func() error
 	context        *Context
 	reload         []string

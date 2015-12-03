@@ -1,0 +1,5 @@
+multiple:
+  image: busybox
+  command: echo two
+  environment:
+    - KEY2=VAL2

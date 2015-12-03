@@ -63,14 +63,24 @@ func (p *Project) Parse() error {
 
 	p.Name = p.context.ProjectName
 
-	if p.context.ComposeFile == "-" {
-		p.File = "."
+	if len(p.context.ComposeFiles) == 1 && p.context.ComposeFiles[0] == "-" {
+		p.Files = []string{"."}
 	} else {
-		p.File = p.context.ComposeFile
+		p.Files = p.context.ComposeFiles
 	}
 
 	if p.context.ComposeBytes != nil {
-		return p.Load(p.context.ComposeBytes)
+		for i, composeBytes := range p.context.ComposeBytes {
+			if i < len(p.context.ComposeFiles) {
+				if err := p.load(p.Files[i], composeBytes); err != nil {
+					return err
+				}
+			} else {
+				if err := p.Load(composeBytes); err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	return nil
@@ -123,8 +133,12 @@ func (p *Project) AddConfig(name string, config *ServiceConfig) error {
 // Load loads the specified byte array (the composefile content) and adds the
 // service configuration to the project.
 func (p *Project) Load(bytes []byte) error {
+	return p.load("", bytes)
+}
+
+func (p *Project) load(file string, bytes []byte) error {
 	configs := make(map[string]*ServiceConfig)
-	configs, err := mergeProject(p, bytes)
+	configs, err := mergeProject(p, file, bytes)
 	if err != nil {
 		log.Errorf("Could not parse config for project %s : %v", p.Name, err)
 		return err

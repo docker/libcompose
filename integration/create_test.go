@@ -3,6 +3,7 @@ package integration
 import (
 	"fmt"
 	"os"
+	"os/exec"
 
 	. "gopkg.in/check.v1"
 )
@@ -155,4 +156,42 @@ func (s *RunSuite) TestFieldTypeConversions(c *C) {
 	c.Assert(referenceContainer.Image, Equals, testContainer.Image)
 
 	os.Unsetenv("LIMIT")
+}
+
+func (s *RunSuite) TestMultipleComposeFiles(c *C) {
+	p := s.RandomProject()
+	cmd := exec.Command(s.command, "-f", "./assets/multiple/one.yml", "-f", "./assets/multiple/two.yml", "-p", p, "create")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	err := cmd.Run()
+
+	c.Assert(err, IsNil)
+
+	name := fmt.Sprintf("%s_%s_1", p, "multiple")
+	container := s.GetContainerByName(c, name)
+
+	c.Assert(container, NotNil)
+
+	c.Assert(container.Config.Image, Equals, "busybox")
+	c.Assert(container.Config.Cmd, DeepEquals, []string{"echo", "two"})
+	c.Assert(container.Config.Env, DeepEquals, []string{"KEY1=VAL1", "KEY2=VAL2"})
+
+	p = s.RandomProject()
+	cmd = exec.Command(s.command, "-f", "./assets/multiple/two.yml", "-f", "./assets/multiple/one.yml", "-p", p, "create")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	err = cmd.Run()
+
+	c.Assert(err, IsNil)
+
+	name = fmt.Sprintf("%s_%s_1", p, "multiple")
+	container = s.GetContainerByName(c, name)
+
+	c.Assert(container, NotNil)
+
+	c.Assert(container.Config.Image, Equals, "tianon/true")
+	c.Assert(container.Config.Cmd, DeepEquals, []string{"echo", "two"})
+	c.Assert(container.Config.Env, DeepEquals, []string{"KEY2=VAL2", "KEY1=VAL1"})
 }
