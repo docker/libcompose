@@ -7,10 +7,10 @@ import (
 	"github.com/flynn/go-shlex"
 )
 
-// stringer converts ints, strings and bools to a string
+// stringer converts ints and strings to a string type
 func stringer(v interface{}) (string, error) {
 	switch v.(type) {
-	case string, int64, int32, int, bool:
+	case string, int64, int32, int:
 		return fmt.Sprint(v), nil
 	default:
 		return "", fmt.Errorf("Value of type %T can't be converted to a string", v)

@@ -89,12 +89,12 @@ func TestMarshalServiceConfig(t *testing.T) {
 }
 
 func TestStringorsliceStringersTypes(t *testing.T) {
-	str := `{foo: [false, 1024]}`
+	str := `{foo: ["bar", 1024]}`
 
 	s := StructStringorslice{}
-	yaml.Unmarshal([]byte(str), &s)
 
-	assert.Equal(t, []string{"false", "1024"}, s.Foo.parts)
+	yaml.Unmarshal([]byte(str), &s)
+	assert.Equal(t, []string{"bar", "1024"}, s.Foo.parts)
 }
 
 func TestStringorsliceYaml(t *testing.T) {
@@ -182,14 +182,15 @@ func contains(list []string, item string) bool {
 }
 
 func TestMaporsliceStringersTypes(t *testing.T) {
-	str := `{foo: {bar: false, far: 1024}}`
+	s1 := StructMaporslice{}
+	assert.Error(t, yaml.Unmarshal([]byte(`{foo: {bar: false}}`), &s1), "An error was expected. Unquoted bools aren't allowed")
 
-	s := StructMaporslice{}
-	yaml.Unmarshal([]byte(str), &s)
+	s2 := StructMaporslice{}
+	assert.NoError(t, yaml.Unmarshal([]byte(`{foo: {bar: "1234", far: 1024}}`), &s2))
 
-	assert.Equal(t, 2, len(s.Foo.parts))
-	assert.True(t, contains(s.Foo.parts, "bar=false"))
-	assert.True(t, contains(s.Foo.parts, "far=1024"))
+	assert.Equal(t, 2, len(s2.Foo.parts))
+	assert.True(t, contains(s2.Foo.parts, "bar=1234"))
+	assert.True(t, contains(s2.Foo.parts, "far=1024"))
 }
 
 func TestMaporsliceYaml(t *testing.T) {
