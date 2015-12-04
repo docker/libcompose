@@ -20,11 +20,11 @@ func stringer(v interface{}) (string, error) {
 func sliceStringer(value []interface{}) ([]string, error) {
 	slice := make([]string, len(value))
 	for k, v := range value {
-		if vstr, err := stringer(v); err != nil {
+		vstr, err := stringer(v)
+		if err != nil {
 			return nil, err
-		} else {
-			slice[k] = vstr
 		}
+		slice[k] = vstr
 	}
 	return slice, nil
 }
@@ -36,11 +36,11 @@ func mapStringer(value map[interface{}]interface{}) (map[string]string, error) {
 		if !ok {
 			return nil, fmt.Errorf("Map must have string keys only, had %T", k)
 		}
-		if vstr, err := stringer(v); err != nil {
+		vstr, err := stringer(v)
+		if err != nil {
 			return nil, err
-		} else {
-			parts[kstr] = vstr
 		}
+		parts[kstr] = vstr
 	}
 	return parts, nil
 }
