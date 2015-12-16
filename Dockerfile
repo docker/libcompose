@@ -13,6 +13,11 @@ RUN go get golang.org/x/tools/cmd/cover
 RUN go get github.com/golang/lint/golint
 RUN go get golang.org/x/tools/cmd/vet
 
+# virtualenv is necessary to run acceptance tests
+RUN apt-get install -y python-setuptools
+RUN easy_install pip
+RUN pip install virtualenv
+
 # Compile Go for cross compilation
 ENV DOCKER_CROSSPLATFORMS \
 	linux/386 linux/arm \

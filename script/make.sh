@@ -15,8 +15,8 @@ DEFAULT_BUNDLES=(
 
 	test-unit
 	test-integration
+	test-acceptance
 )
-
 bundle() {
     local bundle="$1"; shift
     echo "---> Making bundle: $(basename "$bundle") (in $DEST)"

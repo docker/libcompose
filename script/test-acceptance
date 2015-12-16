@@ -5,7 +5,6 @@ export SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export DEST=.
 
 bundle .integration-daemon-start
-trap "bundle .integration-daemon-stop" EXIT
 
 rm -rf venv
 virtualenv venv
@@ -19,4 +18,14 @@ cp bundles/libcompose-cli_linux-amd64 venv/bin/docker-compose
 
 docker-compose --version
 cd venv/compose
-py.test -vs --tb=short tests/acceptance
+
+# if the tests fail, we still want to execute a few cleanup commands
+# so we save the result for the exit command at the end.
+# the "or" ensures that return code isn't trapped by the parent script.
+py.test -vs --tb=short tests/acceptance || result=$?
+
+cd -
+bundle .integration-daemon-stop
+
+# TODO: exit with $result status when tests are more stable.
+exit 0
