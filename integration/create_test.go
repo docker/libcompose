@@ -24,6 +24,20 @@ func (s *RunSuite) TestFields(c *C) {
 	c.Assert(cn.HostConfig.Memory, Equals, int64(4194304))
 }
 
+func (s *RunSuite) TestEmptyEntrypoint(c *C) {
+	p := s.CreateProjectFromText(c, `
+        nil-cmd:
+          image: busybox
+          entrypoint: []
+        `)
+
+	name := fmt.Sprintf("%s_%s_1", p, "nil-cmd")
+	cn := s.GetContainerByName(c, name)
+	c.Assert(cn, NotNil)
+
+	c.Assert(cn.Config.Entrypoint, IsNil)
+}
+
 func (s *RunSuite) TestHelloWorld(c *C) {
 	p := s.CreateProjectFromText(c, `
         hello:
