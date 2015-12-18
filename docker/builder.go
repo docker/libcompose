@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -38,19 +37,6 @@ func NewDaemonBuilder(context *Context) *DaemonBuilder {
 	}
 }
 
-type builderWriter struct {
-	out io.Writer
-}
-
-func (w *builderWriter) Write(bytes []byte) (int, error) {
-	data := map[string]interface{}{}
-	err := json.Unmarshal(bytes, &data)
-	if stream, ok := data["stream"]; err == nil && ok {
-		fmt.Fprint(w.out, stream)
-	}
-	return len(bytes), nil
-}
-
 // Build implements Builder. It consumes the docker build API endpoint and sends
 // a tar of the specified service build context.
 func (d *DaemonBuilder) Build(p *project.Project, service project.Service) (string, error) {
@@ -69,14 +55,16 @@ func (d *DaemonBuilder) Build(p *project.Project, service project.Service) (stri
 	client := d.context.ClientFactory.Create(service)
 
 	logrus.Infof("Building %s...", tag)
+
 	err = client.BuildImage(dockerclient.BuildImageOptions{
 		InputStream:    context,
-		OutputStream:   &builderWriter{out: os.Stderr},
-		RawJSONStream:  true,
+		OutputStream:   os.Stdout,
+		RawJSONStream:  false,
 		Name:           tag,
 		RmTmpContainer: true,
 		Dockerfile:     service.Config().Dockerfile,
 	})
+
 	if err != nil {
 		return "", err
 	}
