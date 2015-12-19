@@ -23,6 +23,7 @@ type Context struct {
 	Volume              bool
 	ForceRecreate       bool
 	NoRecreate          bool
+	NoCache             bool
 	Signal              int
 	ComposeFile         string
 	ComposeBytes        []byte
