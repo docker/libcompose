@@ -10,8 +10,8 @@ import (
 func main() {
 	project, err := docker.NewProject(&docker.Context{
 		Context: project.Context{
-			ComposeFile: "docker-compose.yml",
-			ProjectName: "yeah-compose",
+			ComposeFiles: []string{"docker-compose.yml"},
+			ProjectName:  "yeah-compose",
 		},
 	})
 
