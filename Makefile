@@ -26,13 +26,16 @@ binary: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary
 
 test: build
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-unit test-integration
+	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-unit test-integration test-acceptance
 
 test-unit: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh test-unit
 
 test-integration: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-integration
+
+test-acceptance: build
+	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-acceptance
 
 validate-dco: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-dco

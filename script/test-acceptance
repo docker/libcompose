@@ -1,0 +1,31 @@
+#!/bin/bash
+set -e
+
+export SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export DEST=.
+
+bundle .integration-daemon-start
+
+rm -rf venv
+virtualenv venv
+git clone https://github.com/docker/compose.git venv/compose
+venv/bin/pip install \
+    -r venv/compose/requirements.txt \
+    -r venv/compose/requirements-dev.txt
+
+cp bundles/libcompose-cli_linux-amd64 venv/bin/docker-compose
+. venv/bin/activate
+
+docker-compose --version
+cd venv/compose
+
+# if the tests fail, we still want to execute a few cleanup commands
+# so we save the result for the exit command at the end.
+# the "or" ensures that return code isn't trapped by the parent script.
+py.test -vs --tb=short tests/acceptance || result=$?
+
+cd -
+bundle .integration-daemon-stop
+
+# TODO: exit with $result status when tests are more stable.
+exit 0
