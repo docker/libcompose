@@ -6,7 +6,7 @@ rm -rf vendor/
 source 'script/.vendor-helpers.sh'
 
 clone git github.com/Sirupsen/logrus v0.8.2
-clone git github.com/codegangsta/cli 6086d7927ec35315964d9fea46df6c04e6d697c1
+clone git github.com/codegangsta/cli 70e3fa51ebed95df8c0fbe1519c1c1f9bc16bb13
 clone git github.com/docker/distribution c6c9194e9c6097f84b0ff468a741086ff7704aa3
 clone git github.com/docker/docker 58b270c338e831ac6668a29788c72d202f9fc251
 clone git github.com/docker/libtrust 9cbd2a1374f46905c68a4eb3694a130610adc62a
