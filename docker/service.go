@@ -321,6 +321,22 @@ func (s *Service) Pull() error {
 	return pullImage(s.context.ClientFactory.Create(s), s, s.Config().Image)
 }
 
+// Pause implements Service.Pause. It puts into pause the container(s) related
+// to the service.
+func (s *Service) Pause() error {
+	return s.eachContainer(func(c *Container) error {
+		return c.Pause()
+	})
+}
+
+// Unpause implements Service.Pause. It brings back from pause the container(s)
+// related to the service.
+func (s *Service) Unpause() error {
+	return s.eachContainer(func(c *Container) error {
+		return c.Unpause()
+	})
+}
+
 // Containers implements Service.Containers. It returns the list of containers
 // that are related to the service.
 func (s *Service) Containers() ([]project.Container, error) {

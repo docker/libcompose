@@ -32,6 +32,10 @@ const (
 	EventServiceStart        = EventType(iota)
 	EventServiceBuildStart   = EventType(iota)
 	EventServiceBuild        = EventType(iota)
+	EventServicePauseStart   = EventType(iota)
+	EventServicePause        = EventType(iota)
+	EventServiceUnpauseStart = EventType(iota)
+	EventServiceUnpause      = EventType(iota)
 
 	EventProjectDownStart     = EventType(iota)
 	EventProjectDownDone      = EventType(iota)
@@ -51,6 +55,10 @@ const (
 	EventProjectStartDone     = EventType(iota)
 	EventProjectBuildStart    = EventType(iota)
 	EventProjectBuildDone     = EventType(iota)
+	EventProjectPauseStart    = EventType(iota)
+	EventProjectPauseDone     = EventType(iota)
+	EventProjectUnpauseStart  = EventType(iota)
+	EventProjectUnpauseDone   = EventType(iota)
 )
 
 func (e EventType) String() string {
@@ -246,6 +254,8 @@ type Service interface {
 	DependentServices() []ServiceRelationship
 	Containers() ([]Container, error)
 	Scale(count int) error
+	Pause() error
+	Unpause() error
 }
 
 // Container defines what a libcompose container provides.

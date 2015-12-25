@@ -170,6 +170,26 @@ func (c *Container) Down() error {
 	})
 }
 
+// Pause pauses the container. If the containers are already paused, don't fail.
+func (c *Container) Pause() error {
+	return c.withContainer(func(container *dockerclient.APIContainers) error {
+		if !strings.Contains(container.Status, "Paused") {
+			return c.client.PauseContainer(container.ID)
+		}
+		return nil
+	})
+}
+
+// Unpause unpauses the container. If the containers are not paused, don't fail.
+func (c *Container) Unpause() error {
+	return c.withContainer(func(container *dockerclient.APIContainers) error {
+		if strings.Contains(container.Status, "Paused") {
+			return c.client.UnpauseContainer(container.ID)
+		}
+		return nil
+	})
+}
+
 // Kill kill the container.
 func (c *Container) Kill() error {
 	return c.withContainer(func(container *dockerclient.APIContainers) error {

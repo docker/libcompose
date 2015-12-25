@@ -244,6 +244,24 @@ func (p *Project) Kill(services ...string) error {
 	}), nil)
 }
 
+// Pause pauses the specified services containers (like docker pause).
+func (p *Project) Pause(services ...string) error {
+	return p.perform(EventProjectPauseStart, EventProjectPauseDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(nil, EventServicePauseStart, EventServicePause, func(service Service) error {
+			return service.Pause()
+		})
+	}), nil)
+}
+
+// Unpause pauses the specified services containers (like docker pause).
+func (p *Project) Unpause(services ...string) error {
+	return p.perform(EventProjectUnpauseStart, EventProjectUnpauseDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(nil, EventServiceUnpauseStart, EventServiceUnpause, func(service Service) error {
+			return service.Unpause()
+		})
+	}), nil)
+}
+
 func (p *Project) perform(start, done EventType, services []string, action wrapperAction, cycleAction serviceAction) error {
 	p.Notify(start, "", nil)
 

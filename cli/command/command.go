@@ -213,6 +213,26 @@ func KillCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// PauseCommand defines the libcompose pause subcommand.
+func PauseCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:  "pause",
+		Usage: "Pause services.",
+		// ArgsUsage: "[SERVICE...]",
+		Action: app.WithProject(factory, app.ProjectPause),
+	}
+}
+
+// UnpauseCommand defines the libcompose unpause subcommand.
+func UnpauseCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:  "unpause",
+		Usage: "Unpause services.",
+		// ArgsUsage: "[SERVICE...]",
+		Action: app.WithProject(factory, app.ProjectUnpause),
+	}
+}
+
 // CommonFlags defines the flags that are in common for all subcommands.
 func CommonFlags() []cli.Flag {
 	return []cli.Flag{

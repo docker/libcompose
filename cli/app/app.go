@@ -180,6 +180,22 @@ func ProjectKill(p *project.Project, c *cli.Context) {
 	}
 }
 
+// ProjectPause pauses service containers.
+func ProjectPause(p *project.Project, c *cli.Context) {
+	err := p.Pause(c.Args()...)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+}
+
+// ProjectUnpause unpauses service containers.
+func ProjectUnpause(p *project.Project, c *cli.Context) {
+	err := p.Unpause(c.Args()...)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+}
+
 // ProjectScale scales services.
 func ProjectScale(p *project.Project, c *cli.Context) {
 	// This code is a bit verbose but I wanted to parse everything up front

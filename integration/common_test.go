@@ -81,6 +81,9 @@ func (s *RunSuite) TearDownTest(c *C) {
 	containers, err := client.ListContainers(dockerclient.ListContainersOptions{All: true})
 	c.Assert(err, IsNil)
 	for _, container := range containers {
+		// Unpause container (if paused) and ignore error (if wasn't paused)
+		client.UnpauseContainer(container.ID)
+		// And remove force \o/
 		err := client.RemoveContainer(dockerclient.RemoveContainerOptions{ID: container.ID, Force: true, RemoveVolumes: true})
 		c.Assert(err, IsNil)
 	}
