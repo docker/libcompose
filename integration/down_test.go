@@ -15,7 +15,7 @@ func (s *RunSuite) TestDown(c *C) {
 	c.Assert(cn, NotNil)
 	c.Assert(cn.State.Running, Equals, true)
 
-	s.FromText(c, p, "down", SimpleTemplate)
+	s.FromText(c, p, "stop", SimpleTemplate)
 
 	cn = s.GetContainerByName(c, name)
 	c.Assert(cn, NotNil)
