@@ -168,10 +168,17 @@ func (s *RunSuite) TestMultipleComposeFiles(c *C) {
 
 	c.Assert(err, IsNil)
 
+	containerNames := []string{"multiple", "simple", "another", "yetanother"}
+
+	for _, containerName := range containerNames {
+		name := fmt.Sprintf("%s_%s_1", p, containerName)
+		container := s.GetContainerByName(c, name)
+
+		c.Assert(container, NotNil)
+	}
+
 	name := fmt.Sprintf("%s_%s_1", p, "multiple")
 	container := s.GetContainerByName(c, name)
-
-	c.Assert(container, NotNil)
 
 	c.Assert(container.Config.Image, Equals, "busybox")
 	c.Assert(container.Config.Cmd, DeepEquals, []string{"echo", "two"})
@@ -186,10 +193,15 @@ func (s *RunSuite) TestMultipleComposeFiles(c *C) {
 
 	c.Assert(err, IsNil)
 
+	for _, containerName := range containerNames {
+		name := fmt.Sprintf("%s_%s_1", p, containerName)
+		container := s.GetContainerByName(c, name)
+
+		c.Assert(container, NotNil)
+	}
+
 	name = fmt.Sprintf("%s_%s_1", p, "multiple")
 	container = s.GetContainerByName(c, name)
-
-	c.Assert(container, NotNil)
 
 	c.Assert(container.Config.Image, Equals, "tianon/true")
 	c.Assert(container.Config.Cmd, DeepEquals, []string{"echo", "two"})
