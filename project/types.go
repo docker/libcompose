@@ -171,6 +171,8 @@ type ServiceConfig struct {
 	Build         string            `yaml:"build,omitempty"`
 	CapAdd        []string          `yaml:"cap_add,omitempty"`
 	CapDrop       []string          `yaml:"cap_drop,omitempty"`
+	CgroupParent  string            `yaml:"cgroup_parent,omitempty"`
+	CPUQuota      int64             `yaml:"cpu_quota,omitempty"`
 	CPUSet        string            `yaml:"cpuset,omitempty"`
 	CPUShares     int64             `yaml:"cpu_shares,omitempty"`
 	Command       Command           `yaml:"command,flow,omitempty"`
@@ -188,6 +190,7 @@ type ServiceConfig struct {
 	Labels        SliceorMap        `yaml:"labels,omitempty"`
 	Links         MaporColonSlice   `yaml:"links,omitempty"`
 	LogDriver     string            `yaml:"log_driver,omitempty"`
+	MacAddress    string            `yaml:"mac_address,omitempty"`
 	MemLimit      int64             `yaml:"mem_limit,omitempty"`
 	MemSwapLimit  int64             `yaml:"memswap_limit,omitempty"`
 	Name          string            `yaml:"name,omitempty"`
@@ -211,6 +214,7 @@ type ServiceConfig struct {
 	ExternalLinks []string          `yaml:"external_links,omitempty"`
 	LogOpt        map[string]string `yaml:"log_opt,omitempty"`
 	ExtraHosts    []string          `yaml:"extra_hosts,omitempty"`
+	Ulimits       Ulimits           `yaml:"ulimits,omitemty"`
 }
 
 // EnvironmentLookup defines methods to provides environment variable loading.
