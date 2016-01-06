@@ -25,6 +25,9 @@ all: build
 binary: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary
 
+cross-binary: build
+	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh cross-binary
+
 test: build
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-unit test-integration test-acceptance
 

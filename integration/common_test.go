@@ -87,7 +87,7 @@ func (s *RunSuite) TearDownTest(c *C) {
 }
 
 var _ = Suite(&RunSuite{
-	command: "../bundles/libcompose-cli_linux-amd64",
+	command: "../bundles/libcompose-cli",
 })
 
 func (s *RunSuite) CreateProjectFromText(c *C, input string) string {
