@@ -35,6 +35,8 @@ func main() {
 		command.KillCommand(factory),
 		command.PortCommand(factory),
 		command.PsCommand(factory),
+		command.PauseCommand(factory),
+		command.UnpauseCommand(factory),
 	}
 
 	app.Run(os.Args)

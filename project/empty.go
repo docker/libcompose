@@ -68,3 +68,13 @@ func (e *EmptyService) Scale(count int) error {
 func (e *EmptyService) Info(qFlag bool) (InfoSet, error) {
 	return InfoSet{}, nil
 }
+
+// Pause implements Service.Pause but does nothing.
+func (e *EmptyService) Pause() error {
+	return nil
+}
+
+// Unpause implements Service.Pause but does nothing.
+func (e *EmptyService) Unpause() error {
+	return nil
+}
