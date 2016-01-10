@@ -148,7 +148,8 @@ func parseConfig(option, service string, data *interface{}, mapping func(string)
 	return nil
 }
 
-func interpolate(environmentLookup EnvironmentLookup, config *rawServiceMap) error {
+// Interpolate replaces variables in the raw map representation of the project file
+func Interpolate(environmentLookup EnvironmentLookup, config *RawServiceMap) error {
 	for k, v := range *config {
 		for k2, v2 := range v {
 			err := parseConfig(k2, k, &v2, func(s string) string {

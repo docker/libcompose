@@ -93,13 +93,13 @@ func testInterpolatedConfig(t *testing.T, expectedConfig, interpolatedConfig str
 	expectedConfigBytes := []byte(expectedConfig)
 	interpolatedConfigBytes := []byte(interpolatedConfig)
 
-	expectedData := make(rawServiceMap)
-	interpolatedData := make(rawServiceMap)
+	expectedData := make(RawServiceMap)
+	interpolatedData := make(RawServiceMap)
 
 	yaml.Unmarshal(expectedConfigBytes, &expectedData)
 	yaml.Unmarshal(interpolatedConfigBytes, &interpolatedData)
 
-	_ = interpolate(MockEnvironmentLookup{envVariables}, &interpolatedData)
+	_ = Interpolate(MockEnvironmentLookup{envVariables}, &interpolatedData)
 
 	for k := range envVariables {
 		os.Unsetenv(k)
@@ -110,10 +110,10 @@ func testInterpolatedConfig(t *testing.T, expectedConfig, interpolatedConfig str
 
 func testInvalidInterpolatedConfig(t *testing.T, interpolatedConfig string) {
 	interpolatedConfigBytes := []byte(interpolatedConfig)
-	interpolatedData := make(rawServiceMap)
+	interpolatedData := make(RawServiceMap)
 	yaml.Unmarshal(interpolatedConfigBytes, &interpolatedData)
 
-	err := interpolate(new(MockEnvironmentLookup), &interpolatedData)
+	err := Interpolate(new(MockEnvironmentLookup), &interpolatedData)
 
 	assert.NotNil(t, err)
 }
