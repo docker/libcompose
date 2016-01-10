@@ -9,8 +9,8 @@ import (
 
 // NewProject creates a Project with the specified context.
 func NewProject(context *Context) (*project.Project, error) {
-	if context.ConfigLookup == nil {
-		context.ConfigLookup = &lookup.FileConfigLookup{}
+	if context.ResourceLookup == nil {
+		context.ResourceLookup = &lookup.FileConfigLookup{}
 	}
 
 	if context.EnvironmentLookup == nil {

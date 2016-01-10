@@ -31,8 +31,8 @@ func isVolume(s string) bool {
 }
 
 // ConvertToAPI converts a service configuration to a docker API container configuration.
-func ConvertToAPI(c *project.ServiceConfig, name string) (*dockerclient.CreateContainerOptions, error) {
-	config, hostConfig, err := Convert(c)
+func ConvertToAPI(s *Service, name string) (*dockerclient.CreateContainerOptions, error) {
+	config, hostConfig, err := Convert(s.serviceConfig, s.context)
 	if err != nil {
 		return nil, err
 	}
@@ -45,12 +45,15 @@ func ConvertToAPI(c *project.ServiceConfig, name string) (*dockerclient.CreateCo
 	return &result, nil
 }
 
-func volumes(c *project.ServiceConfig) map[string]struct{} {
-	vs := Filter(c.Volumes, isVolume)
+func volumes(c *project.ServiceConfig, ctx *Context) map[string]struct{} {
+	volumes := make(map[string]struct{}, len(c.Volumes))
+	for k, v := range c.Volumes {
+		vol := ctx.ResourceLookup.ResolvePath(v, ctx.ComposeFile)
 
-	volumes := make(map[string]struct{}, len(vs))
-	for _, v := range vs {
-		volumes[v] = struct{}{}
+		c.Volumes[k] = vol
+		if isVolume(vol) {
+			volumes[vol] = struct{}{}
+		}
 	}
 	return volumes
 }
@@ -95,7 +98,7 @@ func ports(c *project.ServiceConfig) (map[dockerclient.Port]struct{}, map[docker
 }
 
 // Convert converts a service configuration to an docker API structures (Config and HostConfig)
-func Convert(c *project.ServiceConfig) (*dockerclient.Config, *dockerclient.HostConfig, error) {
+func Convert(c *project.ServiceConfig, ctx *Context) (*dockerclient.Config, *dockerclient.HostConfig, error) {
 	restartPolicy, err := restartPolicy(c)
 	if err != nil {
 		return nil, nil, err
@@ -125,7 +128,7 @@ func Convert(c *project.ServiceConfig) (*dockerclient.Config, *dockerclient.Host
 		OpenStdin:    c.StdinOpen,
 		WorkingDir:   c.WorkingDir,
 		VolumeDriver: c.VolumeDriver,
-		Volumes:      volumes(c),
+		Volumes:      volumes(c, ctx),
 	}
 	hostConfig := &dockerclient.HostConfig{
 		VolumesFrom: utils.CopySlice(c.VolumesFrom),

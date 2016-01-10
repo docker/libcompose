@@ -44,7 +44,7 @@ func mergeProject(p *Project, bytes []byte) (map[string]*ServiceConfig, error) {
 	}
 
 	for name, data := range datas {
-		data, err := parse(p.context.ConfigLookup, p.context.EnvironmentLookup, p.File, data, datas)
+		data, err := parse(p.context.ResourceLookup, p.context.EnvironmentLookup, p.File, data, datas)
 		if err != nil {
 			logrus.Errorf("Failed to parse service %s: %v", name, err)
 			return nil, err
@@ -70,7 +70,7 @@ func adjustValues(configs map[string]*ServiceConfig) {
 	}
 }
 
-func readEnvFile(configLookup ConfigLookup, inFile string, serviceData rawService) (rawService, error) {
+func readEnvFile(resourceLookup ResourceLookup, inFile string, serviceData rawService) (rawService, error) {
 	var config ServiceConfig
 
 	if err := utils.Convert(serviceData, &config); err != nil {
@@ -81,7 +81,7 @@ func readEnvFile(configLookup ConfigLookup, inFile string, serviceData rawServic
 		return serviceData, nil
 	}
 
-	if configLookup == nil {
+	if resourceLookup == nil {
 		return nil, fmt.Errorf("Can not use env_file in file %s no mechanism provided to load files", inFile)
 	}
 
@@ -89,7 +89,7 @@ func readEnvFile(configLookup ConfigLookup, inFile string, serviceData rawServic
 
 	for i := len(config.EnvFile.Slice()) - 1; i >= 0; i-- {
 		envFile := config.EnvFile.Slice()[i]
-		content, _, err := configLookup.Lookup(envFile, inFile)
+		content, _, err := resourceLookup.Lookup(envFile, inFile)
 		if err != nil {
 			return nil, err
 		}
@@ -154,8 +154,8 @@ func resolveBuild(inFile string, serviceData rawService) (rawService, error) {
 	return serviceData, nil
 }
 
-func parse(configLookup ConfigLookup, environmentLookup EnvironmentLookup, inFile string, serviceData rawService, datas rawServiceMap) (rawService, error) {
-	serviceData, err := readEnvFile(configLookup, inFile, serviceData)
+func parse(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup, inFile string, serviceData rawService, datas rawServiceMap) (rawService, error) {
+	serviceData, err := readEnvFile(resourceLookup, inFile, serviceData)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func parse(configLookup ConfigLookup, environmentLookup EnvironmentLookup, inFil
 		return serviceData, nil
 	}
 
-	if configLookup == nil {
+	if resourceLookup == nil {
 		return nil, fmt.Errorf("Can not use extends in file %s no mechanism provided to files", inFile)
 	}
 
@@ -190,12 +190,12 @@ func parse(configLookup ConfigLookup, environmentLookup EnvironmentLookup, inFil
 
 	if file == "" {
 		if serviceData, ok := datas[service]; ok {
-			baseService, err = parse(configLookup, environmentLookup, inFile, serviceData, datas)
+			baseService, err = parse(resourceLookup, environmentLookup, inFile, serviceData, datas)
 		} else {
 			return nil, fmt.Errorf("Failed to find service %s to extend", service)
 		}
 	} else {
-		bytes, resolved, err := configLookup.Lookup(file, inFile)
+		bytes, resolved, err := resourceLookup.Lookup(file, inFile)
 		if err != nil {
 			logrus.Errorf("Failed to lookup file %s: %v", file, err)
 			return nil, err
@@ -216,7 +216,7 @@ func parse(configLookup ConfigLookup, environmentLookup EnvironmentLookup, inFil
 			return nil, fmt.Errorf("Failed to find service %s in file %s", service, file)
 		}
 
-		baseService, err = parse(configLookup, environmentLookup, resolved, baseService, baseRawServices)
+		baseService, err = parse(resourceLookup, environmentLookup, resolved, baseService, baseRawServices)
 	}
 
 	if err != nil {
