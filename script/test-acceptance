@@ -13,7 +13,7 @@ venv/bin/pip install \
     -r venv/compose/requirements.txt \
     -r venv/compose/requirements-dev.txt
 
-cp bundles/libcompose-cli_linux-amd64 venv/bin/docker-compose
+cp bundles/libcompose-cli venv/bin/docker-compose
 . venv/bin/activate
 
 docker-compose --version
@@ -28,4 +28,4 @@ cd -
 bundle .integration-daemon-stop
 
 # TODO: exit with $result status when tests are more stable.
-exit 0
+return 0

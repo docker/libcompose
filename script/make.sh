@@ -16,6 +16,8 @@ DEFAULT_BUNDLES=(
 	test-unit
 	test-integration
 	test-acceptance
+
+	cross-binary
 )
 bundle() {
     local bundle="$1"; shift
