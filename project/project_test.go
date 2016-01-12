@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type TestServiceFactory struct {
@@ -87,7 +89,9 @@ func TestEventEquality(t *testing.T) {
 
 func TestParseWithBadContent(t *testing.T) {
 	p := NewProject(&Context{
-		ComposeBytes: []byte("garbage"),
+		ComposeBytes: [][]byte{
+			[]byte("garbage"),
+		},
 	})
 
 	err := p.Parse()
@@ -102,7 +106,9 @@ func TestParseWithBadContent(t *testing.T) {
 
 func TestParseWithGoodContent(t *testing.T) {
 	p := NewProject(&Context{
-		ComposeBytes: []byte("not-garbage:\n  image: foo"),
+		ComposeBytes: [][]byte{
+			[]byte("not-garbage:\n  image: foo"),
+		},
 	})
 
 	err := p.Parse()
@@ -145,4 +151,62 @@ func TestEnvironmentResolve(t *testing.T) {
 	if !reflect.DeepEqual(service.Config().Environment.Slice(), []string{"A=X", "A=X", "A=B"}) {
 		t.Fatal("Invalid environment", service.Config().Environment.Slice())
 	}
+}
+
+func TestParseWithMultipleComposeFiles(t *testing.T) {
+	configOne := []byte(`
+  multiple:
+    image: tianon/true
+    ports:
+      - 8000`)
+
+	configTwo := []byte(`
+  multiple:
+    image: busybox
+    name: multi
+    ports:
+      - 9000`)
+
+	configThree := []byte(`
+  multiple:
+    mem_limit: 40000000
+    ports:
+      - 10000`)
+
+	p := NewProject(&Context{
+		ComposeBytes: [][]byte{configOne, configTwo},
+	})
+
+	err := p.Parse()
+
+	assert.Nil(t, err)
+
+	assert.Equal(t, "busybox", p.Configs["multiple"].Image)
+	assert.Equal(t, "multi", p.Configs["multiple"].Name)
+	assert.Equal(t, []string{"8000", "9000"}, p.Configs["multiple"].Ports)
+
+	p = NewProject(&Context{
+		ComposeBytes: [][]byte{configTwo, configOne},
+	})
+
+	err = p.Parse()
+
+	assert.Nil(t, err)
+
+	assert.Equal(t, "tianon/true", p.Configs["multiple"].Image)
+	assert.Equal(t, "multi", p.Configs["multiple"].Name)
+	assert.Equal(t, []string{"9000", "8000"}, p.Configs["multiple"].Ports)
+
+	p = NewProject(&Context{
+		ComposeBytes: [][]byte{configOne, configTwo, configThree},
+	})
+
+	err = p.Parse()
+
+	assert.Nil(t, err)
+
+	assert.Equal(t, "busybox", p.Configs["multiple"].Image)
+	assert.Equal(t, "multi", p.Configs["multiple"].Name)
+	assert.Equal(t, []string{"8000", "9000", "10000"}, p.Configs["multiple"].Ports)
+	assert.Equal(t, int64(40000000), p.Configs["multiple"].MemLimit)
 }
