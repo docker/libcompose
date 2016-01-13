@@ -218,9 +218,10 @@ type EnvironmentLookup interface {
 	Lookup(key, serviceName string, config *ServiceConfig) []string
 }
 
-// ConfigLookup defines methods to provides file loading.
-type ConfigLookup interface {
+// ResourceLookup defines methods to provides file loading.
+type ResourceLookup interface {
 	Lookup(file, relativeTo string) ([]byte, string, error)
+	ResolvePath(path, inFile string) string
 }
 
 // Project holds libcompose project information.

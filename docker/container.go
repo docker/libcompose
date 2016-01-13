@@ -302,7 +302,7 @@ func volumeBinds(volumes map[string]struct{}, container *dockerclient.Container)
 }
 
 func (c *Container) createContainer(imageName, oldContainer string) (*dockerclient.APIContainers, error) {
-	createOpts, err := ConvertToAPI(c.service.serviceConfig, c.name)
+	createOpts, err := ConvertToAPI(c.service, c.name)
 	if err != nil {
 		return nil, err
 	}
