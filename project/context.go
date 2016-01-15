@@ -44,6 +44,7 @@ func (c *Context) readComposeFiles() error {
 
 	logrus.Debugf("Opening compose files: %s", strings.Join(c.ComposeFiles, ","))
 
+	// Handle STDIN (`-f -`)
 	if len(c.ComposeFiles) == 1 && c.ComposeFiles[0] == "-" {
 		composeBytes, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
@@ -51,22 +52,20 @@ func (c *Context) readComposeFiles() error {
 			return err
 		}
 		c.ComposeBytes = [][]byte{composeBytes}
-	} else {
-		for _, composeFile := range c.ComposeFiles {
-			if composeFile != "" {
-				if composeBytes, err := ioutil.ReadFile(composeFile); os.IsNotExist(err) {
-					if !c.IgnoreMissingConfig {
-						logrus.Errorf("Failed to find %s", composeFile)
-						return err
-					}
-				} else if err != nil {
-					logrus.Errorf("Failed to open %s", composeFile)
-					return err
-				} else {
-					c.ComposeBytes = append(c.ComposeBytes, composeBytes)
-				}
-			}
+		return nil
+	}
+
+	for _, composeFile := range c.ComposeFiles {
+		composeBytes, err := ioutil.ReadFile(composeFile)
+		if !os.IsNotExist(err) {
+			logrus.Errorf("Failed to open the compose file: %s", composeFile)
+			return err
 		}
+		if !c.IgnoreMissingConfig {
+			logrus.Errorf("Failed to find the compose file: %s", composeFile)
+			return err
+		}
+		c.ComposeBytes = append(c.ComposeBytes, composeBytes)
 	}
 
 	return nil
@@ -100,7 +99,7 @@ func (c *Context) lookupProjectName() (string, error) {
 		return envProject, nil
 	}
 
-	file := ""
+	file := "."
 	if len(c.ComposeFiles) > 0 {
 		file = c.ComposeFiles[0]
 	}

@@ -56,10 +56,10 @@ func mergeProject(p *Project, file string, bytes []byte) (map[string]*ServiceCon
 				return nil, err
 			}
 
-			datas[name] = mergeConfig(rawExistingService, data)
-		} else {
-			datas[name] = data
+			data = mergeConfig(rawExistingService, data)
 		}
+
+		datas[name] = data
 	}
 
 	if err := utils.Convert(datas, &configs); err != nil {

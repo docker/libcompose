@@ -256,14 +256,13 @@ func CommonFlags() []cli.Flag {
 
 // Populate updates the specified project context based on command line arguments and subcommands.
 func Populate(context *project.Context, c *cli.Context) {
-	if len(c.GlobalStringSlice("file")) == 0 {
+	context.ComposeFiles = c.GlobalStringSlice("file")
+
+	if len(context.ComposeFiles) == 0 {
+		context.ComposeFiles = []string{"docker-compose.yml"}
 		if _, err := os.Stat("docker-compose.override.yml"); err == nil {
-			context.ComposeFiles = []string{"docker-compose.yml", "docker-compose.override.yml"}
-		} else {
-			context.ComposeFiles = []string{"docker-compose.yml"}
+			context.ComposeFiles = append(context.ComposeFiles, "docker-compose.override.yml")
 		}
-	} else {
-		context.ComposeFiles = c.GlobalStringSlice("file")
 	}
 
 	context.ProjectName = c.GlobalString("project-name")
