@@ -57,11 +57,11 @@ func (c *Context) readComposeFiles() error {
 
 	for _, composeFile := range c.ComposeFiles {
 		composeBytes, err := ioutil.ReadFile(composeFile)
-		if !os.IsNotExist(err) {
+		if err != nil && !os.IsNotExist(err) {
 			logrus.Errorf("Failed to open the compose file: %s", composeFile)
 			return err
 		}
-		if !c.IgnoreMissingConfig {
+		if err != nil && !c.IgnoreMissingConfig {
 			logrus.Errorf("Failed to find the compose file: %s", composeFile)
 			return err
 		}
