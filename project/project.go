@@ -226,6 +226,39 @@ func (p *Project) Pull(services ...string) error {
 	}), nil)
 }
 
+// ListStoppedContainers lists the stopped containers for the specified services.
+func (p *Project) ListStoppedContainers(services ...string) ([]string, error) {
+	stoppedContainers := []string{}
+	err := p.forEach(services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(nil, EventServiceDeleteStart, EventServiceDelete, func(service Service) error {
+			containers, innerErr := service.Containers()
+			if innerErr != nil {
+				return innerErr
+			}
+
+			for _, container := range containers {
+				running, innerErr := container.IsRunning()
+				if innerErr != nil {
+					log.Error(innerErr)
+				}
+				if !running {
+					containerID, innerErr := container.ID()
+					if innerErr != nil {
+						log.Error(innerErr)
+					}
+					stoppedContainers = append(stoppedContainers, containerID)
+				}
+			}
+
+			return nil
+		})
+	}), nil)
+	if err != nil {
+		return nil, err
+	}
+	return stoppedContainers, nil
+}
+
 // Delete removes the specified services (like docker rm).
 func (p *Project) Delete(services ...string) error {
 	return p.perform(EventProjectDeleteStart, EventProjectDeleteDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {

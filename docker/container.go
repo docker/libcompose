@@ -210,14 +210,26 @@ func (c *Container) Delete() error {
 		return err
 	}
 
-	if info.State.Running {
-		err := c.client.StopContainer(container.ID, c.service.context.Timeout)
-		if err != nil {
-			return err
-		}
+	if !info.State.Running {
+		return c.client.RemoveContainer(dockerclient.RemoveContainerOptions{ID: container.ID, RemoveVolumes: c.service.context.Volume})
 	}
 
-	return c.client.RemoveContainer(dockerclient.RemoveContainerOptions{ID: container.ID, Force: true, RemoveVolumes: c.service.context.Volume})
+	return nil
+}
+
+// IsRunning returns the running state of the container.
+func (c *Container) IsRunning() (bool, error) {
+	container, err := c.findExisting()
+	if err != nil || container == nil {
+		return false, err
+	}
+
+	info, err := c.client.InspectContainer(container.ID)
+	if err != nil {
+		return false, err
+	}
+
+	return info.State.Running, nil
 }
 
 // Up creates and start the container based on the image name and send an event
