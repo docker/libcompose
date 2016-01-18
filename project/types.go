@@ -36,6 +36,8 @@ const (
 	EventServicePause        = EventType(iota)
 	EventServiceUnpauseStart = EventType(iota)
 	EventServiceUnpause      = EventType(iota)
+	EventServiceRunStart     = EventType(iota)
+	EventServiceRun          = EventType(iota)
 
 	EventProjectDownStart     = EventType(iota)
 	EventProjectDownDone      = EventType(iota)
@@ -109,6 +111,10 @@ func (e EventType) String() string {
 		m = "Building"
 	case EventServiceBuild:
 		m = "Built"
+	case EventServiceRunStart:
+		m = "Executing"
+	case EventServiceRun:
+		m = "Executed"
 
 	case EventProjectDownStart:
 		m = "Stopping project"
@@ -250,6 +256,7 @@ type Service interface {
 	Restart() error
 	Log() error
 	Pull() error
+	Run(commandParts []string) (int, error)
 	Kill() error
 	Config() *ServiceConfig
 	DependentServices() []ServiceRelationship

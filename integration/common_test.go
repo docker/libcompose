@@ -117,11 +117,7 @@ func (s *RunSuite) FromText(c *C, projectName, command string, argsAndInput ...s
 	}
 
 	err := cmd.Run()
-	if err != nil {
-		logrus.Errorf("Failed to run %s %v: %v\n with input:\n%s", s.command, err, args, input)
-	}
-
-	c.Assert(err, IsNil)
+	c.Assert(err, IsNil, Commentf("Failed to run %s %v: %v\n with input:\n%s", s.command, err, args, input))
 
 	return projectName
 }

@@ -2,6 +2,7 @@ package docker
 
 import (
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/docker/docker/pkg/parsers"
 	"github.com/docker/docker/registry"
 	"github.com/docker/docker/utils"
+	"github.com/docker/libcompose/docker/pty"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project"
 	util "github.com/docker/libcompose/utils"
@@ -124,7 +126,7 @@ func (c *Container) Recreate(imageName string) (*dockerclient.APIContainers, err
 		return nil, err
 	}
 
-	newContainer, err := c.createContainer(imageName, info.ID)
+	newContainer, err := c.createContainer(imageName, info.ID, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -145,13 +147,20 @@ func (c *Container) Recreate(imageName string) (*dockerclient.APIContainers, err
 // to notify the container has been created. If the container already exists, does
 // nothing.
 func (c *Container) Create(imageName string) (*dockerclient.APIContainers, error) {
+	return c.CreateWithOverride(imageName, nil)
+}
+
+// CreateWithOverride create container and override parts of the config to
+// allow special situations to override the config generated from the compose
+// file
+func (c *Container) CreateWithOverride(imageName string, configOverride *project.ServiceConfig) (*dockerclient.APIContainers, error) {
 	container, err := c.findExisting()
 	if err != nil {
 		return nil, err
 	}
 
 	if container == nil {
-		container, err = c.createContainer(imageName, "")
+		container, err = c.createContainer(imageName, "", configOverride)
 		if err != nil {
 			return nil, err
 		}
@@ -220,6 +229,35 @@ func (c *Container) Delete() error {
 	return c.client.RemoveContainer(dockerclient.RemoveContainerOptions{ID: container.ID, Force: true, RemoveVolumes: c.service.context.Volume})
 }
 
+// Run creates, start and attach to the container based on the image name,
+// the specified configuration.
+// It will always create a new container.
+func (c *Container) Run(imageName string, configOverride *project.ServiceConfig) (int, error) {
+	var err error
+
+	container, err := c.createContainer(imageName, "", configOverride)
+	if err != nil {
+		return -1, err
+	}
+
+	info, err := c.client.InspectContainer(container.ID)
+	if err != nil {
+		return -1, err
+	}
+
+	// Fire up the console
+	if err = pty.Start(c.client, info, info.HostConfig); err != nil && err != io.ErrClosedPipe {
+		return -1, err
+	}
+
+	info, err = c.client.InspectContainer(container.ID)
+	if err != nil {
+		return -1, err
+	}
+
+	return info.State.ExitCode, nil
+}
+
 // Up creates and start the container based on the image name and send an event
 // to notify the container has been created. If the container exists but is stopped
 // it tries to start it.
@@ -243,16 +281,27 @@ func (c *Container) Up(imageName string) error {
 	}
 
 	if !info.State.Running {
-		logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Starting container")
-		if err = c.client.StartContainer(container.ID, nil); err != nil {
-			logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
-			return err
-		}
-
-		c.service.context.Project.Notify(project.EventContainerStarted, c.service.Name(), map[string]string{
-			"name": c.Name(),
-		})
+		c.Start(container, info.HostConfig)
 	}
+
+	return nil
+}
+
+// Start the specified container with the specified host config
+func (c *Container) Start(container *dockerclient.APIContainers, hostConfig *dockerclient.HostConfig) error {
+	logrus.Debugf("Starting container: %s: %#v", container.ID, hostConfig)
+	err := c.populateAdditionalHostConfig(hostConfig)
+	if err != nil {
+		return err
+	}
+
+	if err := c.client.StartContainer(container.ID, hostConfig); err != nil {
+		return err
+	}
+
+	c.service.context.Project.Notify(project.EventContainerStarted, c.service.Name(), map[string]string{
+		"name": c.Name(),
+	})
 
 	return nil
 }
@@ -301,7 +350,14 @@ func volumeBinds(volumes map[string]struct{}, container *dockerclient.Container)
 	return result
 }
 
-func (c *Container) createContainer(imageName, oldContainer string) (*dockerclient.APIContainers, error) {
+func (c *Container) createContainer(imageName, oldContainer string, configOverride *project.ServiceConfig) (*dockerclient.APIContainers, error) {
+	serviceConfig := c.service.serviceConfig
+	if configOverride != nil {
+		serviceConfig.Command = configOverride.Command
+		serviceConfig.Tty = configOverride.Tty
+		serviceConfig.StdinOpen = configOverride.StdinOpen
+	}
+
 	createOpts, err := ConvertToAPI(c.service, c.name)
 	if err != nil {
 		return nil, err

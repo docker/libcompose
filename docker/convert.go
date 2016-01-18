@@ -129,6 +129,10 @@ func Convert(c *project.ServiceConfig, ctx *Context) (*dockerclient.Config, *doc
 		WorkingDir:   c.WorkingDir,
 		VolumeDriver: c.VolumeDriver,
 		Volumes:      volumes(c, ctx),
+		AttachStdin:  c.StdinOpen,
+		AttachStdout: c.Tty,
+		AttachStderr: c.Tty,
+		StdinOnce:    c.StdinOpen,
 	}
 	hostConfig := &dockerclient.HostConfig{
 		VolumesFrom: utils.CopySlice(c.VolumesFrom),
