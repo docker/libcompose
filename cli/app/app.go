@@ -161,6 +161,27 @@ func ProjectPull(p *project.Project, c *cli.Context) {
 	}
 }
 
+// ProjectRun runs a given command within a service's container.
+func ProjectRun(p *project.Project, c *cli.Context) {
+	if len(c.Args()) == 1 {
+		logrus.Fatal("No service specified")
+	}
+
+	serviceName := c.Args()[0]
+	commandParts := c.Args()[1:]
+
+	if _, ok := p.Configs[serviceName]; !ok {
+		logrus.Fatalf("%s is not defined in the template", serviceName)
+	}
+
+	exitCode, err := p.Run(serviceName, commandParts)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	os.Exit(exitCode)
+}
+
 // ProjectDelete delete services.
 func ProjectDelete(p *project.Project, c *cli.Context) {
 	if !c.Bool("force") && len(c.Args()) == 0 {

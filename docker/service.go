@@ -2,6 +2,7 @@ package docker
 
 import (
 	"fmt"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/pkg/nat"
 	"github.com/docker/libcompose/project"
@@ -250,6 +251,25 @@ func (s *Service) Restart() error {
 	return s.eachContainer(func(c *Container) error {
 		return c.Restart()
 	})
+}
+
+// Run implements Service.Run. It runs a one of command within the service container.
+func (s *Service) Run(commandParts []string) (int, error) {
+	imageName, err := s.build()
+	if err != nil {
+		return -1, err
+	}
+
+	client := s.context.ClientFactory.Create(s)
+
+	namer := NewNamer(client, s.context.Project.Name, s.name+"_run")
+	defer namer.Close()
+
+	containerName := namer.Next()
+
+	c := NewContainer(client, containerName, s)
+
+	return c.Run(imageName, &project.ServiceConfig{Command: project.NewCommand(commandParts...), Tty: true, StdinOpen: true})
 }
 
 // Kill implements Service.Kill. It kills any containers related to the service.
