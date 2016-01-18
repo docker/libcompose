@@ -264,6 +264,7 @@ type Container interface {
 	ID() (string, error)
 	Name() string
 	Port(port string) (string, error)
+	IsRunning() (bool, error)
 }
 
 // ServiceFactory is an interface factory to create Service object for the specified
