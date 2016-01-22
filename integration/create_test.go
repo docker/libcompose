@@ -3,8 +3,10 @@ package integration
 import (
 	"fmt"
 	"os"
+	"os/exec"
 
 	. "gopkg.in/check.v1"
+	"path/filepath"
 )
 
 func (s *RunSuite) TestFields(c *C) {
@@ -169,4 +171,80 @@ func (s *RunSuite) TestFieldTypeConversions(c *C) {
 	c.Assert(referenceContainer.Image, Equals, testContainer.Image)
 
 	os.Unsetenv("LIMIT")
+}
+
+func (s *RunSuite) TestMultipleComposeFilesOneTwo(c *C) {
+	p := "multiple"
+	cmd := exec.Command(s.command, "-f", "./assets/multiple/one.yml", "-f", "./assets/multiple/two.yml", "create")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	err := cmd.Run()
+
+	c.Assert(err, IsNil)
+
+	containerNames := []string{"multiple", "simple", "another", "yetanother"}
+
+	for _, containerName := range containerNames {
+		name := fmt.Sprintf("%s_%s_1", p, containerName)
+		container := s.GetContainerByName(c, name)
+
+		c.Assert(container, NotNil)
+	}
+
+	name := fmt.Sprintf("%s_%s_1", p, "multiple")
+	container := s.GetContainerByName(c, name)
+
+	c.Assert(container.Config.Image, Equals, "busybox")
+	c.Assert(container.Config.Cmd, DeepEquals, []string{"echo", "two"})
+	c.Assert(container.Config.Env, DeepEquals, []string{"KEY1=VAL1", "KEY2=VAL2"})
+}
+
+func (s *RunSuite) TestMultipleComposeFilesTwoOne(c *C) {
+	p := "multiple"
+	cmd := exec.Command(s.command, "-f", "./assets/multiple/two.yml", "-f", "./assets/multiple/one.yml", "create")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	err := cmd.Run()
+
+	c.Assert(err, IsNil)
+
+	containerNames := []string{"multiple", "simple", "another", "yetanother"}
+
+	for _, containerName := range containerNames {
+		name := fmt.Sprintf("%s_%s_1", p, containerName)
+		container := s.GetContainerByName(c, name)
+
+		c.Assert(container, NotNil)
+	}
+
+	name := fmt.Sprintf("%s_%s_1", p, "multiple")
+	container := s.GetContainerByName(c, name)
+
+	c.Assert(container.Config.Image, Equals, "tianon/true")
+	c.Assert(container.Config.Cmd, DeepEquals, []string{"echo", "two"})
+	c.Assert(container.Config.Env, DeepEquals, []string{"KEY2=VAL2", "KEY1=VAL1"})
+}
+
+func (s *RunSuite) TestDefaultMultipleComposeFiles(c *C) {
+	p := s.RandomProject()
+	cmd := exec.Command(filepath.Join("../../", s.command), "-p", p, "create")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	cmd.Dir = "./assets/multiple-composefiles-default/"
+	err := cmd.Run()
+
+	c.Assert(err, IsNil)
+
+	containerNames := []string{"simple", "another", "yetanother"}
+
+	for _, containerName := range containerNames {
+		name := fmt.Sprintf("%s_%s_1", p, containerName)
+		container := s.GetContainerByName(c, name)
+
+		c.Assert(container, NotNil)
+	}
+
 }

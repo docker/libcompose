@@ -48,7 +48,7 @@ func ConvertToAPI(s *Service, name string) (*dockerclient.CreateContainerOptions
 func volumes(c *project.ServiceConfig, ctx *Context) map[string]struct{} {
 	volumes := make(map[string]struct{}, len(c.Volumes))
 	for k, v := range c.Volumes {
-		vol := ctx.ResourceLookup.ResolvePath(v, ctx.ComposeFile)
+		vol := ctx.ResourceLookup.ResolvePath(v, ctx.ComposeFiles[0])
 
 		c.Volumes[k] = vol
 		if isVolume(vol) {

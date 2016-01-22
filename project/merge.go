@@ -31,7 +31,7 @@ var (
 type rawService map[string]interface{}
 type rawServiceMap map[string]rawService
 
-func mergeProject(p *Project, bytes []byte) (map[string]*ServiceConfig, error) {
+func mergeProject(p *Project, file string, bytes []byte) (map[string]*ServiceConfig, error) {
 	configs := make(map[string]*ServiceConfig)
 
 	datas := make(rawServiceMap)
@@ -44,10 +44,19 @@ func mergeProject(p *Project, bytes []byte) (map[string]*ServiceConfig, error) {
 	}
 
 	for name, data := range datas {
-		data, err := parse(p.context.ResourceLookup, p.context.EnvironmentLookup, p.File, data, datas)
+		data, err := parse(p.context.ResourceLookup, p.context.EnvironmentLookup, file, data, datas)
 		if err != nil {
 			logrus.Errorf("Failed to parse service %s: %v", name, err)
 			return nil, err
+		}
+
+		if _, ok := p.Configs[name]; ok {
+			var rawExistingService rawService
+			if err := utils.Convert(p.Configs[name], &rawExistingService); err != nil {
+				return nil, err
+			}
+
+			data = mergeConfig(rawExistingService, data)
 		}
 
 		datas[name] = data
@@ -58,6 +67,7 @@ func mergeProject(p *Project, bytes []byte) (map[string]*ServiceConfig, error) {
 	}
 
 	adjustValues(configs)
+
 	return configs, nil
 }
 
@@ -237,6 +247,14 @@ func parse(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup, i
 		}
 	}
 
+	baseService = mergeConfig(baseService, serviceData)
+
+	logrus.Debugf("Merged result %#v", baseService)
+
+	return baseService, nil
+}
+
+func mergeConfig(baseService, serviceData rawService) rawService {
 	for k, v := range serviceData {
 		// Image and build are mutually exclusive in merge
 		if k == "image" {
@@ -252,9 +270,7 @@ func parse(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup, i
 		}
 	}
 
-	logrus.Debugf("Merged result %#v", baseService)
-
-	return baseService, nil
+	return baseService
 }
 
 func merge(existing, value interface{}) interface{} {
