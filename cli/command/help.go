@@ -1,21 +1,17 @@
 package command
 
 import (
-	"github.com/codegangsta/cli"
 	"os"
 	"path"
+
+	"github.com/codegangsta/cli"
 )
 
 func init() {
-	cli.AppHelpTemplate = `Usage: {{.Name}} {{if .Flags}}[OPTIONS] {{end}}COMMAND [arg...]
+	cli.AppHelpTemplate = `{{.Usage}}
 
-{{.Usage}}
+Usage: {{.Name}} {{if .Flags}}[options] {{end}}COMMAND [arg...]
 
-Version: {{.Version}}{{if or .Author .Email}}
-
-Author:{{if .Author}}
-  {{.Author}}{{if .Email}} - <{{.Email}}>{{end}}{{else}}
-  {{.Email}}{{end}}{{end}}
 {{if .Flags}}
 Options:
   {{range .Flags}}{{.}}
@@ -25,11 +21,13 @@ Commands:
   {{end}}
 Run '{{.Name}} COMMAND --help' for more information on a command.
 `
-	cli.CommandHelpTemplate = `Usage: ` + path.Base(os.Args[0]) + ` {{.Name}}{{if .Flags}} [OPTIONS]
+	cli.CommandHelpTemplate = `{{.Usage}}{{if .Description}}
 
-{{.Usage}}
+{{.Description}}{{end}}
 
-Options:
+Usage: ` + path.Base(os.Args[0]) + ` {{.Name}}{{if .Flags}} [options]{{end}}{{if .ArgsUsage}} {{.ArgsUsage}}{{end}}
+
+{{if .Flags}}Options:
    {{range .Flags}}{{.}}
    {{end}}{{end}}
 `
