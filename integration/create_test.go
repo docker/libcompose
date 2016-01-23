@@ -13,7 +13,7 @@ func (s *RunSuite) TestFields(c *C) {
 	p := s.CreateProjectFromText(c, `
         hello:
           image: tianon/true
-          cpuset: 1,2
+          cpuset: 0,1
           mem_limit: 4194304
         `)
 
@@ -22,7 +22,7 @@ func (s *RunSuite) TestFields(c *C) {
 	c.Assert(cn, NotNil)
 
 	c.Assert(cn.Config.Image, Equals, "tianon/true")
-	c.Assert(cn.HostConfig.CPUSetCPUs, Equals, "1,2")
+	c.Assert(cn.HostConfig.CPUSetCPUs, Equals, "0,1")
 	c.Assert(cn.HostConfig.Memory, Equals, int64(4194304))
 }
 
