@@ -2,7 +2,6 @@ package integration
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 
@@ -12,9 +11,6 @@ import (
 func (s *RunSuite) TestBuild(c *C) {
 	p := s.RandomProject()
 	cmd := exec.Command(s.command, "-f", "./assets/build/docker-compose.yml", "-p", p, "build")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
 	err := cmd.Run()
 
 	oneImageName := fmt.Sprintf("%s_one", p)
@@ -67,9 +63,6 @@ func (s *RunSuite) TestBuildWithNoCache2(c *C) {
 func (s *RunSuite) TestBuildWithNoCache3(c *C) {
 	p := s.RandomProject()
 	cmd := exec.Command(s.command, "-f", "./assets/build/docker-compose.yml", "-p", p, "build", "--no-cache")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
 	err := cmd.Run()
 
 	oneImageName := fmt.Sprintf("%s_one", p)

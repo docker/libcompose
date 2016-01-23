@@ -22,7 +22,7 @@ const DefaultDockerfileName = "Dockerfile"
 // Builder defines methods to provide a docker builder. This makes libcompose
 // not tied up to the docker daemon builder.
 type Builder interface {
-	Build(p *project.Project, service project.Service) (string, error)
+	Build(imageName string, p *project.Project, service project.Service) error
 }
 
 // DaemonBuilder is the daemon "docker build" Builder implementation.
@@ -39,38 +39,31 @@ func NewDaemonBuilder(context *Context) *DaemonBuilder {
 
 // Build implements Builder. It consumes the docker build API endpoint and sends
 // a tar of the specified service build context.
-func (d *DaemonBuilder) Build(p *project.Project, service project.Service) (string, error) {
+func (d *DaemonBuilder) Build(imageName string, p *project.Project, service project.Service) error {
 	if service.Config().Build == "" {
-		return service.Config().Image, nil
+		return fmt.Errorf("Specified service does not have a build section")
 	}
 
-	tag := fmt.Sprintf("%s_%s", p.Name, service.Name())
 	context, err := CreateTar(p, service.Name())
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	defer context.Close()
 
 	client := d.context.ClientFactory.Create(service)
 
-	logrus.Infof("Building %s...", tag)
+	logrus.Infof("Building %s...", imageName)
 
-	err = client.BuildImage(dockerclient.BuildImageOptions{
+	return client.BuildImage(dockerclient.BuildImageOptions{
 		InputStream:    context,
 		OutputStream:   os.Stdout,
 		RawJSONStream:  false,
-		Name:           tag,
+		Name:           imageName,
 		RmTmpContainer: true,
 		Dockerfile:     service.Config().Dockerfile,
 		NoCache:        d.context.NoCache,
 	})
-
-	if err != nil {
-		return "", err
-	}
-
-	return tag, nil
 }
 
 // CreateTar create a build context tar for the specified project and service name.
