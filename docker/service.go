@@ -41,9 +41,20 @@ func (s *Service) DependentServices() []project.ServiceRelationship {
 
 // Create implements Service.Create.
 func (s *Service) Create() error {
+	containers, err := s.collectContainers()
+	if err != nil {
+		return err
+	}
+
 	imageName, err := s.build()
 	if err != nil {
 		return err
+	}
+
+	if len(containers) != 0 {
+		return s.eachContainer(func(c *Container) error {
+			return s.recreateIfNeeded(imageName, c)
+		})
 	}
 
 	_, err = s.createOne(imageName)
