@@ -2,6 +2,7 @@ package integration
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -296,4 +297,25 @@ func (s *RunSuite) TestRelativeVolume(c *C) {
 	c.Assert(cn, NotNil)
 	c.Assert(len(cn.Mounts), DeepEquals, 1)
 	c.Assert(cn.Mounts[0].Source, DeepEquals, absPath)
+}
+
+func (s *RunSuite) TestUpNoBuildFailIfImageNotPresent(c *C) {
+	p := s.RandomProject()
+	cmd := exec.Command(s.command, "-f", "./assets/build/docker-compose.yml", "-p", p, "up", "--no-build")
+	err := cmd.Run()
+
+	c.Assert(err, NotNil)
+}
+
+func (s *RunSuite) TestUpNoBuildShouldWorkIfImageIsPresent(c *C) {
+	p := s.RandomProject()
+	cmd := exec.Command(s.command, "-f", "./assets/simple-build/docker-compose.yml", "-p", p, "build")
+	err := cmd.Run()
+
+	c.Assert(err, IsNil)
+
+	cmd = exec.Command(s.command, "-f", "./assets/simple-build/docker-compose.yml", "-p", p, "up", "-d", "--no-build")
+	err = cmd.Run()
+
+	c.Assert(err, IsNil)
 }

@@ -24,6 +24,7 @@ type Context struct {
 	ForceRecreate       bool
 	NoRecreate          bool
 	NoCache             bool
+	NoBuild             bool
 	Signal              int
 	ComposeFiles        []string
 	ComposeBytes        [][]byte

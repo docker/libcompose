@@ -23,6 +23,10 @@ func CreateCommand(factory app.ProjectFactory) cli.Command {
 				Name:  "force-recreate",
 				Usage: "Recreate containers even if their configuration and image haven't changed. Incompatible with --no-recreate.",
 			},
+			cli.BoolFlag{
+				Name:  "no-build",
+				Usage: "Don't build an image, even if it's missing.",
+			},
 		},
 	}
 }
@@ -88,6 +92,10 @@ func UpCommand(factory app.ProjectFactory) cli.Command {
 			cli.BoolFlag{
 				Name:  "d",
 				Usage: "Do not block and log",
+			},
+			cli.BoolFlag{
+				Name:  "no-build",
+				Usage: "Don't build an image, even if it's missing.",
 			},
 			cli.BoolFlag{
 				Name:  "no-recreate",
@@ -283,6 +291,7 @@ func Populate(context *project.Context, c *cli.Context) {
 		context.Log = !c.Bool("d")
 		context.NoRecreate = c.Bool("no-recreate")
 		context.ForceRecreate = c.Bool("force-recreate")
+		context.NoBuild = c.Bool("no-build")
 	} else if c.Command.Name == "stop" || c.Command.Name == "restart" || c.Command.Name == "scale" {
 		context.Timeout = uint(c.Int("timeout"))
 	} else if c.Command.Name == "kill" {

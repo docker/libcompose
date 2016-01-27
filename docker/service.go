@@ -2,10 +2,12 @@ package docker
 
 import (
 	"fmt"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/pkg/nat"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
+	"github.com/fsouza/go-dockerclient"
 )
 
 // Service is a project.Service implementations.
@@ -39,14 +41,15 @@ func (s *Service) DependentServices() []project.ServiceRelationship {
 	return project.DefaultDependentServices(s.context.Project, s)
 }
 
-// Create implements Service.Create.
+// Create implements Service.Create. It ensures the image exists or build it
+// if it can and then create a container.
 func (s *Service) Create() error {
 	containers, err := s.collectContainers()
 	if err != nil {
 		return err
 	}
 
-	imageName, err := s.build()
+	imageName, err := s.ensureImageExists()
 	if err != nil {
 		return err
 	}
@@ -87,20 +90,57 @@ func (s *Service) createOne(imageName string) (*Container, error) {
 	return containers[0], err
 }
 
+func (s *Service) ensureImageExists() (string, error) {
+	err := s.imageExists()
+
+	if err == nil {
+		return s.imageName(), nil
+	}
+
+	if err != nil && err != docker.ErrNoSuchImage {
+		return "", err
+	}
+
+	if s.Config().Build != "" {
+		if s.context.NoBuild {
+			return "", fmt.Errorf("Service %q needs to be built, but no-build was specified", s.name)
+		}
+		return s.imageName(), s.build()
+	}
+
+	return s.imageName(), s.Pull()
+}
+
+func (s *Service) imageExists() error {
+	client := s.context.ClientFactory.Create(s)
+
+	_, err := client.InspectImage(s.imageName())
+	return err
+}
+
+func (s *Service) imageName() string {
+	if s.Config().Image != "" {
+		return s.Config().Image
+	}
+	return fmt.Sprintf("%s_%s", s.context.ProjectName, s.Name())
+}
+
 // Build implements Service.Build. If an imageName is specified or if the context has
 // no build to work with it will do nothing. Otherwise it will try to build
 // the image and returns an error if any.
 func (s *Service) Build() error {
-	_, err := s.build()
-	return err
+	if s.Config().Image != "" {
+		return nil
+	}
+	return s.build()
 }
 
-func (s *Service) build() (string, error) {
+func (s *Service) build() error {
 	if s.context.Builder == nil {
-		return s.Config().Image, nil
+		return fmt.Errorf("Cannot build an image without a builder configured")
 	}
 
-	return s.context.Builder.Build(s.context.Project, s)
+	return s.context.Builder.Build(s.imageName(), s.context.Project, s)
 }
 
 func (s *Service) constructContainers(imageName string, count int) ([]*Container, error) {
@@ -145,9 +185,17 @@ func (s *Service) constructContainers(imageName string, count int) ([]*Container
 // Up implements Service.Up. It builds the image if needed, creates a container
 // and start it.
 func (s *Service) Up() error {
-	imageName, err := s.build()
+	containers, err := s.collectContainers()
 	if err != nil {
 		return err
+	}
+
+	var imageName = s.imageName()
+	if len(containers) == 0 || !s.context.NoRecreate {
+		imageName, err = s.ensureImageExists()
+		if err != nil {
+			return err
+		}
 	}
 
 	return s.up(imageName, true)
@@ -310,7 +358,7 @@ func (s *Service) Scale(scale int) error {
 	}
 
 	if foundCount != scale {
-		imageName, err := s.build()
+		imageName, err := s.ensureImageExists()
 		if err != nil {
 			return err
 		}
@@ -323,7 +371,8 @@ func (s *Service) Scale(scale int) error {
 	return s.up("", false)
 }
 
-// Pull implements Service.Pull. It pulls or build the image of the service.
+// Pull implements Service.Pull. It pulls the image of the service and skip the service that
+// would need to be built.
 func (s *Service) Pull() error {
 	if s.Config().Image == "" {
 		return nil
