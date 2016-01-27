@@ -129,19 +129,34 @@ func Convert(c *project.ServiceConfig, ctx *Context) (*dockerclient.Config, *doc
 		WorkingDir:   c.WorkingDir,
 		VolumeDriver: c.VolumeDriver,
 		Volumes:      volumes(c, ctx),
+		MacAddress:   c.MacAddress,
 	}
+
+	ulimits := []dockerclient.ULimit{}
+	if c.Ulimits.Elements != nil {
+		for _, ulimit := range c.Ulimits.Elements {
+			ulimits = append(ulimits, dockerclient.ULimit{
+				Name: ulimit.Name,
+				Soft: ulimit.Soft,
+				Hard: ulimit.Hard,
+			})
+		}
+	}
+
 	hostConfig := &dockerclient.HostConfig{
-		VolumesFrom: utils.CopySlice(c.VolumesFrom),
-		CapAdd:      utils.CopySlice(c.CapAdd),
-		CapDrop:     utils.CopySlice(c.CapDrop),
-		CPUShares:   c.CPUShares,
-		CPUSetCPUs:  c.CPUSet,
-		ExtraHosts:  utils.CopySlice(c.ExtraHosts),
-		Privileged:  c.Privileged,
-		Binds:       Filter(c.Volumes, isBind),
-		Devices:     deviceMappings,
-		DNS:         utils.CopySlice(c.DNS.Slice()),
-		DNSSearch:   utils.CopySlice(c.DNSSearch.Slice()),
+		VolumesFrom:  utils.CopySlice(c.VolumesFrom),
+		CapAdd:       utils.CopySlice(c.CapAdd),
+		CapDrop:      utils.CopySlice(c.CapDrop),
+		CgroupParent: c.CgroupParent,
+		CPUQuota:     c.CPUQuota,
+		CPUShares:    c.CPUShares,
+		CPUSetCPUs:   c.CPUSet,
+		ExtraHosts:   utils.CopySlice(c.ExtraHosts),
+		Privileged:   c.Privileged,
+		Binds:        Filter(c.Volumes, isBind),
+		Devices:      deviceMappings,
+		DNS:          utils.CopySlice(c.DNS.Slice()),
+		DNSSearch:    utils.CopySlice(c.DNSSearch.Slice()),
 		LogConfig: dockerclient.LogConfig{
 			Type:   c.LogDriver,
 			Config: utils.CopyMap(c.LogOpt),
@@ -156,6 +171,7 @@ func Convert(c *project.ServiceConfig, ctx *Context) (*dockerclient.Config, *doc
 		PortBindings:   portBindings,
 		RestartPolicy:  *restartPolicy,
 		SecurityOpt:    utils.CopySlice(c.SecurityOpt),
+		Ulimits:        ulimits,
 	}
 
 	return config, hostConfig, nil

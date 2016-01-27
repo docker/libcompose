@@ -2,6 +2,8 @@ package project
 
 import (
 	"fmt"
+	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/flynn/go-shlex"
@@ -69,6 +71,93 @@ func (s *Stringorslice) Slice() []string {
 // NewStringorslice creates an Stringorslice based on the specified parts (as strings).
 func NewStringorslice(parts ...string) Stringorslice {
 	return Stringorslice{parts}
+}
+
+// Ulimits represent a list of Ulimit.
+// It is, however, represented in yaml as keys (and thus map in Go)
+type Ulimits struct {
+	Elements []Ulimit
+}
+
+// MarshalYAML implements the Marshaller interface.
+func (u Ulimits) MarshalYAML() (tag string, value interface{}, err error) {
+	ulimitMap := make(map[string]Ulimit)
+	for _, ulimit := range u.Elements {
+		ulimitMap[ulimit.Name] = ulimit
+	}
+	return "", ulimitMap, nil
+}
+
+// UnmarshalYAML implements the Unmarshaller interface.
+func (u *Ulimits) UnmarshalYAML(tag string, value interface{}) error {
+	ulimits := make(map[string]Ulimit)
+	yamlUlimits := reflect.ValueOf(value)
+	switch yamlUlimits.Kind() {
+	case reflect.Map:
+		for _, key := range yamlUlimits.MapKeys() {
+			var name string
+			var soft, hard int64
+			mapValue := yamlUlimits.MapIndex(key).Elem()
+			name = key.Elem().String()
+			switch mapValue.Kind() {
+			case reflect.Int64:
+				soft = mapValue.Int()
+				hard = mapValue.Int()
+			case reflect.Map:
+				if len(mapValue.MapKeys()) != 2 {
+					return fmt.Errorf("Failed to unmarshal Ulimit: %#v", mapValue)
+				}
+				for _, subKey := range mapValue.MapKeys() {
+					subValue := mapValue.MapIndex(subKey).Elem()
+					switch subKey.Elem().String() {
+					case "soft":
+						soft = subValue.Int()
+					case "hard":
+						hard = subValue.Int()
+					}
+				}
+			default:
+				return fmt.Errorf("Failed to unmarshal Ulimit: %#v, %v", mapValue, mapValue.Kind())
+			}
+			ulimits[name] = Ulimit{
+				Name: name,
+				ulimitValues: ulimitValues{
+					Soft: soft,
+					Hard: hard,
+				},
+			}
+		}
+		keys := make([]string, 0, len(ulimits))
+		for key := range ulimits {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			u.Elements = append(u.Elements, ulimits[key])
+		}
+	default:
+		return fmt.Errorf("Failed to unmarshal Ulimit: %#v", value)
+	}
+	return nil
+}
+
+// Ulimit represent ulimit inforation.
+type Ulimit struct {
+	ulimitValues
+	Name string
+}
+
+type ulimitValues struct {
+	Soft int64 `yaml:"soft"`
+	Hard int64 `yaml:"hard"`
+}
+
+// MarshalYAML implements the Marshaller interface.
+func (u Ulimit) MarshalYAML() (tag string, value interface{}, err error) {
+	if u.Soft == u.Hard {
+		return "", u.Soft, nil
+	}
+	return "", u.ulimitValues, err
 }
 
 // Command represents a docker command, can be a string or an array of strings.
