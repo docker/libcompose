@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/docker/pkg/nat"
+	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
 	"github.com/fsouza/go-dockerclient"

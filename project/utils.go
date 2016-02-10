@@ -3,7 +3,7 @@ package project
 import (
 	"strings"
 
-	"github.com/docker/docker/runconfig"
+	"github.com/docker/engine-api/types/container"
 )
 
 // DefaultDependentServices return the dependent services (as an array of ServiceRelationship)
@@ -51,7 +51,7 @@ func NameAlias(name string) (string, string) {
 // GetContainerFromIpcLikeConfig returns name of the service that shares the IPC
 // namespace with the specified service.
 func GetContainerFromIpcLikeConfig(p *Project, conf string) string {
-	ipc := runconfig.IpcMode(conf)
+	ipc := container.IpcMode(conf)
 	if !ipc.IsContainer() {
 		return ""
 	}
