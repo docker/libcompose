@@ -3,8 +3,8 @@ package docker
 import (
 	"strings"
 
-	"github.com/docker/docker/pkg/nat"
-	"github.com/docker/docker/runconfig"
+	"github.com/docker/docker/runconfig/opts"
+	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
 
@@ -59,7 +59,7 @@ func volumes(c *project.ServiceConfig, ctx *Context) map[string]struct{} {
 }
 
 func restartPolicy(c *project.ServiceConfig) (*dockerclient.RestartPolicy, error) {
-	restart, err := runconfig.ParseRestartPolicy(c.Restart)
+	restart, err := opts.ParseRestartPolicy(c.Restart)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func parseDevices(devices []string) ([]dockerclient.Device, error) {
 	// parse device mappings
 	deviceMappings := []dockerclient.Device{}
 	for _, device := range devices {
-		v, err := runconfig.ParseDevice(device)
+		v, err := opts.ParseDevice(device)
 		if err != nil {
 			return nil, err
 		}

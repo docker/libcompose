@@ -7,10 +7,9 @@ import (
 	"strings"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/docker/cliconfig"
-	"github.com/docker/docker/pkg/parsers"
+	"github.com/docker/docker/reference"
 	"github.com/docker/docker/registry"
-	"github.com/docker/docker/utils"
+	"github.com/docker/engine-api/types"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project"
 	util "github.com/docker/libcompose/utils"
@@ -507,19 +506,19 @@ func (c *Container) pull(image string) error {
 }
 
 func pullImage(client *dockerclient.Client, service *Service, image string) error {
-	taglessRemote, tag := parsers.ParseRepositoryTag(image)
-	if tag == "" {
-		image = utils.ImageReference(taglessRemote, DefaultTag)
-	}
-
-	repoInfo, err := registry.ParseRepositoryInfo(taglessRemote)
+	distributionRef, err := reference.ParseNamed(image)
 	if err != nil {
 		return err
 	}
 
-	authConfig := cliconfig.AuthConfig{}
+	repoInfo, err := registry.ParseRepositoryInfo(distributionRef)
+	if err != nil {
+		return err
+	}
+
+	authConfig := types.AuthConfig{}
 	if service.context.ConfigFile != nil && repoInfo != nil && repoInfo.Index != nil {
-		authConfig = registry.ResolveAuthConfig(service.context.ConfigFile, repoInfo.Index)
+		authConfig = registry.ResolveAuthConfig(service.context.ConfigFile.AuthConfigs, repoInfo.Index)
 	}
 
 	err = client.PullImage(

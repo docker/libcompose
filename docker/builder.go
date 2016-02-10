@@ -9,9 +9,10 @@ import (
 	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/docker/builder"
+	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/fileutils"
-	"github.com/docker/docker/utils"
 	"github.com/docker/libcompose/project"
 	dockerclient "github.com/fsouza/go-dockerclient"
 )
@@ -129,7 +130,7 @@ func CreateTar(p *project.Project, name string) (io.ReadCloser, error) {
 		logrus.Warnf("Error while reading .dockerignore (%s) : %s", dockerIgnorePath, err.Error())
 		excludes = make([]string, 0)
 	} else {
-		excludes, err = utils.ReadDockerIgnore(dockerIgnore)
+		excludes, err = dockerignore.ReadAll(dockerIgnore)
 		if err != nil {
 			return nil, err
 		}
@@ -147,7 +148,7 @@ func CreateTar(p *project.Project, name string) (io.ReadCloser, error) {
 		includes = append(includes, ".dockerignore", dockerfileName)
 	}
 
-	if err := utils.ValidateContextDirectory(root, excludes); err != nil {
+	if err := builder.ValidateContextDirectory(root, excludes); err != nil {
 		return nil, fmt.Errorf("Error checking context is accessible: '%s'. Please check permissions and try again.", err)
 	}
 
