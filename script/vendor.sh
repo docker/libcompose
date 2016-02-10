@@ -15,7 +15,6 @@ clone git github.com/docker/go-connections v0.1.3
 clone git github.com/docker/libtrust 9cbd2a1374f46905c68a4eb3694a130610adc62a
 clone git github.com/docker/engine-api 9a940e4ead265e18d4feb9e3c515428966a08278
 clone git github.com/flynn/go-shlex 3f9db97f856818214da2e1057f8ad84803971cff
-clone git github.com/fsouza/go-dockerclient e0d22d30691bcc996eca51f729a4777b8c7dc2a8
 clone git github.com/gorilla/context 14f550f51a
 clone git github.com/gorilla/mux e444e69cbd
 clone git github.com/opencontainers/runc 3d8a20bb772defc28c355534d83486416d1719b4
@@ -27,6 +26,6 @@ clone git golang.org/x/net 47990a1ba55743e6ef1affd3a14e5bac8553615d https://gith
 clone git gopkg.in/check.v1 11d3bc7aa68e238947792f30573146a3231fc0f1
 clone git github.com/Azure/go-ansiterm 70b2c90b260171e829f1ebd7c17f600c11858dbe
 clone git github.com/cloudfoundry-incubator/candiedyaml 55a459c2d9da2b078f0725e5fb324823b2c71702
-clone git github.com/agl/ed25519 d2b94fd789ea21d12fac1a4443dd3a3f79cda72c
+clone git github.com/Microsoft/go-winio eb176a9831c54b88eaf9eb4fbc24b94080d910ad
 
 clean && mv vendor/src/* vendor
