@@ -506,9 +506,13 @@ func (c *Container) pull(image string) error {
 }
 
 func pullImage(client *dockerclient.Client, service *Service, image string) error {
+	tag := reference.DefaultTag
 	distributionRef, err := reference.ParseNamed(image)
 	if err != nil {
 		return err
+	}
+	if named, ok := distributionRef.(reference.NamedTagged); ok {
+		tag = named.Tag()
 	}
 
 	repoInfo, err := registry.ParseRepositoryInfo(distributionRef)
@@ -524,6 +528,7 @@ func pullImage(client *dockerclient.Client, service *Service, image string) erro
 	err = client.PullImage(
 		dockerclient.PullImageOptions{
 			Repository:   image,
+			Tag:          tag,
 			OutputStream: os.Stderr, // TODO maybe get the stream from some configured place
 		},
 		dockerclient.AuthConfiguration{
