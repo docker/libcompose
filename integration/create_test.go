@@ -22,7 +22,7 @@ func (s *RunSuite) TestFields(c *C) {
 	c.Assert(cn, NotNil)
 
 	c.Assert(cn.Config.Image, Equals, "tianon/true")
-	c.Assert(cn.HostConfig.CPUSetCPUs, Equals, "0,1")
+	c.Assert(cn.HostConfig.CpusetCpus, Equals, "0,1")
 	c.Assert(cn.HostConfig.Memory, Equals, int64(4194304))
 }
 
@@ -196,7 +196,7 @@ func (s *RunSuite) TestMultipleComposeFilesOneTwo(c *C) {
 	container := s.GetContainerByName(c, name)
 
 	c.Assert(container.Config.Image, Equals, "busybox")
-	c.Assert(container.Config.Cmd, DeepEquals, []string{"echo", "two"})
+	c.Assert(container.Config.Cmd.Slice(), DeepEquals, []string{"echo", "two"})
 	c.Assert(container.Config.Env, DeepEquals, []string{"KEY1=VAL1", "KEY2=VAL2"})
 }
 
@@ -223,7 +223,7 @@ func (s *RunSuite) TestMultipleComposeFilesTwoOne(c *C) {
 	container := s.GetContainerByName(c, name)
 
 	c.Assert(container.Config.Image, Equals, "tianon/true")
-	c.Assert(container.Config.Cmd, DeepEquals, []string{"echo", "two"})
+	c.Assert(container.Config.Cmd.Slice(), DeepEquals, []string{"echo", "two"})
 	c.Assert(container.Config.Env, DeepEquals, []string{"KEY2=VAL2", "KEY1=VAL1"})
 }
 

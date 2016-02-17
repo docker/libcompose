@@ -47,11 +47,11 @@ func TestParseLabels(t *testing.T) {
 	assert.Nil(t, err)
 
 	cfg.Labels[fooLabel] = "FUN"
-	cfg.Entrypoint[0] = "less"
+	cfg.Entrypoint.Slice()[0] = "less"
 
 	assert.Equal(t, fooLabelValue, sc.Labels.MapParts()[fooLabel])
 	assert.Equal(t, "FUN", cfg.Labels[fooLabel])
 
 	assert.Equal(t, []string{bashCmd}, sc.Entrypoint.Slice())
-	assert.Equal(t, []string{"less"}, cfg.Entrypoint)
+	assert.Equal(t, []string{"less"}, cfg.Entrypoint.Slice())
 }

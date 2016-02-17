@@ -14,7 +14,7 @@ func (s *RunSuite) TestRestart(c *C) {
 	c.Assert(cn, NotNil)
 
 	c.Assert(cn.State.Running, Equals, true)
-	time := cn.State.StartedAt.UnixNano()
+	time := cn.State.StartedAt
 
 	s.FromText(c, p, "restart", SimpleTemplate)
 
@@ -22,5 +22,5 @@ func (s *RunSuite) TestRestart(c *C) {
 	c.Assert(cn, NotNil)
 	c.Assert(cn.State.Running, Equals, true)
 
-	c.Assert(time, Not(Equals), cn.State.StartedAt.UnixNano())
+	c.Assert(time, Not(Equals), cn.State.StartedAt)
 }

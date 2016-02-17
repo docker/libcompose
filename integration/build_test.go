@@ -19,13 +19,13 @@ func (s *RunSuite) TestBuild(c *C) {
 	c.Assert(err, IsNil)
 
 	client := GetClient(c)
-	one, err := client.InspectImage(oneImageName)
+	one, _, err := client.ImageInspectWithRaw(oneImageName, false)
 	c.Assert(err, IsNil)
-	c.Assert(one.Config.Cmd, DeepEquals, []string{"echo", "one"})
+	c.Assert(one.Config.Cmd.Slice(), DeepEquals, []string{"echo", "one"})
 
-	two, err := client.InspectImage(twoImageName)
+	two, _, err := client.ImageInspectWithRaw(twoImageName, false)
 	c.Assert(err, IsNil)
-	c.Assert(two.Config.Cmd, DeepEquals, []string{"echo", "two"})
+	c.Assert(two.Config.Cmd.Slice(), DeepEquals, []string{"echo", "two"})
 }
 
 func (s *RunSuite) TestBuildWithNoCache1(c *C) {
@@ -71,11 +71,11 @@ func (s *RunSuite) TestBuildWithNoCache3(c *C) {
 	c.Assert(err, IsNil)
 
 	client := GetClient(c)
-	one, err := client.InspectImage(oneImageName)
+	one, _, err := client.ImageInspectWithRaw(oneImageName, false)
 	c.Assert(err, IsNil)
-	c.Assert(one.Config.Cmd, DeepEquals, []string{"echo", "one"})
+	c.Assert(one.Config.Cmd.Slice(), DeepEquals, []string{"echo", "one"})
 
-	two, err := client.InspectImage(twoImageName)
+	two, _, err := client.ImageInspectWithRaw(twoImageName, false)
 	c.Assert(err, IsNil)
-	c.Assert(two.Config.Cmd, DeepEquals, []string{"echo", "two"})
+	c.Assert(two.Config.Cmd.Slice(), DeepEquals, []string{"echo", "two"})
 }

@@ -2,20 +2,22 @@ package docker
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 
 	"github.com/docker/docker/cliconfig"
-	"github.com/docker/docker/opts"
 	"github.com/docker/docker/pkg/homedir"
-	"github.com/docker/docker/pkg/tlsconfig"
-	dockerclient "github.com/fsouza/go-dockerclient"
+	"github.com/docker/engine-api/client"
+	"github.com/docker/go-connections/sockets"
+	"github.com/docker/go-connections/tlsconfig"
+	"github.com/docker/libcompose/version"
 )
 
 const (
 	// DefaultAPIVersion is the default docker API version set by libcompose
-	DefaultAPIVersion   = "1.20"
+	DefaultAPIVersion   = "v1.20"
 	defaultTrustKeyFile = "key.json"
 	defaultCaFile       = "ca.pem"
 	defaultKeyFile      = "key.pem"
@@ -43,7 +45,23 @@ type ClientOpts struct {
 }
 
 // CreateClient creates a docker client based on the specified options.
-func CreateClient(c ClientOpts) (*dockerclient.Client, error) {
+func CreateClient(c ClientOpts) (client.APIClient, error) {
+	if c.Host == "" {
+		if os.Getenv("DOCKER_API_VERSION") == "" {
+			os.Setenv("DOCKER_API_VERSION", DefaultAPIVersion)
+		}
+		client, err := client.NewEnvClient()
+		if err != nil {
+			return nil, err
+		}
+		return client, nil
+	}
+
+	apiVersion := c.APIVersion
+	if apiVersion == "" {
+		apiVersion = DefaultAPIVersion
+	}
+
 	if c.TLSOptions.CAFile == "" {
 		c.TLSOptions.CAFile = filepath.Join(dockerCertPath, defaultCaFile)
 	}
@@ -53,50 +71,43 @@ func CreateClient(c ClientOpts) (*dockerclient.Client, error) {
 	if c.TLSOptions.KeyFile == "" {
 		c.TLSOptions.KeyFile = filepath.Join(dockerCertPath, defaultKeyFile)
 	}
-
-	if c.Host == "" {
-		defaultHost := os.Getenv("DOCKER_HOST")
-		if defaultHost == "" {
-			if runtime.GOOS != "windows" {
-				// If we do not have a host, default to unix socket
-				defaultHost = fmt.Sprintf("unix://%s", opts.DefaultUnixSocket)
-			} else {
-				// If we do not have a host, default to TCP socket on Windows
-				defaultHost = fmt.Sprintf("tcp://%s:%d", opts.DefaultHTTPHost, opts.DefaultHTTPPort)
-			}
-		}
-		defaultHost, err := opts.ValidateHost(defaultHost)
-		if err != nil {
-			return nil, err
-		}
-		c.Host = defaultHost
-	}
-
 	if c.TrustKey == "" {
 		c.TrustKey = filepath.Join(homedir.Get(), ".docker", defaultTrustKeyFile)
 	}
-
 	if c.TLSVerify {
 		c.TLS = true
 	}
-
 	if c.TLS {
 		c.TLSOptions.InsecureSkipVerify = !c.TLSVerify
 	}
 
-	apiVersion := c.APIVersion
-	if apiVersion == "" {
-		apiVersion = DefaultAPIVersion
-	}
+	var httpClient *http.Client
 	if c.TLS {
-		client, err := dockerclient.NewVersionedTLSClient(c.Host, c.TLSOptions.CertFile, c.TLSOptions.KeyFile, c.TLSOptions.CAFile, apiVersion)
+		config, err := tlsconfig.Client(c.TLSOptions)
 		if err != nil {
 			return nil, err
 		}
-		if c.TLSOptions.InsecureSkipVerify {
-			client.TLSConfig.InsecureSkipVerify = true
+		tr := &http.Transport{
+			TLSClientConfig: config,
 		}
-		return client, nil
+		proto, addr, _, err := client.ParseHost(c.Host)
+		if err != nil {
+			return nil, err
+		}
+
+		sockets.ConfigureTransport(tr, proto, addr)
+
+		httpClient = &http.Client{
+			Transport: tr,
+		}
 	}
-	return dockerclient.NewVersionedClient(c.Host, apiVersion)
+
+	customHeaders := map[string]string{}
+	customHeaders["User-Agent"] = fmt.Sprintf("Libcompose-Client/%s (%s)", version.VERSION, runtime.GOOS)
+
+	client, err := client.NewClient(c.Host, apiVersion, httpClient, customHeaders)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }

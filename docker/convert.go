@@ -4,12 +4,21 @@ import (
 	"strings"
 
 	"github.com/docker/docker/runconfig/opts"
+	"github.com/docker/engine-api/types/container"
+	"github.com/docker/engine-api/types/network"
+	"github.com/docker/engine-api/types/strslice"
 	"github.com/docker/go-connections/nat"
+	"github.com/docker/go-units"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
-
-	dockerclient "github.com/fsouza/go-dockerclient"
 )
+
+// ConfigWrapper wraps Config, HostConfig and NetworkingConfig for a container.
+type ConfigWrapper struct {
+	Config           *container.Config
+	HostConfig       *container.HostConfig
+	NetworkingConfig *network.NetworkingConfig
+}
 
 // Filter filters the specified string slice with the specified function.
 func Filter(vs []string, f func(string) bool) []string {
@@ -31,14 +40,13 @@ func isVolume(s string) bool {
 }
 
 // ConvertToAPI converts a service configuration to a docker API container configuration.
-func ConvertToAPI(s *Service, name string) (*dockerclient.CreateContainerOptions, error) {
+func ConvertToAPI(s *Service) (*ConfigWrapper, error) {
 	config, hostConfig, err := Convert(s.serviceConfig, s.context)
 	if err != nil {
 		return nil, err
 	}
 
-	result := dockerclient.CreateContainerOptions{
-		Name:       name,
+	result := ConfigWrapper{
 		Config:     config,
 		HostConfig: hostConfig,
 	}
@@ -58,15 +66,15 @@ func volumes(c *project.ServiceConfig, ctx *Context) map[string]struct{} {
 	return volumes
 }
 
-func restartPolicy(c *project.ServiceConfig) (*dockerclient.RestartPolicy, error) {
+func restartPolicy(c *project.ServiceConfig) (*container.RestartPolicy, error) {
 	restart, err := opts.ParseRestartPolicy(c.Restart)
 	if err != nil {
 		return nil, err
 	}
-	return &dockerclient.RestartPolicy{Name: restart.Name, MaximumRetryCount: restart.MaximumRetryCount}, nil
+	return &container.RestartPolicy{Name: restart.Name, MaximumRetryCount: restart.MaximumRetryCount}, nil
 }
 
-func ports(c *project.ServiceConfig) (map[dockerclient.Port]struct{}, map[dockerclient.Port][]dockerclient.PortBinding, error) {
+func ports(c *project.ServiceConfig) (map[nat.Port]struct{}, nat.PortMap, error) {
 	ports, binding, err := nat.ParsePortSpecs(c.Ports)
 	if err != nil {
 		return nil, nil, err
@@ -81,24 +89,24 @@ func ports(c *project.ServiceConfig) (map[dockerclient.Port]struct{}, map[docker
 		ports[k] = v
 	}
 
-	exposedPorts := map[dockerclient.Port]struct{}{}
+	exposedPorts := map[nat.Port]struct{}{}
 	for k, v := range ports {
-		exposedPorts[dockerclient.Port(k)] = v
+		exposedPorts[nat.Port(k)] = v
 	}
 
-	portBindings := map[dockerclient.Port][]dockerclient.PortBinding{}
+	portBindings := nat.PortMap{}
 	for k, bv := range binding {
-		dcbs := make([]dockerclient.PortBinding, len(bv))
+		dcbs := make([]nat.PortBinding, len(bv))
 		for k, v := range bv {
-			dcbs[k] = dockerclient.PortBinding{HostIP: v.HostIP, HostPort: v.HostPort}
+			dcbs[k] = nat.PortBinding{HostIP: v.HostIP, HostPort: v.HostPort}
 		}
-		portBindings[dockerclient.Port(k)] = dcbs
+		portBindings[nat.Port(k)] = dcbs
 	}
 	return exposedPorts, portBindings, nil
 }
 
 // Convert converts a service configuration to an docker API structures (Config and HostConfig)
-func Convert(c *project.ServiceConfig, ctx *Context) (*dockerclient.Config, *dockerclient.HostConfig, error) {
+func Convert(c *project.ServiceConfig, ctx *Context) (*container.Config, *container.HostConfig, error) {
 	restartPolicy, err := restartPolicy(c)
 	if err != nil {
 		return nil, nil, err
@@ -114,28 +122,27 @@ func Convert(c *project.ServiceConfig, ctx *Context) (*dockerclient.Config, *doc
 		return nil, nil, err
 	}
 
-	config := &dockerclient.Config{
-		Entrypoint:   utils.CopySlice(c.Entrypoint.Slice()),
+	config := &container.Config{
+		Entrypoint:   strslice.New(utils.CopySlice(c.Entrypoint.Slice())...),
 		Hostname:     c.Hostname,
 		Domainname:   c.DomainName,
 		User:         c.User,
 		Env:          utils.CopySlice(c.Environment.Slice()),
-		Cmd:          utils.CopySlice(c.Command.Slice()),
+		Cmd:          strslice.New(utils.CopySlice(c.Command.Slice())...),
 		Image:        c.Image,
 		Labels:       utils.CopyMap(c.Labels.MapParts()),
 		ExposedPorts: exposedPorts,
 		Tty:          c.Tty,
 		OpenStdin:    c.StdinOpen,
 		WorkingDir:   c.WorkingDir,
-		VolumeDriver: c.VolumeDriver,
 		Volumes:      volumes(c, ctx),
 		MacAddress:   c.MacAddress,
 	}
 
-	ulimits := []dockerclient.ULimit{}
+	ulimits := []*units.Ulimit{}
 	if c.Ulimits.Elements != nil {
 		for _, ulimit := range c.Ulimits.Elements {
-			ulimits = append(ulimits, dockerclient.ULimit{
+			ulimits = append(ulimits, &units.Ulimit{
 				Name: ulimit.Name,
 				Soft: ulimit.Soft,
 				Hard: ulimit.Hard,
@@ -143,49 +150,54 @@ func Convert(c *project.ServiceConfig, ctx *Context) (*dockerclient.Config, *doc
 		}
 	}
 
-	hostConfig := &dockerclient.HostConfig{
-		VolumesFrom:  utils.CopySlice(c.VolumesFrom),
-		CapAdd:       utils.CopySlice(c.CapAdd),
-		CapDrop:      utils.CopySlice(c.CapDrop),
+	resources := container.Resources{
 		CgroupParent: c.CgroupParent,
-		CPUQuota:     c.CPUQuota,
+		Memory:       c.MemLimit,
+		MemorySwap:   c.MemSwapLimit,
 		CPUShares:    c.CPUShares,
-		CPUSetCPUs:   c.CPUSet,
-		ExtraHosts:   utils.CopySlice(c.ExtraHosts),
-		Privileged:   c.Privileged,
-		Binds:        Filter(c.Volumes, isBind),
+		CPUQuota:     c.CPUQuota,
+		CpusetCpus:   c.CPUSet,
+		Ulimits:      ulimits,
 		Devices:      deviceMappings,
-		DNS:          utils.CopySlice(c.DNS.Slice()),
-		DNSSearch:    utils.CopySlice(c.DNSSearch.Slice()),
-		LogConfig: dockerclient.LogConfig{
+	}
+
+	hostConfig := &container.HostConfig{
+		VolumesFrom: utils.CopySlice(c.VolumesFrom),
+		CapAdd:      strslice.New(utils.CopySlice(c.CapAdd)...),
+		CapDrop:     strslice.New(utils.CopySlice(c.CapDrop)...),
+		ExtraHosts:  utils.CopySlice(c.ExtraHosts),
+		Privileged:  c.Privileged,
+		Binds:       Filter(c.Volumes, isBind),
+		DNS:         utils.CopySlice(c.DNS.Slice()),
+		DNSSearch:   utils.CopySlice(c.DNSSearch.Slice()),
+		LogConfig: container.LogConfig{
 			Type:   c.LogDriver,
 			Config: utils.CopyMap(c.LogOpt),
 		},
-		Memory:         c.MemLimit,
-		MemorySwap:     c.MemSwapLimit,
-		NetworkMode:    c.Net,
+		NetworkMode:    container.NetworkMode(c.Net),
 		ReadonlyRootfs: c.ReadOnly,
-		PidMode:        c.Pid,
-		UTSMode:        c.Uts,
-		IpcMode:        c.Ipc,
+		PidMode:        container.PidMode(c.Pid),
+		UTSMode:        container.UTSMode(c.Uts),
+		IpcMode:        container.IpcMode(c.Ipc),
 		PortBindings:   portBindings,
 		RestartPolicy:  *restartPolicy,
 		SecurityOpt:    utils.CopySlice(c.SecurityOpt),
-		Ulimits:        ulimits,
+		VolumeDriver:   c.VolumeDriver,
+		Resources:      resources,
 	}
 
 	return config, hostConfig, nil
 }
 
-func parseDevices(devices []string) ([]dockerclient.Device, error) {
+func parseDevices(devices []string) ([]container.DeviceMapping, error) {
 	// parse device mappings
-	deviceMappings := []dockerclient.Device{}
+	deviceMappings := []container.DeviceMapping{}
 	for _, device := range devices {
 		v, err := opts.ParseDevice(device)
 		if err != nil {
 			return nil, err
 		}
-		deviceMappings = append(deviceMappings, dockerclient.Device{
+		deviceMappings = append(deviceMappings, container.DeviceMapping{
 			PathOnHost:        v.PathOnHost,
 			PathInContainer:   v.PathInContainer,
 			CgroupPermissions: v.CgroupPermissions,
