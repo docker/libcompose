@@ -8,13 +8,19 @@ import (
 	"path/filepath"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/builder"
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/fileutils"
+	"github.com/docker/docker/pkg/jsonmessage"
+	"github.com/docker/docker/pkg/progress"
+	"github.com/docker/docker/pkg/streamformatter"
+	"github.com/docker/docker/pkg/term"
+	"github.com/docker/engine-api/types"
 	"github.com/docker/libcompose/project"
-	dockerclient "github.com/fsouza/go-dockerclient"
 )
 
 // DefaultDockerfileName is the default name of a Dockerfile
@@ -32,9 +38,9 @@ type DaemonBuilder struct {
 }
 
 // NewDaemonBuilder creates a DaemonBuilder based on the specified context.
-func NewDaemonBuilder(context *Context) *DaemonBuilder {
+func NewDaemonBuilder(ctx *Context) *DaemonBuilder {
 	return &DaemonBuilder{
-		context: context,
+		context: ctx,
 	}
 }
 
@@ -45,26 +51,47 @@ func (d *DaemonBuilder) Build(imageName string, p *project.Project, service proj
 		return fmt.Errorf("Specified service does not have a build section")
 	}
 
-	context, err := CreateTar(p, service.Name())
+	ctx, err := CreateTar(p, service.Name())
 	if err != nil {
 		return err
 	}
+	defer ctx.Close()
 
-	defer context.Close()
+	var progBuff io.Writer = os.Stdout
+	var buildBuff io.Writer = os.Stdout
+
+	// Setup an upload progress bar
+	progressOutput := streamformatter.NewStreamFormatter().NewProgressOutput(progBuff, true)
+
+	var body io.Reader = progress.NewProgressReader(ctx, progressOutput, 0, "", "Sending build context to Docker daemon")
 
 	client := d.context.ClientFactory.Create(service)
 
 	logrus.Infof("Building %s...", imageName)
 
-	return client.BuildImage(dockerclient.BuildImageOptions{
-		InputStream:    context,
-		OutputStream:   os.Stdout,
-		RawJSONStream:  false,
-		Name:           imageName,
-		RmTmpContainer: true,
-		Dockerfile:     service.Config().Dockerfile,
-		NoCache:        d.context.NoCache,
+	outFd, isTerminalOut := term.GetFdInfo(os.Stdout)
+
+	response, err := client.ImageBuild(context.Background(), types.ImageBuildOptions{
+		Context:     body,
+		Tags:        []string{imageName},
+		NoCache:     d.context.NoCache,
+		Remove:      true,
+		Dockerfile:  service.Config().Dockerfile,
+		AuthConfigs: d.context.ConfigFile.AuthConfigs,
 	})
+
+	err = jsonmessage.DisplayJSONMessagesStream(response.Body, buildBuff, outFd, isTerminalOut, nil)
+	if err != nil {
+		if jerr, ok := err.(*jsonmessage.JSONError); ok {
+			// If no error code is set, default to 1
+			if jerr.Code == 0 {
+				jerr.Code = 1
+			}
+			fmt.Fprintf(os.Stderr, "%s%s", progBuff, buildBuff)
+			return fmt.Errorf("Status: %s, Code: %d", jerr.Message, jerr.Code)
+		}
+	}
+	return err
 }
 
 // CreateTar create a build context tar for the specified project and service name.

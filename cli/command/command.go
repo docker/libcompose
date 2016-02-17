@@ -295,7 +295,7 @@ func Populate(context *project.Context, c *cli.Context) {
 	} else if c.Command.Name == "stop" || c.Command.Name == "restart" || c.Command.Name == "scale" {
 		context.Timeout = uint(c.Int("timeout"))
 	} else if c.Command.Name == "kill" {
-		context.Signal = c.Int("signal")
+		context.Signal = c.String("signal")
 	} else if c.Command.Name == "rm" {
 		context.Volume = c.Bool("v")
 	} else if c.Command.Name == "build" {

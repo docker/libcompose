@@ -10,8 +10,9 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/engine-api/client"
+	"github.com/docker/engine-api/types"
 	"github.com/docker/libcompose/docker"
-	dockerclient "github.com/fsouza/go-dockerclient"
 
 	. "gopkg.in/check.v1"
 )
@@ -78,13 +79,20 @@ type RunSuite struct {
 func (s *RunSuite) TearDownTest(c *C) {
 	// Delete all containers
 	client := GetClient(c)
-	containers, err := client.ListContainers(dockerclient.ListContainersOptions{All: true})
+
+	containers, err := client.ContainerList(types.ContainerListOptions{
+		All: true,
+	})
 	c.Assert(err, IsNil)
 	for _, container := range containers {
 		// Unpause container (if paused) and ignore error (if wasn't paused)
-		client.UnpauseContainer(container.ID)
+		client.ContainerUnpause(container.ID)
 		// And remove force \o/
-		err := client.RemoveContainer(dockerclient.RemoveContainerOptions{ID: container.ID, Force: true, RemoveVolumes: true})
+		err := client.ContainerRemove(types.ContainerRemoveOptions{
+			ContainerID:   container.ID,
+			Force:         true,
+			RemoveVolumes: true,
+		})
 		c.Assert(err, IsNil)
 	}
 }
@@ -162,7 +170,7 @@ func (s *RunSuite) createCommand(c *C, projectName, command string, argsAndInput
 	return command, args, input
 }
 
-func GetClient(c *C) *dockerclient.Client {
+func GetClient(c *C) client.APIClient {
 	client, err := docker.CreateClient(docker.ClientOpts{})
 
 	c.Assert(err, IsNil)
@@ -170,7 +178,7 @@ func GetClient(c *C) *dockerclient.Client {
 	return client
 }
 
-func (s *RunSuite) GetContainerByName(c *C, name string) *dockerclient.Container {
+func (s *RunSuite) GetContainerByName(c *C, name string) *types.ContainerJSON {
 	client := GetClient(c)
 	container, err := docker.GetContainerByName(client, name)
 
@@ -180,14 +188,14 @@ func (s *RunSuite) GetContainerByName(c *C, name string) *dockerclient.Container
 		return nil
 	}
 
-	info, err := client.InspectContainer(container.ID)
+	info, err := client.ContainerInspect(container.ID)
 
 	c.Assert(err, IsNil)
 
-	return info
+	return &info
 }
 
-func (s *RunSuite) GetContainersByProject(c *C, project string) []dockerclient.APIContainers {
+func (s *RunSuite) GetContainersByProject(c *C, project string) []types.Container {
 	client := GetClient(c)
 	containers, err := docker.GetContainersByFilter(client, docker.PROJECT.Eq(project))
 

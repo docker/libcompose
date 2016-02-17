@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/engine-api/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
-	"github.com/fsouza/go-dockerclient"
 )
 
 // Service is a project.Service implementations.
@@ -97,7 +97,7 @@ func (s *Service) ensureImageExists() (string, error) {
 		return s.imageName(), nil
 	}
 
-	if err != nil && err != docker.ErrNoSuchImage {
+	if err != nil && !client.IsErrImageNotFound(err) {
 		return "", err
 	}
 
@@ -114,7 +114,7 @@ func (s *Service) ensureImageExists() (string, error) {
 func (s *Service) imageExists() error {
 	client := s.context.ClientFactory.Create(s)
 
-	_, err := client.InspectImage(s.imageName())
+	_, _, err := client.ImageInspectWithRaw(s.imageName(), false)
 	return err
 }
 

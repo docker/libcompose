@@ -6,8 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/docker/engine-api/types"
+	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/utils"
-	dockerclient "github.com/fsouza/go-dockerclient"
+
 	. "gopkg.in/check.v1"
 )
 
@@ -41,7 +43,7 @@ func (s *RunSuite) TestRecreateForceRecreate(c *C) {
 	c.Assert(cn.ID, Not(Equals), cn2.ID)
 }
 
-func mountSet(slice []dockerclient.Mount) map[string]bool {
+func mountSet(slice []types.MountPoint) map[string]bool {
 	result := map[string]bool{}
 	for _, v := range slice {
 		result[fmt.Sprint(v.Source, ":", v.Destination)] = true
@@ -188,14 +190,21 @@ func (s *RunSuite) TestUpAfterImageTagDeleted(c *C) {
 	  tty: true
 	`, image)
 
-	err := client.TagImage("busybox:latest", dockerclient.TagImageOptions{Repo: repo, Tag: label, Force: true})
+	err := client.ImageTag(types.ImageTagOptions{
+		ImageID:        "busybox:latest",
+		RepositoryName: repo,
+		Tag:            label,
+		Force:          true,
+	})
 	c.Assert(err, IsNil)
 
 	p := s.ProjectFromText(c, "up", template)
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
 	firstContainer := s.GetContainerByName(c, name)
 
-	err = client.RemoveImage(image)
+	_, err = client.ImageRemove(types.ImageRemoveOptions{
+		ImageID: image,
+	})
 	c.Assert(err, IsNil)
 
 	p = s.FromText(c, p, "up", "--no-recreate", template)
@@ -219,7 +228,9 @@ func (s *RunSuite) TestRecreateImageChanging(c *C) {
 	`, image)
 
 	// Ignore error here
-	client.RemoveImage(image)
+	client.ImageRemove(types.ImageRemoveOptions{
+		ImageID: image,
+	})
 
 	// Up, pull needed
 	p := s.ProjectFromText(c, "up", template)
@@ -237,7 +248,12 @@ func (s *RunSuite) TestRecreateImageChanging(c *C) {
 	c.Assert(firstContainer.ID, Equals, latestContainer.ID)
 
 	// Change what tag points to
-	err := client.TagImage("busybox:latest", dockerclient.TagImageOptions{Repo: repo, Tag: label, Force: true})
+	err := client.ImageTag(types.ImageTagOptions{
+		ImageID:        "busybox:latest",
+		RepositoryName: repo,
+		Tag:            label,
+		Force:          true,
+	})
 	c.Assert(err, IsNil)
 
 	// Up (with recreate - the default), pull is needed and new container is created
@@ -267,7 +283,7 @@ func (s *RunSuite) TestLink(c *C) {
 
 	cn := s.GetContainerByName(c, serverName)
 	c.Assert(cn, NotNil)
-	c.Assert(cn.Config.ExposedPorts, DeepEquals, map[dockerclient.Port]struct{}{
+	c.Assert(cn.Config.ExposedPorts, DeepEquals, map[nat.Port]struct{}{
 		"80/tcp": {},
 	})
 

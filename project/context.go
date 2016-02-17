@@ -25,7 +25,7 @@ type Context struct {
 	NoRecreate          bool
 	NoCache             bool
 	NoBuild             bool
-	Signal              int
+	Signal              string
 	ComposeFiles        []string
 	ComposeBytes        [][]byte
 	ProjectName         string

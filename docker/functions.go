@@ -1,29 +1,43 @@
 package docker
 
 import (
-	dockerclient "github.com/fsouza/go-dockerclient"
+	"fmt"
+
+	"github.com/docker/engine-api/client"
+	"github.com/docker/engine-api/types"
+	"github.com/docker/engine-api/types/filters"
 )
 
 // GetContainersByFilter looks up the hosts containers with the specified filters and
 // returns a list of container matching it, or an error.
-func GetContainersByFilter(client *dockerclient.Client, filters ...map[string][]string) ([]dockerclient.APIContainers, error) {
-	var filterResult map[string][]string
+func GetContainersByFilter(client client.APIClient, containerFilters ...map[string][]string) ([]types.Container, error) {
+	filterArgs := filters.NewArgs()
 
-	for _, filter := range filters {
-		if filterResult == nil {
-			filterResult = filter
-		} else {
-			filterResult = And(filterResult, filter)
+	// FIXME(vdemeester) I don't like 3 for loops >_<
+	for _, filter := range containerFilters {
+		for key, filterValue := range filter {
+			for _, value := range filterValue {
+				filterArgs.Add(key, value)
+			}
 		}
 	}
 
-	return client.ListContainers(dockerclient.ListContainersOptions{All: true, Filters: filterResult})
+	return client.ContainerList(types.ContainerListOptions{
+		All:    true,
+		Filter: filterArgs,
+	})
 }
 
 // GetContainerByName looks up the hosts containers with the specified name and
 // returns it, or an error.
-func GetContainerByName(client *dockerclient.Client, name string) (*dockerclient.APIContainers, error) {
-	containers, err := client.ListContainers(dockerclient.ListContainersOptions{All: true, Filters: NAME.Eq(name)})
+func GetContainerByName(client client.APIClient, name string) (*types.Container, error) {
+	filterArgs := filters.NewArgs()
+	filterArgs.Add("label", fmt.Sprintf("%s=%s", NAME, name))
+
+	containers, err := client.ContainerList(types.ContainerListOptions{
+		All:    true,
+		Filter: filterArgs,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -37,9 +51,14 @@ func GetContainerByName(client *dockerclient.Client, name string) (*dockerclient
 
 // GetContainerByID looks up the hosts containers with the specified Id and
 // returns it, or an error.
-func GetContainerByID(client *dockerclient.Client, id string) (*dockerclient.APIContainers, error) {
-	containers, err := client.ListContainers(
-		dockerclient.ListContainersOptions{All: true, Filters: map[string][]string{"id": {id}}})
+func GetContainerByID(client client.APIClient, id string) (*types.Container, error) {
+	filterArgs := filters.NewArgs()
+	filterArgs.Add("id", id)
+
+	containers, err := client.ContainerList(types.ContainerListOptions{
+		All:    true,
+		Filter: filterArgs,
+	})
 	if err != nil {
 		return nil, err
 	}
