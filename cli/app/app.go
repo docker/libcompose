@@ -3,8 +3,10 @@ package app
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
@@ -124,7 +126,7 @@ func ProjectUp(p *project.Project, c *cli.Context) {
 	}
 
 	if !c.Bool("d") {
-		wait()
+		exitOnSignal(p, c)
 	}
 }
 
@@ -258,4 +260,19 @@ func ProjectScale(p *project.Project, c *cli.Context) {
 
 func wait() {
 	<-make(chan interface{})
+}
+
+func exitOnSignal(p *project.Project, c *cli.Context) {
+	signalChan := make(chan os.Signal, 1)
+	cleanupDone := make(chan bool)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		for range signalChan {
+			fmt.Printf("\nGracefully stopping...\n")
+			ProjectDown(p, c)
+			cleanupDone <- true
+		}
+	}()
+	<-cleanupDone
 }
