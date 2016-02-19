@@ -32,7 +32,7 @@ func GetContainersByFilter(client client.APIClient, containerFilters ...map[stri
 // returns it, or an error.
 func GetContainerByName(client client.APIClient, name string) (*types.Container, error) {
 	filterArgs := filters.NewArgs()
-	filterArgs.Add("label", fmt.Sprintf("%s=%s", NAME, name))
+	filterArgs.Add("name", fmt.Sprintf("%s", name))
 
 	containers, err := client.ContainerList(types.ContainerListOptions{
 		All:    true,

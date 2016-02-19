@@ -11,10 +11,12 @@ type Label string
 
 // Libcompose default labels.
 const (
-	NAME    = Label("io.docker.compose.name")
-	PROJECT = Label("io.docker.compose.project")
-	SERVICE = Label("io.docker.compose.service")
-	HASH    = Label("io.docker.compose.config-hash")
+	NUMBER  = Label("com.docker.compose.container-number")
+	ONEOFF  = Label("com.docker.compose.oneoff")
+	PROJECT = Label("com.docker.compose.project")
+	SERVICE = Label("com.docker.compose.service")
+	HASH    = Label("com.docker.compose.config-hash")
+	VERSION = Label("com.docker.compose.version")
 )
 
 // EqString returns a label json string representation with the specified value.
