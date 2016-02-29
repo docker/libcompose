@@ -193,6 +193,7 @@ func (s *Service) build(ctx context.Context, buildOptions options.Build) error {
 		NoCache:          buildOptions.NoCache,
 		ForceRemove:      buildOptions.ForceRemove,
 		Pull:             buildOptions.Pull,
+		LoggerFactory:    s.context.LoggerFactory,
 	}
 	return builder.Build(ctx, s.imageName())
 }
@@ -572,7 +573,7 @@ func (s *Service) Log(ctx context.Context, follow bool) error {
 			return err
 		}
 		name := fmt.Sprintf("%s_%d", s.name, containerNumber)
-		l := s.context.LoggerFactory.Create(name)
+		l := s.context.LoggerFactory.CreateContainerLogger(name)
 		return c.Log(ctx, l, follow)
 	})
 }

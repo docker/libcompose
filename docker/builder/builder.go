@@ -21,6 +21,7 @@ import (
 	"github.com/docker/docker/pkg/term"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
+	"github.com/docker/libcompose/logger"
 )
 
 // DefaultDockerfileName is the default name of a Dockerfile
@@ -42,6 +43,7 @@ type DaemonBuilder struct {
 	ForceRemove      bool
 	Pull             bool
 	BuildArgs        map[string]string
+	LoggerFactory    logger.Factory
 }
 
 // Build implements Builder. It consumes the docker build API endpoint and sends
@@ -52,9 +54,26 @@ func (d *DaemonBuilder) Build(ctx context.Context, imageName string) error {
 		return err
 	}
 	defer buildCtx.Close()
+	if d.LoggerFactory == nil {
+		d.LoggerFactory = &logger.NullLogger{}
+	}
 
-	var progBuff io.Writer = os.Stdout
-	var buildBuff io.Writer = os.Stdout
+	l := d.LoggerFactory.CreateBuildLogger(imageName)
+
+	progBuff := &logger.Wrapper{
+		Err:    false,
+		Logger: l,
+	}
+
+	buildBuff := &logger.Wrapper{
+		Err:    false,
+		Logger: l,
+	}
+
+	errBuff := &logger.Wrapper{
+		Err:    true,
+		Logger: l,
+	}
 
 	// Setup an upload progress bar
 	progressOutput := streamformatter.NewStreamFormatter().NewProgressOutput(progBuff, true)
@@ -64,6 +83,10 @@ func (d *DaemonBuilder) Build(ctx context.Context, imageName string) error {
 	logrus.Infof("Building %s...", imageName)
 
 	outFd, isTerminalOut := term.GetFdInfo(os.Stdout)
+	w := l.OutWriter()
+	if w != nil {
+		outFd, isTerminalOut = term.GetFdInfo(w)
+	}
 
 	response, err := d.Client.ImageBuild(ctx, body, types.ImageBuildOptions{
 		Tags:        []string{imageName},
@@ -86,6 +109,7 @@ func (d *DaemonBuilder) Build(ctx context.Context, imageName string) error {
 			if jerr.Code == 0 {
 				jerr.Code = 1
 			}
+			errBuff.Write([]byte(jerr.Error()))
 			return fmt.Errorf("Status: %s, Code: %d", jerr.Message, jerr.Code)
 		}
 	}
