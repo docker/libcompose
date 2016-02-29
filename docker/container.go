@@ -164,8 +164,11 @@ func (c *Container) Create(imageName string) (*types.Container, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		id, _ := c.ID()
 		c.service.context.Project.Notify(project.EventContainerCreated, c.service.Name(), map[string]string{
 			"name": c.Name(),
+			"id":   id,
 		})
 	}
 
@@ -273,9 +276,10 @@ func (c *Container) Up(imageName string) error {
 			logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
 			return err
 		}
-
+		id, _ := c.ID()
 		c.service.context.Project.Notify(project.EventContainerStarted, c.service.Name(), map[string]string{
 			"name": c.Name(),
+			"id":   id,
 		})
 	}
 
