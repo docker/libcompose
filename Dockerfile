@@ -1,5 +1,5 @@
 # This file describes the standard way to build libcompose, using docker
-FROM golang:1.5.3
+FROM golang:1.6.0
 
 RUN apt-get update && apt-get install -y \
     iptables \
@@ -26,10 +26,7 @@ ENV DOCKER_CROSSPLATFORMS \
 	windows/amd64 windows/386
 
 # Which docker version to test on
-ENV DOCKER_VERSION 1.10.0
-
-# enable GO15VENDOREXPERIMENT
-ENV GO15VENDOREXPERIMENT 1
+ENV DOCKER_VERSION 1.10.2
 
 # Download docker
 RUN set -ex; \
