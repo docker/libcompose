@@ -347,6 +347,18 @@ func (s MaporColonSlice) MarshalYAML() (tag string, value interface{}, err error
 func (s *MaporColonSlice) UnmarshalYAML(tag string, value interface{}) error {
 	switch value := value.(type) {
 	case []interface{}:
+		for i, part := range value {
+			switch part := part.(type) {
+			case map[interface{}]interface{}:
+				sepMapParts, err := toSepMapParts(part, ":")
+				if err != nil {
+					return err
+				}
+
+				value[i] = sepMapParts[0]
+			}
+		}
+
 		parts, err := toStrings(value)
 		if err != nil {
 			return err
