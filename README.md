@@ -67,8 +67,8 @@ libcompose-cli_linux-386*     libcompose-cli_windows-386.exe*
 
 ### Building with `go`
 
-- You need `go` v1.5
-- You need to set export `GO15VENDOREXPERIMENT=1` environment variable
+- You need `go` v1.5 or greater
+- If you are not using `go` v1.6, you need to set export `GO15VENDOREXPERIMENT=1` environment variable
 - If your working copy is not in your `GOPATH`, you need to set it
 accordingly.
 
