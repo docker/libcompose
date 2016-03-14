@@ -506,7 +506,7 @@ func (c *Container) Log() error {
 		ShowStdout:  true,
 		ShowStderr:  true,
 		Follow:      true,
-		Tail:        "0",
+		Tail:        "all",
 	}
 	responseBody, err := c.client.ContainerLogs(context.Background(), options)
 	if err != nil {
