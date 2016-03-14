@@ -295,6 +295,37 @@ func (s *RunSuite) TestLink(c *C) {
 		fmt.Sprintf("/%s:/%s/%s", serverName, clientName, "server"),
 		fmt.Sprintf("/%s:/%s/%s", serverName, clientName, serverName),
 	}))
+
+	p = s.ProjectFromText(c, "up", `
+        server:
+          image: busybox
+          command: cat
+          stdin_open: true
+          expose:
+          - 80
+        client:
+          image: busybox
+          links:
+          - "server: foo2"
+          - server
+        `)
+
+	serverName = fmt.Sprintf("%s_%s_1", p, "server")
+
+	cn = s.GetContainerByName(c, serverName)
+	c.Assert(cn, NotNil)
+	c.Assert(cn.Config.ExposedPorts, DeepEquals, map[nat.Port]struct{}{
+		"80/tcp": {},
+	})
+
+	clientName = fmt.Sprintf("%s_%s_1", p, "client")
+	cn = s.GetContainerByName(c, clientName)
+	c.Assert(cn, NotNil)
+	c.Assert(asMap(cn.HostConfig.Links), DeepEquals, asMap([]string{
+		fmt.Sprintf("/%s:/%s/%s", serverName, clientName, "foo2"),
+		fmt.Sprintf("/%s:/%s/%s", serverName, clientName, "server"),
+		fmt.Sprintf("/%s:/%s/%s", serverName, clientName, serverName),
+	}))
 }
 
 func (s *RunSuite) TestRelativeVolume(c *C) {
