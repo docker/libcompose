@@ -413,7 +413,9 @@ func (p *Project) traverse(start bool, selected map[string]bool, wrappers map[st
 	launched := map[string]bool{}
 
 	for _, wrapper := range wrappers {
-		p.startService(wrappers, []string{}, selected, launched, wrapper, action, cycleAction)
+		if err := p.startService(wrappers, []string{}, selected, launched, wrapper, action, cycleAction); err != nil {
+			return err
+		}
 	}
 
 	var firstError error
