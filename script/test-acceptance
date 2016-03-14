@@ -22,7 +22,7 @@ cd venv/compose
 # if the tests fail, we still want to execute a few cleanup commands
 # so we save the result for the exit command at the end.
 # the "or" ensures that return code isn't trapped by the parent script.
-py.test -vs --tb=short tests/acceptance || result=$?
+timeout 15m py.test -vs --tb=short tests/acceptance || result=$?
 
 cd -
 bundle .integration-daemon-stop
