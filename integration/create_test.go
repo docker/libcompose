@@ -197,7 +197,8 @@ func (s *RunSuite) TestMultipleComposeFilesOneTwo(c *C) {
 
 	c.Assert(container.Config.Image, Equals, "busybox")
 	c.Assert(container.Config.Cmd.Slice(), DeepEquals, []string{"echo", "two"})
-	c.Assert(container.Config.Env, DeepEquals, []string{"KEY1=VAL1", "KEY2=VAL2"})
+	c.Assert(contains(container.Config.Env, "KEY2=VAL2"), Equals, true)
+	c.Assert(contains(container.Config.Env, "KEY1=VAL1"), Equals, true)
 }
 
 func (s *RunSuite) TestMultipleComposeFilesTwoOne(c *C) {
@@ -224,7 +225,17 @@ func (s *RunSuite) TestMultipleComposeFilesTwoOne(c *C) {
 
 	c.Assert(container.Config.Image, Equals, "tianon/true")
 	c.Assert(container.Config.Cmd.Slice(), DeepEquals, []string{"echo", "two"})
-	c.Assert(container.Config.Env, DeepEquals, []string{"KEY2=VAL2", "KEY1=VAL1"})
+	c.Assert(contains(container.Config.Env, "KEY2=VAL2"), Equals, true)
+	c.Assert(contains(container.Config.Env, "KEY1=VAL1"), Equals, true)
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *RunSuite) TestDefaultMultipleComposeFiles(c *C) {
