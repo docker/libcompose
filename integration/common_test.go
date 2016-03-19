@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
@@ -80,15 +82,15 @@ func (s *RunSuite) TearDownTest(c *C) {
 	// Delete all containers
 	client := GetClient(c)
 
-	containers, err := client.ContainerList(types.ContainerListOptions{
+	containers, err := client.ContainerList(context.Background(), types.ContainerListOptions{
 		All: true,
 	})
 	c.Assert(err, IsNil)
 	for _, container := range containers {
 		// Unpause container (if paused) and ignore error (if wasn't paused)
-		client.ContainerUnpause(container.ID)
+		client.ContainerUnpause(context.Background(), container.ID)
 		// And remove force \o/
-		err := client.ContainerRemove(types.ContainerRemoveOptions{
+		err := client.ContainerRemove(context.Background(), types.ContainerRemoveOptions{
 			ContainerID:   container.ID,
 			Force:         true,
 			RemoveVolumes: true,
@@ -188,7 +190,7 @@ func (s *RunSuite) GetContainerByName(c *C, name string) *types.ContainerJSON {
 		return nil
 	}
 
-	info, err := client.ContainerInspect(container.ID)
+	info, err := client.ContainerInspect(context.Background(), container.ID)
 
 	c.Assert(err, IsNil)
 

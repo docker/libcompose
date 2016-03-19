@@ -3,6 +3,8 @@ package docker
 import (
 	"fmt"
 
+	"golang.org/x/net/context"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/go-connections/nat"
@@ -114,7 +116,7 @@ func (s *Service) ensureImageExists() (string, error) {
 func (s *Service) imageExists() error {
 	client := s.context.ClientFactory.Create(s)
 
-	_, _, err := client.ImageInspectWithRaw(s.imageName(), false)
+	_, _, err := client.ImageInspectWithRaw(context.Background(), s.imageName(), false)
 	return err
 }
 

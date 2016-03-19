@@ -123,12 +123,12 @@ func Convert(c *project.ServiceConfig, ctx *Context) (*container.Config, *contai
 	}
 
 	config := &container.Config{
-		Entrypoint:   strslice.New(utils.CopySlice(c.Entrypoint.Slice())...),
+		Entrypoint:   strslice.StrSlice(utils.CopySlice(c.Entrypoint.Slice())),
 		Hostname:     c.Hostname,
 		Domainname:   c.DomainName,
 		User:         c.User,
 		Env:          utils.CopySlice(c.Environment.Slice()),
-		Cmd:          strslice.New(utils.CopySlice(c.Command.Slice())...),
+		Cmd:          strslice.StrSlice(utils.CopySlice(c.Command.Slice())),
 		Image:        c.Image,
 		Labels:       utils.CopyMap(c.Labels.MapParts()),
 		ExposedPorts: exposedPorts,
@@ -163,8 +163,8 @@ func Convert(c *project.ServiceConfig, ctx *Context) (*container.Config, *contai
 
 	hostConfig := &container.HostConfig{
 		VolumesFrom: utils.CopySlice(c.VolumesFrom),
-		CapAdd:      strslice.New(utils.CopySlice(c.CapAdd)...),
-		CapDrop:     strslice.New(utils.CopySlice(c.CapDrop)...),
+		CapAdd:      strslice.StrSlice(utils.CopySlice(c.CapAdd)),
+		CapDrop:     strslice.StrSlice(utils.CopySlice(c.CapDrop)),
 		ExtraHosts:  utils.CopySlice(c.ExtraHosts),
 		Privileged:  c.Privileged,
 		Binds:       Filter(c.Volumes, isBind),

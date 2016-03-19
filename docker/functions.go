@@ -3,6 +3,8 @@ package docker
 import (
 	"fmt"
 
+	"golang.org/x/net/context"
+
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/filters"
@@ -22,7 +24,7 @@ func GetContainersByFilter(client client.APIClient, containerFilters ...map[stri
 		}
 	}
 
-	return client.ContainerList(types.ContainerListOptions{
+	return client.ContainerList(context.Background(), types.ContainerListOptions{
 		All:    true,
 		Filter: filterArgs,
 	})
@@ -34,7 +36,7 @@ func GetContainerByName(client client.APIClient, name string) (*types.Container,
 	filterArgs := filters.NewArgs()
 	filterArgs.Add("label", fmt.Sprintf("%s=%s", NAME, name))
 
-	containers, err := client.ContainerList(types.ContainerListOptions{
+	containers, err := client.ContainerList(context.Background(), types.ContainerListOptions{
 		All:    true,
 		Filter: filterArgs,
 	})
@@ -55,7 +57,7 @@ func GetContainerByID(client client.APIClient, id string) (*types.Container, err
 	filterArgs := filters.NewArgs()
 	filterArgs.Add("id", id)
 
-	containers, err := client.ContainerList(types.ContainerListOptions{
+	containers, err := client.ContainerList(context.Background(), types.ContainerListOptions{
 		All:    true,
 		Filter: filterArgs,
 	})

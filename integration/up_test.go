@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	"github.com/docker/engine-api/types"
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/utils"
@@ -190,7 +192,7 @@ func (s *RunSuite) TestUpAfterImageTagDeleted(c *C) {
 	  tty: true
 	`, image)
 
-	err := client.ImageTag(types.ImageTagOptions{
+	err := client.ImageTag(context.Background(), types.ImageTagOptions{
 		ImageID:        "busybox:latest",
 		RepositoryName: repo,
 		Tag:            label,
@@ -202,7 +204,7 @@ func (s *RunSuite) TestUpAfterImageTagDeleted(c *C) {
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
 	firstContainer := s.GetContainerByName(c, name)
 
-	_, err = client.ImageRemove(types.ImageRemoveOptions{
+	_, err = client.ImageRemove(context.Background(), types.ImageRemoveOptions{
 		ImageID: image,
 	})
 	c.Assert(err, IsNil)
@@ -228,7 +230,7 @@ func (s *RunSuite) TestRecreateImageChanging(c *C) {
 	`, image)
 
 	// Ignore error here
-	client.ImageRemove(types.ImageRemoveOptions{
+	client.ImageRemove(context.Background(), types.ImageRemoveOptions{
 		ImageID: image,
 	})
 
@@ -248,7 +250,7 @@ func (s *RunSuite) TestRecreateImageChanging(c *C) {
 	c.Assert(firstContainer.ID, Equals, latestContainer.ID)
 
 	// Change what tag points to
-	err := client.ImageTag(types.ImageTagOptions{
+	err := client.ImageTag(context.Background(), types.ImageTagOptions{
 		ImageID:        "busybox:latest",
 		RepositoryName: repo,
 		Tag:            label,

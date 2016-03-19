@@ -196,7 +196,7 @@ func (s *RunSuite) TestMultipleComposeFilesOneTwo(c *C) {
 	container := s.GetContainerByName(c, name)
 
 	c.Assert(container.Config.Image, Equals, "busybox")
-	c.Assert(container.Config.Cmd.Slice(), DeepEquals, []string{"echo", "two"})
+	c.Assert([]string(container.Config.Cmd), DeepEquals, []string{"echo", "two"})
 	c.Assert(contains(container.Config.Env, "KEY2=VAL2"), Equals, true)
 	c.Assert(contains(container.Config.Env, "KEY1=VAL1"), Equals, true)
 }
@@ -224,7 +224,7 @@ func (s *RunSuite) TestMultipleComposeFilesTwoOne(c *C) {
 	container := s.GetContainerByName(c, name)
 
 	c.Assert(container.Config.Image, Equals, "tianon/true")
-	c.Assert(container.Config.Cmd.Slice(), DeepEquals, []string{"echo", "two"})
+	c.Assert([]string(container.Config.Cmd), DeepEquals, []string{"echo", "two"})
 	c.Assert(contains(container.Config.Env, "KEY2=VAL2"), Equals, true)
 	c.Assert(contains(container.Config.Env, "KEY1=VAL1"), Equals, true)
 }
