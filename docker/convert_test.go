@@ -26,7 +26,7 @@ func TestParseBindsAndVolumes(t *testing.T) {
 	assert.Nil(t, err)
 	cfg, hostCfg, err := Convert(&project.ServiceConfig{
 		Volumes: []string{"/foo", "/home:/home", "/bar/baz", ".:/home", "/usr/lib:/usr/lib:ro"},
-	}, ctx)
+	}, ctx.Context)
 	assert.Nil(t, err)
 	assert.Equal(t, map[string]struct{}{"/foo": {}, "/bar/baz": {}}, cfg.Volumes)
 	assert.Equal(t, []string{"/home:/home", abs + "/foo:/home", "/usr/lib:/usr/lib:ro"}, hostCfg.Binds)
@@ -43,7 +43,7 @@ func TestParseLabels(t *testing.T) {
 		Entrypoint: project.NewCommand(bashCmd),
 		Labels:     project.NewSliceorMap(map[string]string{fooLabel: "service.config.value"}),
 	}
-	cfg, _, err := Convert(sc, ctx)
+	cfg, _, err := Convert(sc, ctx.Context)
 	assert.Nil(t, err)
 
 	cfg.Labels[fooLabel] = "FUN"
