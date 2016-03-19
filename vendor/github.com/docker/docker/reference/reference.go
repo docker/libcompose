@@ -1,6 +1,7 @@
 package reference
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -72,7 +73,10 @@ func ParseNamed(s string) (Named, error) {
 // WithName returns a named object representing the given string. If the input
 // is invalid ErrReferenceInvalidFormat will be returned.
 func WithName(name string) (Named, error) {
-	name = normalize(name)
+	name, err := normalize(name)
+	if err != nil {
+		return nil, err
+	}
 	if err := validateName(name); err != nil {
 		return nil, err
 	}
@@ -151,6 +155,19 @@ func IsNameOnly(ref Named) bool {
 	return true
 }
 
+// ParseIDOrReference parses string for a image ID or a reference. ID can be
+// without a default prefix.
+func ParseIDOrReference(idOrRef string) (digest.Digest, Named, error) {
+	if err := v1.ValidateID(idOrRef); err == nil {
+		idOrRef = "sha256:" + idOrRef
+	}
+	if dgst, err := digest.ParseDigest(idOrRef); err == nil {
+		return dgst, nil, nil
+	}
+	ref, err := ParseNamed(idOrRef)
+	return "", ref, err
+}
+
 // splitHostname splits a repository name to hostname and remotename string.
 // If no valid hostname is found, the default hostname is used. Repository name
 // needs to be already validated before.
@@ -172,15 +189,18 @@ func splitHostname(name string) (hostname, remoteName string) {
 
 // normalize returns a repository name in its normalized form, meaning it
 // will not contain default hostname nor library/ prefix for official images.
-func normalize(name string) string {
+func normalize(name string) (string, error) {
 	host, remoteName := splitHostname(name)
+	if strings.ToLower(remoteName) != remoteName {
+		return "", errors.New("invalid reference format: repository name must be lowercase")
+	}
 	if host == DefaultHostname {
 		if strings.HasPrefix(remoteName, DefaultRepoPrefix) {
-			return strings.TrimPrefix(remoteName, DefaultRepoPrefix)
+			return strings.TrimPrefix(remoteName, DefaultRepoPrefix), nil
 		}
-		return remoteName
+		return remoteName, nil
 	}
-	return name
+	return name, nil
 }
 
 func validateName(name string) error {
