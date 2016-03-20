@@ -26,7 +26,7 @@ ENV DOCKER_CROSSPLATFORMS \
 	windows/amd64 windows/386
 
 # Which docker version to test on
-ENV DOCKER_VERSION 1.10.2
+ENV DOCKER_VERSION 1.10.3
 
 # Download docker
 RUN set -ex; \

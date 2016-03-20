@@ -7,13 +7,13 @@ source 'script/.vendor-helpers.sh'
 
 clone git github.com/Sirupsen/logrus v0.9.0
 clone git github.com/codegangsta/cli 6086d7927ec35315964d9fea46df6c04e6d697c1
-clone git github.com/docker/distribution c301f8ab27f4913c968b8d73a38e5dda79b9d3d7
+clone git github.com/docker/distribution db17a23b961978730892e12a0c6051d43a31aab3
 clone git github.com/vbatts/tar-split v0.9.11
-clone git github.com/docker/docker e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+clone git github.com/docker/docker 9e530247e066ef7a32e35a1f0f818c1e4048ad54
 clone git github.com/docker/go-units 651fc226e7441360384da338d0fd37f2440ffbe3
-clone git github.com/docker/go-connections v0.1.3
+clone git github.com/docker/go-connections v0.2.0
 clone git github.com/docker/libtrust 9cbd2a1374f46905c68a4eb3694a130610adc62a
-clone git github.com/docker/engine-api 9a940e4ead265e18d4feb9e3c515428966a08278
+clone git github.com/docker/engine-api 6de18e18540cda038b00e71a1f2946d779e83f87
 clone git github.com/flynn/go-shlex 3f9db97f856818214da2e1057f8ad84803971cff
 clone git github.com/gorilla/context 14f550f51a
 clone git github.com/gorilla/mux e444e69cbd
@@ -26,6 +26,6 @@ clone git golang.org/x/net 47990a1ba55743e6ef1affd3a14e5bac8553615d https://gith
 clone git gopkg.in/check.v1 11d3bc7aa68e238947792f30573146a3231fc0f1
 clone git github.com/Azure/go-ansiterm 70b2c90b260171e829f1ebd7c17f600c11858dbe
 clone git github.com/cloudfoundry-incubator/candiedyaml 55a459c2d9da2b078f0725e5fb324823b2c71702
-clone git github.com/Microsoft/go-winio eb176a9831c54b88eaf9eb4fbc24b94080d910ad
+clone git github.com/Microsoft/go-winio v0.1.0
 
 clean && mv vendor/src/* vendor

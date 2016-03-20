@@ -58,7 +58,7 @@ func (c *Container) findInfo() (types.ContainerJSON, error) {
 		return types.ContainerJSON{}, err
 	}
 
-	return c.client.ContainerInspect(container.ID)
+	return c.client.ContainerInspect(context.Background(), container.ID)
 }
 
 // Info returns info about the container, like name, command, state or ports.
@@ -126,7 +126,7 @@ func (c *Container) Recreate(imageName string) (*types.Container, error) {
 	name := info.Name[1:]
 	newName := fmt.Sprintf("%s_%s", name, info.ID[:12])
 	logrus.Debugf("Renaming %s => %s", name, newName)
-	if err := c.client.ContainerRename(info.ID, newName); err != nil {
+	if err := c.client.ContainerRename(context.Background(), info.ID, newName); err != nil {
 		logrus.Errorf("Failed to rename old container %s", c.name)
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func (c *Container) Recreate(imageName string) (*types.Container, error) {
 	}
 	logrus.Debugf("Created replacement container %s", newContainer.ID)
 
-	if err := c.client.ContainerRemove(types.ContainerRemoveOptions{
+	if err := c.client.ContainerRemove(context.Background(), types.ContainerRemoveOptions{
 		ContainerID:   info.ID,
 		Force:         true,
 		RemoveVolumes: false,
@@ -175,7 +175,7 @@ func (c *Container) Create(imageName string) (*types.Container, error) {
 // Down stops the container.
 func (c *Container) Down() error {
 	return c.withContainer(func(container *types.Container) error {
-		return c.client.ContainerStop(container.ID, int(c.service.context.Timeout))
+		return c.client.ContainerStop(context.Background(), container.ID, int(c.service.context.Timeout))
 	})
 }
 
@@ -183,7 +183,7 @@ func (c *Container) Down() error {
 func (c *Container) Pause() error {
 	return c.withContainer(func(container *types.Container) error {
 		if !strings.Contains(container.Status, "Paused") {
-			return c.client.ContainerPause(container.ID)
+			return c.client.ContainerPause(context.Background(), container.ID)
 		}
 		return nil
 	})
@@ -193,7 +193,7 @@ func (c *Container) Pause() error {
 func (c *Container) Unpause() error {
 	return c.withContainer(func(container *types.Container) error {
 		if strings.Contains(container.Status, "Paused") {
-			return c.client.ContainerUnpause(container.ID)
+			return c.client.ContainerUnpause(context.Background(), container.ID)
 		}
 		return nil
 	})
@@ -202,7 +202,7 @@ func (c *Container) Unpause() error {
 // Kill kill the container.
 func (c *Container) Kill() error {
 	return c.withContainer(func(container *types.Container) error {
-		return c.client.ContainerKill(container.ID, c.service.context.Signal)
+		return c.client.ContainerKill(context.Background(), container.ID, c.service.context.Signal)
 	})
 }
 
@@ -214,13 +214,13 @@ func (c *Container) Delete() error {
 		return err
 	}
 
-	info, err := c.client.ContainerInspect(container.ID)
+	info, err := c.client.ContainerInspect(context.Background(), container.ID)
 	if err != nil {
 		return err
 	}
 
 	if !info.State.Running {
-		return c.client.ContainerRemove(types.ContainerRemoveOptions{
+		return c.client.ContainerRemove(context.Background(), types.ContainerRemoveOptions{
 			ContainerID:   container.ID,
 			Force:         true,
 			RemoveVolumes: c.service.context.Volume,
@@ -237,7 +237,7 @@ func (c *Container) IsRunning() (bool, error) {
 		return false, err
 	}
 
-	info, err := c.client.ContainerInspect(container.ID)
+	info, err := c.client.ContainerInspect(context.Background(), container.ID)
 	if err != nil {
 		return false, err
 	}
@@ -262,14 +262,14 @@ func (c *Container) Up(imageName string) error {
 		return err
 	}
 
-	info, err := c.client.ContainerInspect(container.ID)
+	info, err := c.client.ContainerInspect(context.Background(), container.ID)
 	if err != nil {
 		return err
 	}
 
 	if !info.State.Running {
 		logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Starting container")
-		if err = c.client.ContainerStart(container.ID); err != nil {
+		if err = c.client.ContainerStart(context.Background(), container.ID); err != nil {
 			logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
 			return err
 		}
@@ -300,7 +300,7 @@ func (c *Container) OutOfSync(imageName string) (bool, error) {
 		return true, nil
 	}
 
-	image, _, err := c.client.ImageInspectWithRaw(info.Config.Image, false)
+	image, _, err := c.client.ImageInspectWithRaw(context.Background(), info.Config.Image, false)
 	if err != nil {
 		if client.IsErrImageNotFound(err) {
 			logrus.Debugf("Image %s do not exist, do not know if it's out of sync", info.Config.Image)
@@ -350,7 +350,7 @@ func (c *Container) createContainer(imageName, oldContainer string) (*types.Cont
 	}
 
 	if oldContainer != "" {
-		info, err := c.client.ContainerInspect(oldContainer)
+		info, err := c.client.ContainerInspect(context.Background(), oldContainer)
 		if err != nil {
 			return nil, err
 		}
@@ -359,14 +359,14 @@ func (c *Container) createContainer(imageName, oldContainer string) (*types.Cont
 
 	logrus.Debugf("Creating container %s %#v", c.name, configWrapper)
 
-	container, err := c.client.ContainerCreate(configWrapper.Config, configWrapper.HostConfig, configWrapper.NetworkingConfig, c.name)
+	container, err := c.client.ContainerCreate(context.Background(), configWrapper.Config, configWrapper.HostConfig, configWrapper.NetworkingConfig, c.name)
 	if err != nil {
 		if client.IsErrImageNotFound(err) {
 			logrus.Debugf("Not Found, pulling image %s", configWrapper.Config.Image)
 			if err = c.pull(configWrapper.Config.Image); err != nil {
 				return nil, err
 			}
-			if container, err = c.client.ContainerCreate(configWrapper.Config, configWrapper.HostConfig, configWrapper.NetworkingConfig, c.name); err != nil {
+			if container, err = c.client.ContainerCreate(context.Background(), configWrapper.Config, configWrapper.HostConfig, configWrapper.NetworkingConfig, c.name); err != nil {
 				return nil, err
 			}
 		} else {
@@ -484,7 +484,7 @@ func (c *Container) Restart() error {
 		return err
 	}
 
-	return c.client.ContainerRestart(container.ID, int(c.service.context.Timeout))
+	return c.client.ContainerRestart(context.Background(), container.ID, int(c.service.context.Timeout))
 }
 
 // Log forwards container logs to the project configured logger.
@@ -494,7 +494,7 @@ func (c *Container) Log() error {
 		return err
 	}
 
-	info, err := c.client.ContainerInspect(container.ID)
+	info, err := c.client.ContainerInspect(context.Background(), container.ID)
 	if err != nil {
 		return err
 	}
