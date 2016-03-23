@@ -214,7 +214,7 @@ type ServiceConfig struct {
 	ExternalLinks []string          `yaml:"external_links,omitempty"`
 	LogOpt        map[string]string `yaml:"log_opt,omitempty"`
 	ExtraHosts    []string          `yaml:"extra_hosts,omitempty"`
-	Ulimits       Ulimits           `yaml:"ulimits,omitemty"`
+	Ulimits       Ulimits           `yaml:"ulimits,omitempty"`
 }
 
 // EnvironmentLookup defines methods to provides environment variable loading.
