@@ -158,7 +158,7 @@ func TestRestartNo(t *testing.T) {
 
 	config, err := mergeProject(p, "", []byte(`
 test:
-  restart: no
+  restart: "no"
   image: foo
 `))
 

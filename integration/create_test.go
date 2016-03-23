@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	. "gopkg.in/check.v1"
 	"path/filepath"
@@ -149,7 +150,6 @@ func (s *RunSuite) TestFieldTypeConversions(c *C) {
           image: tianon/true
           mem_limit: $LIMIT
           memswap_limit: "40000000"
-          hostname: 100
         `)
 
 	name := fmt.Sprintf("%s_%s_1", p, "test")
@@ -160,7 +160,6 @@ func (s *RunSuite) TestFieldTypeConversions(c *C) {
           image: tianon/true
           mem_limit: 40000000
           memswap_limit: 40000000
-          hostname: "100"
         `)
 
 	name = fmt.Sprintf("%s_%s_1", p, "reference")
@@ -257,5 +256,92 @@ func (s *RunSuite) TestDefaultMultipleComposeFiles(c *C) {
 
 		c.Assert(container, NotNil)
 	}
+}
 
+func (s *RunSuite) TestValidation(c *C) {
+	template := `
+  test:
+    image: busybox
+    ports: invalid_type
+	`
+	_, output := s.FromTextCaptureOutput(c, s.RandomProject(), "create", template)
+
+	c.Assert(strings.Contains(output, "Service 'test' configuration key 'ports' contains an invalid type, it should be an array."), Equals, true)
+
+	template = `
+  test:
+    image: busybox
+    build: .
+	`
+	_, output = s.FromTextCaptureOutput(c, s.RandomProject(), "create", template)
+
+	c.Assert(strings.Contains(output, "Service 'test' has both an image and build path specified. A service can either be built to image or use an existing image, not both."), Equals, true)
+
+	template = `
+  test:
+    image: busybox
+    ports: invalid_type
+    links: invalid_type
+    devices:
+      - /dev/foo:/dev/foo
+      - /dev/foo:/dev/foo
+  `
+	_, output = s.FromTextCaptureOutput(c, s.RandomProject(), "create", template)
+
+	c.Assert(strings.Contains(output, "Service 'test' configuration key 'ports' contains an invalid type, it should be an array."), Equals, true)
+	c.Assert(strings.Contains(output, "Service 'test' configuration key 'links' contains an invalid type, it should be an array"), Equals, true)
+	c.Assert(strings.Contains(output, "Service 'test' configuration key 'devices' value [/dev/foo:/dev/foo /dev/foo:/dev/foo] has non-unique elements"), Equals, true)
+}
+
+func (s *RunSuite) TestValidationWithExtends(c *C) {
+	template := `
+  base:
+    image: busybox
+    privilege: "something"
+  test:
+    extends:
+      service: base
+	`
+
+	_, output := s.FromTextCaptureOutput(c, s.RandomProject(), "create", template)
+
+	c.Assert(strings.Contains(output, "Unsupported config option for base service: 'privilege' (did you mean 'privileged'?)"), Equals, true)
+
+	template = `
+  base:
+    image: busybox
+  test:
+    extends:
+      service: base
+    links: invalid_type
+	`
+
+	_, output = s.FromTextCaptureOutput(c, s.RandomProject(), "create", template)
+
+	c.Assert(strings.Contains(output, "Service 'test' configuration key 'links' contains an invalid type, it should be an array"), Equals, true)
+
+	template = `
+  test:
+    extends:
+      file: ./assets/validation/valid/docker-compose.yml
+      service: base
+    devices:
+      - /dev/foo:/dev/foo
+      - /dev/foo:/dev/foo
+	`
+
+	_, output = s.FromTextCaptureOutput(c, s.RandomProject(), "create", template)
+
+	c.Assert(strings.Contains(output, "Service 'test' configuration key 'devices' value [/dev/foo:/dev/foo /dev/foo:/dev/foo] has non-unique elements"), Equals, true)
+
+	template = `
+  test:
+    extends:
+      file: ./assets/validation/invalid/docker-compose.yml
+      service: base
+	`
+
+	_, output = s.FromTextCaptureOutput(c, s.RandomProject(), "create", template)
+
+	c.Assert(strings.Contains(output, "Service 'base' configuration key 'ports' contains an invalid type, it should be an array."), Equals, true)
 }

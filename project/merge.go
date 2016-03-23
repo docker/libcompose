@@ -43,6 +43,10 @@ func mergeProject(p *Project, file string, bytes []byte) (map[string]*ServiceCon
 		return nil, err
 	}
 
+	if err := validate(datas); err != nil {
+		return nil, err
+	}
+
 	for name, data := range datas {
 		data, err := parse(p.context.ResourceLookup, p.context.EnvironmentLookup, file, data, datas)
 		if err != nil {
@@ -60,6 +64,13 @@ func mergeProject(p *Project, file string, bytes []byte) (map[string]*ServiceCon
 		}
 
 		datas[name] = data
+	}
+
+	for name, data := range datas {
+		err := validateServiceConstraints(data, name)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if err := utils.Convert(datas, &configs); err != nil {
@@ -218,6 +229,10 @@ func parse(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup, i
 
 		err = interpolate(environmentLookup, &baseRawServices)
 		if err != nil {
+			return nil, err
+		}
+
+		if err := validate(baseRawServices); err != nil {
 			return nil, err
 		}
 

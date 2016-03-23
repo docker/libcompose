@@ -163,12 +163,13 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	configTwo := []byte(`
   multiple:
     image: busybox
-    name: multi
+    container_name: multi
     ports:
       - 9000`)
 
 	configThree := []byte(`
   multiple:
+    image: busybox
     mem_limit: 40000000
     ports:
       - 10000`)
@@ -182,7 +183,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, "busybox", p.Configs["multiple"].Image)
-	assert.Equal(t, "multi", p.Configs["multiple"].Name)
+	assert.Equal(t, "multi", p.Configs["multiple"].ContainerName)
 	assert.Equal(t, []string{"8000", "9000"}, p.Configs["multiple"].Ports)
 
 	p = NewProject(&Context{
@@ -194,7 +195,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, "tianon/true", p.Configs["multiple"].Image)
-	assert.Equal(t, "multi", p.Configs["multiple"].Name)
+	assert.Equal(t, "multi", p.Configs["multiple"].ContainerName)
 	assert.Equal(t, []string{"9000", "8000"}, p.Configs["multiple"].Ports)
 
 	p = NewProject(&Context{
@@ -206,7 +207,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, "busybox", p.Configs["multiple"].Image)
-	assert.Equal(t, "multi", p.Configs["multiple"].Name)
+	assert.Equal(t, "multi", p.Configs["multiple"].ContainerName)
 	assert.Equal(t, []string{"8000", "9000", "10000"}, p.Configs["multiple"].Ports)
 	assert.Equal(t, int64(40000000), p.Configs["multiple"].MemLimit)
 }
