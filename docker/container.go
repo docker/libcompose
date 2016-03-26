@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -28,6 +29,9 @@ import (
 
 // DefaultTag is the name of the default tag of an image.
 const DefaultTag = "latest"
+
+// ComposeVersion is name of docker-compose.yml file syntax supported version
+const ComposeVersion = "1.5.0"
 
 // Container holds information about a docker container and the service it is tied on.
 // It implements Service interface by encapsulating a EmptyService.
@@ -108,6 +112,16 @@ func name(names []string) string {
 	}
 
 	return current[1:]
+}
+
+func getContainerNumber(c *Container) string {
+	containers, err := c.service.collectContainers()
+	if err != nil {
+		logrus.Errorf("Unable to collect the containers from service")
+		return "1"
+	}
+	// Returns container count + 1
+	return strconv.Itoa(len(containers) + 1)
 }
 
 // Recreate will not refresh the container by means of relaxation and enjoyment,
@@ -339,10 +353,13 @@ func (c *Container) createContainer(imageName, oldContainer string) (*types.Cont
 		configWrapper.Config.Labels = map[string]string{}
 	}
 
-	configWrapper.Config.Labels[NAME.Str()] = c.name
 	configWrapper.Config.Labels[SERVICE.Str()] = c.service.name
 	configWrapper.Config.Labels[PROJECT.Str()] = c.service.context.Project.Name
 	configWrapper.Config.Labels[HASH.Str()] = c.getHash()
+	// libcompose run command not yet supported, so always "False"
+	configWrapper.Config.Labels[ONEOFF.Str()] = "False"
+	configWrapper.Config.Labels[NUMBER.Str()] = getContainerNumber(c)
+	configWrapper.Config.Labels[VERSION.Str()] = ComposeVersion
 
 	err = c.populateAdditionalHostConfig(configWrapper.HostConfig)
 	if err != nil {

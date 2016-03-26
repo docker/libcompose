@@ -2,6 +2,7 @@ package docker
 
 import (
 	"fmt"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -76,8 +77,9 @@ func (s *Service) collectContainers() ([]*Container, error) {
 	result := []*Container{}
 
 	for _, container := range containers {
-		name := container.Labels[NAME.Str()]
-		result = append(result, NewContainer(client, name, s))
+		// Compose add "/" before name, so Name[1] will store actaul name.
+		name := strings.SplitAfter(container.Names[0], "/")
+		result = append(result, NewContainer(client, name[1], s))
 	}
 
 	return result, nil
