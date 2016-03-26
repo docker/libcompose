@@ -4,6 +4,8 @@ set -e
 # Get rid of existing binary
 rm -f libcompose-cli
 
+go generate
+
 # Build binaries
 go build \
    -ldflags="-w -X github.com/docker/libcompose/version.GITCOMMIT=`git rev-parse --short HEAD`" \
