@@ -82,7 +82,7 @@ func (s *serviceWrapper) waitForDeps(wrappers map[string]*serviceWrapper) bool {
 	return true
 }
 
-func (s *serviceWrapper) Do(wrappers map[string]*serviceWrapper, start, done EventType, action func(service Service) error) {
+func (s *serviceWrapper) Do(wrappers map[string]*serviceWrapper, start, done, failed EventType, action func(service Service) error) {
 	defer s.done.Done()
 
 	if s.state == StateExecuted {
@@ -102,6 +102,7 @@ func (s *serviceWrapper) Do(wrappers map[string]*serviceWrapper, start, done Eve
 		s.project.Notify(done, s.service.Name(), nil)
 		s.project.Notify(EventProjectReloadTrigger, s.service.Name(), nil)
 	} else if s.err != nil {
+		s.project.Notify(failed, s.service.Name(), nil)
 		log.Errorf("Failed %s %s : %v", start, s.name, s.err)
 	} else {
 		s.project.Notify(done, s.service.Name(), nil)
