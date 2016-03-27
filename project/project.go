@@ -219,6 +219,24 @@ func (p *Project) Start(services ...string) error {
 	}), nil)
 }
 
+// Run executes a one off command (like `docker run image command`).
+func (p *Project) Run(serviceName string, commandParts []string) (int, error) {
+	var exitCode int
+	err := p.forEach([]string{}, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(wrappers, EventServiceRunStart, EventServiceRun, func(service Service) error {
+			if service.Name() == serviceName {
+				code, err := service.Run(commandParts)
+				exitCode = code
+				return err
+			}
+			return nil
+		})
+	}), func(service Service) error {
+		return service.Create()
+	})
+	return exitCode, err
+}
+
 // Up creates and starts the specified services (kinda like docker run).
 func (p *Project) Up(services ...string) error {
 	return p.perform(EventProjectUpStart, EventProjectUpDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
