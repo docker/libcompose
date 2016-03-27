@@ -17,7 +17,20 @@ func (s *RunSuite) TestDown(c *C) {
 
 	s.FromText(c, p, "down", SimpleTemplate)
 
-	cn = s.GetContainerByName(c, name)
-	c.Assert(cn, NotNil)
-	c.Assert(cn.State.Running, Equals, false)
+	containers := s.GetContainersByProject(c, p)
+	c.Assert(len(containers), Equals, 0)
+}
+
+func (s *RunSuite) TestDownMultiple(c *C) {
+	p := s.ProjectFromText(c, "up", SimpleTemplate)
+
+	s.FromText(c, p, "scale", "hello=2", SimpleTemplate)
+
+	containers := s.GetContainersByProject(c, p)
+	c.Assert(len(containers), Equals, 2)
+
+	s.FromText(c, p, "down", SimpleTemplate)
+
+	containers = s.GetContainersByProject(c, p)
+	c.Assert(len(containers), Equals, 0)
 }

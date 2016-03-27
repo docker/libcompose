@@ -301,7 +301,14 @@ func (s *Service) eachContainer(action func(*Container) error) error {
 	return tasks.Wait()
 }
 
-// Down implements Service.Down. It stops any containers related to the service.
+// Stop implements Service.Stop. It stops any containers related to the service.
+func (s *Service) Stop() error {
+	return s.eachContainer(func(c *Container) error {
+		return c.Stop()
+	})
+}
+
+// Down implements Service.Down. It stops any containers related to the service and removes them.
 func (s *Service) Down() error {
 	return s.eachContainer(func(c *Container) error {
 		return c.Down()

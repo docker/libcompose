@@ -183,7 +183,16 @@ func (p *Project) Create(services ...string) error {
 	}), nil)
 }
 
-// Down stops the specified services (like docker stop).
+// Stop stops the specified services (like docker stop).
+func (p *Project) Stop(services ...string) error {
+	return p.perform(EventProjectStopStart, EventProjectStopDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(nil, EventServiceStopStart, EventServiceStop, func(service Service) error {
+			return service.Stop()
+		})
+	}), nil)
+}
+
+// Down stops the specified services and clean related containers (like docker stop + docker rm).
 func (p *Project) Down(services ...string) error {
 	return p.perform(EventProjectDownStart, EventProjectDownDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, EventServiceDownStart, EventServiceDown, func(service Service) error {

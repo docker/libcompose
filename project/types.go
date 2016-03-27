@@ -36,6 +36,8 @@ const (
 	EventServicePause        = EventType(iota)
 	EventServiceUnpauseStart = EventType(iota)
 	EventServiceUnpause      = EventType(iota)
+	EventServiceStopStart    = EventType(iota)
+	EventServiceStop         = EventType(iota)
 
 	EventProjectDownStart     = EventType(iota)
 	EventProjectDownDone      = EventType(iota)
@@ -59,6 +61,8 @@ const (
 	EventProjectPauseDone     = EventType(iota)
 	EventProjectUnpauseStart  = EventType(iota)
 	EventProjectUnpauseDone   = EventType(iota)
+	EventProjectStopStart     = EventType(iota)
+	EventProjectStopDone      = EventType(iota)
 )
 
 func (e EventType) String() string {
@@ -85,6 +89,10 @@ func (e EventType) String() string {
 		m = "Deleting"
 	case EventServiceDelete:
 		m = "Deleted"
+	case EventServiceStopStart:
+		m = "Stopping"
+	case EventServiceStop:
+		m = "Stopped"
 	case EventServiceDownStart:
 		m = "Stopping"
 	case EventServiceDown:
@@ -113,6 +121,10 @@ func (e EventType) String() string {
 	case EventProjectDownStart:
 		m = "Stopping project"
 	case EventProjectDownDone:
+		m = "Project stopped"
+	case EventProjectStopStart:
+		m = "Stopping project"
+	case EventProjectStopDone:
 		m = "Project stopped"
 	case EventProjectCreateStart:
 		m = "Creating project"
@@ -249,6 +261,7 @@ type Service interface {
 	Create() error
 	Up() error
 	Start() error
+	Stop() error
 	Down() error
 	Delete() error
 	Restart() error

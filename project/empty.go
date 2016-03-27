@@ -24,6 +24,11 @@ func (e *EmptyService) Start() error {
 	return nil
 }
 
+// Stop implements Service.Stop() but does nothing.
+func (e *EmptyService) Stop() error {
+	return nil
+}
+
 // Down implements Service.Down but does nothing.
 func (e *EmptyService) Down() error {
 	return nil
