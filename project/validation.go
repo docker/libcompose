@@ -54,9 +54,9 @@ func getValue(val interface{}, context string) string {
 			if index, err := strconv.Atoi(k); err == nil {
 				val = typedVal[index]
 			}
-		case rawServiceMap:
+		case RawServiceMap:
 			val = typedVal[k]
-		case rawService:
+		case RawService:
 			val = typedVal[k]
 		case map[interface{}]interface{}:
 			val = typedVal[k]
@@ -72,8 +72,8 @@ func getValue(val interface{}, context string) string {
 
 // Converts map[interface{}]interface{} to map[string]interface{} recursively
 // gojsonschema only accepts map[string]interface{}
-func convertServiceMapKeysToStrings(serviceMap rawServiceMap) rawServiceMap {
-	newServiceMap := make(rawServiceMap)
+func convertServiceMapKeysToStrings(serviceMap RawServiceMap) RawServiceMap {
+	newServiceMap := make(RawServiceMap)
 
 	for k, v := range serviceMap {
 		newServiceMap[k] = convertServiceKeysToStrings(v)
@@ -82,8 +82,8 @@ func convertServiceMapKeysToStrings(serviceMap rawServiceMap) rawServiceMap {
 	return newServiceMap
 }
 
-func convertServiceKeysToStrings(service rawService) rawService {
-	newService := make(rawService)
+func convertServiceKeysToStrings(service RawService) RawService {
+	newService := make(RawService)
 
 	for k, v := range service {
 		newService[k] = convertKeysToStrings(v)
@@ -146,7 +146,7 @@ func unsupportedConfigMessage(key string, nextErr gojsonschema.ResultError) stri
 	return message
 }
 
-func oneOfMessage(serviceMap rawServiceMap, schema map[string]interface{}, err, nextErr gojsonschema.ResultError) string {
+func oneOfMessage(serviceMap RawServiceMap, schema map[string]interface{}, err, nextErr gojsonschema.ResultError) string {
 	switch nextErr.Type() {
 	case "additional_property_not_allowed":
 		property := nextErr.Details()["property"]
@@ -188,7 +188,7 @@ func invalidTypeMessage(service, key string, err gojsonschema.ResultError) strin
 	return fmt.Sprintf("Service '%s' configuration key '%s' contains an invalid type, it should be %s.", service, key, validTypesMsg)
 }
 
-func validate(serviceMap rawServiceMap) error {
+func validate(serviceMap RawServiceMap) error {
 	if err := setupSchemaLoaders(); err != nil {
 		return err
 	}
@@ -260,7 +260,7 @@ func validate(serviceMap rawServiceMap) error {
 	return nil
 }
 
-func validateServiceConstraints(service rawService, serviceName string) error {
+func validateServiceConstraints(service RawService, serviceName string) error {
 	if err := setupSchemaLoaders(); err != nil {
 		return err
 	}

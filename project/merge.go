@@ -28,18 +28,21 @@ var (
 	}
 )
 
-type rawService map[string]interface{}
-type rawServiceMap map[string]rawService
+// RawService is represent a Service in map form unparsed
+type RawService map[string]interface{}
+
+// RawServiceMap is a collection of RawServices
+type RawServiceMap map[string]RawService
 
 func mergeProject(p *Project, file string, bytes []byte) (map[string]*ServiceConfig, error) {
 	configs := make(map[string]*ServiceConfig)
 
-	datas := make(rawServiceMap)
+	datas := make(RawServiceMap)
 	if err := yaml.Unmarshal(bytes, &datas); err != nil {
 		return nil, err
 	}
 
-	if err := interpolate(p.context.EnvironmentLookup, &datas); err != nil {
+	if err := Interpolate(p.context.EnvironmentLookup, &datas); err != nil {
 		return nil, err
 	}
 
@@ -55,7 +58,7 @@ func mergeProject(p *Project, file string, bytes []byte) (map[string]*ServiceCon
 		}
 
 		if _, ok := p.Configs[name]; ok {
-			var rawExistingService rawService
+			var rawExistingService RawService
 			if err := utils.Convert(p.Configs[name], &rawExistingService); err != nil {
 				return nil, err
 			}
@@ -91,7 +94,7 @@ func adjustValues(configs map[string]*ServiceConfig) {
 	}
 }
 
-func readEnvFile(resourceLookup ResourceLookup, inFile string, serviceData rawService) (rawService, error) {
+func readEnvFile(resourceLookup ResourceLookup, inFile string, serviceData RawService) (RawService, error) {
 	var config ServiceConfig
 
 	if err := utils.Convert(serviceData, &config); err != nil {
@@ -149,7 +152,7 @@ func readEnvFile(resourceLookup ResourceLookup, inFile string, serviceData rawSe
 	return serviceData, nil
 }
 
-func resolveBuild(inFile string, serviceData rawService) (rawService, error) {
+func resolveBuild(inFile string, serviceData RawService) (RawService, error) {
 
 	build := asString(serviceData["build"])
 	if build == "" {
@@ -175,7 +178,7 @@ func resolveBuild(inFile string, serviceData rawService) (rawService, error) {
 	return serviceData, nil
 }
 
-func parse(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup, inFile string, serviceData rawService, datas rawServiceMap) (rawService, error) {
+func parse(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup, inFile string, serviceData RawService, datas RawServiceMap) (RawService, error) {
 	serviceData, err := readEnvFile(resourceLookup, inFile, serviceData)
 	if err != nil {
 		return nil, err
@@ -207,7 +210,7 @@ func parse(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup, i
 		return serviceData, nil
 	}
 
-	var baseService rawService
+	var baseService RawService
 
 	if file == "" {
 		if serviceData, ok := datas[service]; ok {
@@ -222,12 +225,12 @@ func parse(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup, i
 			return nil, err
 		}
 
-		var baseRawServices rawServiceMap
+		var baseRawServices RawServiceMap
 		if err := yaml.Unmarshal(bytes, &baseRawServices); err != nil {
 			return nil, err
 		}
 
-		err = interpolate(environmentLookup, &baseRawServices)
+		err = Interpolate(environmentLookup, &baseRawServices)
 		if err != nil {
 			return nil, err
 		}
@@ -269,7 +272,7 @@ func parse(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup, i
 	return baseService, nil
 }
 
-func mergeConfig(baseService, serviceData rawService) rawService {
+func mergeConfig(baseService, serviceData RawService) RawService {
 	for k, v := range serviceData {
 		// Image and build are mutually exclusive in merge
 		if k == "image" {
@@ -313,8 +316,8 @@ func merge(existing, value interface{}) interface{} {
 	return value
 }
 
-func clone(in rawService) rawService {
-	result := rawService{}
+func clone(in RawService) RawService {
+	result := RawService{}
 	for k, v := range in {
 		result[k] = v
 	}
