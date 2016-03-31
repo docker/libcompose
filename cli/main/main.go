@@ -29,6 +29,7 @@ func main() {
 		command.LogsCommand(factory),
 		command.RestartCommand(factory),
 		command.StopCommand(factory),
+		command.DownCommand(factory),
 		command.ScaleCommand(factory),
 		command.RmCommand(factory),
 		command.PullCommand(factory),

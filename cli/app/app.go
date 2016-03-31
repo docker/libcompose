@@ -94,7 +94,15 @@ func ProjectPort(p *project.Project, c *cli.Context) {
 	fmt.Println(output)
 }
 
-// ProjectDown brings all services down.
+// ProjectStop stops all services.
+func ProjectStop(p *project.Project, c *cli.Context) {
+	err := p.Stop(c.Args()...)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+}
+
+// ProjectDown brings all services down (stops and clean containers).
 func ProjectDown(p *project.Project, c *cli.Context) {
 	err := p.Down(c.Args()...)
 	if err != nil {

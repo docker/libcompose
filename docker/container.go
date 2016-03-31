@@ -186,10 +186,25 @@ func (c *Container) Create(imageName string) (*types.Container, error) {
 	return container, err
 }
 
-// Down stops the container.
-func (c *Container) Down() error {
+// Stop stops the container.
+func (c *Container) Stop() error {
 	return c.withContainer(func(container *types.Container) error {
 		return c.client.ContainerStop(context.Background(), container.ID, int(c.service.context.Timeout))
+	})
+}
+
+// Down stops and remove the container.
+func (c *Container) Down() error {
+	if err := c.Stop(); err != nil {
+		return err
+	}
+
+	return c.withContainer(func(container *types.Container) error {
+		return c.client.ContainerRemove(context.Background(), types.ContainerRemoveOptions{
+			ContainerID:   container.ID,
+			Force:         true,
+			RemoveVolumes: c.service.context.Volume,
+		})
 	})
 }
 

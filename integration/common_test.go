@@ -159,8 +159,6 @@ func (s *RunSuite) createCommand(c *C, projectName, command string, argsAndInput
 
 	if command == "up" {
 		args = append(args, "-d")
-	} else if command == "down" {
-		args = append(args, "--timeout", "0")
 	} else if command == "restart" {
 		args = append(args, "--timeout", "0")
 	} else if command == "stop" {

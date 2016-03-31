@@ -168,10 +168,9 @@ func RestartCommand(factory app.ProjectFactory) cli.Command {
 // StopCommand defines the libcompose stop subcommand.
 func StopCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
-		Name:      "stop",
-		ShortName: "down",
-		Usage:     "Stop services",
-		Action:    app.WithProject(factory, app.ProjectDown),
+		Name:   "stop",
+		Usage:  "Stop services",
+		Action: app.WithProject(factory, app.ProjectStop),
 		Flags: []cli.Flag{
 			cli.IntFlag{
 				Name:  "timeout,t",
@@ -179,6 +178,16 @@ func StopCommand(factory app.ProjectFactory) cli.Command {
 				Value: 10,
 			},
 		},
+	}
+}
+
+// DownCommand defines the libcompose stop subcommand.
+func DownCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "down",
+		Usage:  "Stop and remove containers, networks, images, and volumes",
+		Action: app.WithProject(factory, app.ProjectDown),
+		Flags:  []cli.Flag{},
 	}
 }
 
