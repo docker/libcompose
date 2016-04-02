@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -28,7 +29,10 @@ import (
 )
 
 // DefaultTag is the name of the default tag of an image.
-const DefaultTag = "latest"
+const (
+	DefaultTag    = "latest"
+	pollSleepTime = 5 * time.Second
+)
 
 // ComposeVersion is name of docker-compose.yml file syntax supported version
 const ComposeVersion = "1.5.0"
@@ -178,8 +182,11 @@ func (c *Container) Create(imageName string) (*types.Container, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		id, _ := c.ID()
 		c.service.context.Project.Notify(project.EventContainerCreated, c.service.Name(), map[string]string{
 			"name": c.Name(),
+			"id":   id,
 		})
 	}
 
@@ -302,13 +309,38 @@ func (c *Container) Up(imageName string) error {
 			logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
 			return err
 		}
-
+		id, _ := c.ID()
 		c.service.context.Project.Notify(project.EventContainerStarted, c.service.Name(), map[string]string{
 			"name": c.Name(),
+			"id":   id,
 		})
 	}
 
+	go c.pollContainer()
+
 	return nil
+}
+
+// pollContainer waits until a container exits and then dispatched a stopped event
+// to all registered notifiers
+func (c *Container) pollContainer() {
+	for {
+		cont, err := c.findExisting()
+		if err != nil {
+			return
+		}
+		if cont.State == "Stopped" {
+			c.service.context.Project.Notify(project.EventContainerStopped, c.service.Name(), map[string]string{
+				"name": c.Name(),
+				"id":   cont.ID,
+			})
+			return
+		} else if cont.State == "Running" {
+			time.Sleep(pollSleepTime)
+		} else {
+			return
+		}
+	}
 }
 
 // OutOfSync checks if the container is out of sync with the service definition.

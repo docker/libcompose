@@ -11,6 +11,7 @@ const (
 
 	EventContainerCreated = EventType(iota)
 	EventContainerStarted = EventType(iota)
+	EventContainerStopped = EventType(iota)
 
 	EventServiceAdd          = EventType(iota)
 	EventServiceUpStart      = EventType(iota)
