@@ -205,6 +205,25 @@ func (s *Service) Up() error {
 	return s.up(imageName, true)
 }
 
+// Run implements Service.Run. It runs a one of command within the service container.
+func (s *Service) Run(commandParts []string) (int, error) {
+	imageName, err := s.ensureImageExists()
+	if err != nil {
+		return -1, err
+	}
+
+	client := s.context.ClientFactory.Create(s)
+
+	namer := NewNamer(client, s.context.Project.Name, s.name+"_run")
+	defer namer.Close()
+
+	containerName := namer.Next()
+
+	c := NewContainer(client, containerName, s)
+
+	return c.Run(imageName, &project.ServiceConfig{Command: project.NewCommand(commandParts...), Tty: true, StdinOpen: true})
+}
+
 // Info implements Service.Info. It returns an project.InfoSet with the containers
 // related to this service (can be multiple if using the scale command).
 func (s *Service) Info(qFlag bool) (project.InfoSet, error) {

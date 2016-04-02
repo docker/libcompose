@@ -24,21 +24,23 @@ func main() {
 	app.Commands = []cli.Command{
 		command.BuildCommand(factory),
 		command.CreateCommand(factory),
-		command.UpCommand(factory),
-		command.StartCommand(factory),
-		command.LogsCommand(factory),
-		command.RestartCommand(factory),
-		command.StopCommand(factory),
 		command.DownCommand(factory),
-		command.ScaleCommand(factory),
-		command.RmCommand(factory),
-		command.PullCommand(factory),
 		command.KillCommand(factory),
+		command.LogsCommand(factory),
+		command.PauseCommand(factory),
 		command.PortCommand(factory),
 		command.PsCommand(factory),
-		command.PauseCommand(factory),
+		command.PullCommand(factory),
+		command.RestartCommand(factory),
+		command.RmCommand(factory),
+		command.RunCommand(factory),
+		command.ScaleCommand(factory),
+		command.StartCommand(factory),
+		command.StopCommand(factory),
 		command.UnpauseCommand(factory),
+		command.UpCommand(factory),
 	}
 
 	app.Run(os.Args)
+
 }

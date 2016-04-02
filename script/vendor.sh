@@ -30,5 +30,6 @@ clone git github.com/Microsoft/go-winio v0.1.0
 clone git github.com/xeipuuv/gojsonpointer e0fe6f68307607d540ed8eac07a342c33fa1b54a
 clone git github.com/xeipuuv/gojsonreference e02fc20de94c78484cd5ffb007f8af96be030a45
 clone git github.com/xeipuuv/gojsonschema ac452913faa25c08bb78810d3e6f88b8a39f8f25
+clone git github.com/kr/pty 5cf931ef8f
 
 clean && mv vendor/src/* vendor

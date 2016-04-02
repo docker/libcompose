@@ -124,6 +124,16 @@ func StartCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// RunCommand defines the libcompose run subcommand.
+func RunCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "run",
+		Usage:  "Run a one-off command",
+		Action: app.WithProject(factory, app.ProjectRun),
+		Flags:  []cli.Flag{},
+	}
+}
+
 // PullCommand defines the libcompose pull subcommand.
 func PullCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
