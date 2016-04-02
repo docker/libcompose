@@ -35,7 +35,7 @@ type Event struct {
 type wrapperAction func(*serviceWrapper, map[string]*serviceWrapper)
 type serviceAction func(service Service) error
 
-// NewProject create a new project with the specified context.
+// NewProject creates a new project with the specified context.
 func NewProject(context *Context) *Project {
 	p := &Project{
 		context: context,
@@ -84,7 +84,7 @@ func (p *Project) Parse() error {
 	return nil
 }
 
-// CreateService creates a service with the specified name based. It there
+// CreateService creates a service with the specified name based. If there
 // is no config in the project for this service, it will return an error.
 func (p *Project) CreateService(name string) (Service, error) {
 	existing, ok := p.Configs[name]
@@ -219,7 +219,7 @@ func (p *Project) Start(services ...string) error {
 	}), nil)
 }
 
-// Up create and start the specified services (kinda like docker run).
+// Up creates and starts the specified services (kinda like docker run).
 func (p *Project) Up(services ...string) error {
 	return p.perform(EventProjectUpStart, EventProjectUpDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, EventServiceUpStart, EventServiceUp, func(service Service) error {
@@ -230,7 +230,7 @@ func (p *Project) Up(services ...string) error {
 	})
 }
 
-// Log aggregate and prints out the logs for the specified services.
+// Log aggregates and prints out the logs for the specified services.
 func (p *Project) Log(services ...string) error {
 	return p.forEach(services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, NoEvent, NoEvent, func(service Service) error {

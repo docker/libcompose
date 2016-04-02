@@ -17,7 +17,7 @@ type InParallel struct {
 	pool sync.Pool
 }
 
-// Add adds runs the specified task in parallel and add it to the waitGroup.
+// Add runs the specified task in parallel and adds it to the waitGroup.
 func (i *InParallel) Add(task func() error) {
 	i.wg.Add(1)
 
@@ -30,7 +30,7 @@ func (i *InParallel) Add(task func() error) {
 	}()
 }
 
-// Wait waits for all tasks to complete and returns the latests error encountered if any.
+// Wait waits for all tasks to complete and returns the latest error encountered if any.
 func (i *InParallel) Wait() error {
 	i.wg.Wait()
 	obj := i.pool.Get()

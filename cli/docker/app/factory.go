@@ -8,7 +8,7 @@ import (
 	"github.com/docker/libcompose/project"
 )
 
-// ProjectFactory is a struct that hold the app.ProjectFactory implementation.
+// ProjectFactory is a struct that holds the app.ProjectFactory implementation.
 type ProjectFactory struct {
 }
 

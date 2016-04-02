@@ -32,7 +32,7 @@ func BeforeApp(c *cli.Context) error {
 	return nil
 }
 
-// WithProject is an helper function to create a cli.Command action with a ProjectFactory.
+// WithProject is a helper function to create a cli.Command action with a ProjectFactory.
 func WithProject(factory ProjectFactory, action ProjectAction) func(context *cli.Context) {
 	return func(context *cli.Context) {
 		p, err := factory.Create(context)
@@ -171,7 +171,7 @@ func ProjectPull(p *project.Project, c *cli.Context) {
 	}
 }
 
-// ProjectDelete delete services.
+// ProjectDelete deletes services.
 func ProjectDelete(p *project.Project, c *cli.Context) {
 	stoppedContainers, err := p.ListStoppedContainers(c.Args()...)
 	if err != nil {

@@ -73,7 +73,7 @@ func NewStringorslice(parts ...string) Stringorslice {
 	return Stringorslice{parts}
 }
 
-// Ulimits represent a list of Ulimit.
+// Ulimits represents a list of Ulimit.
 // It is, however, represented in yaml as keys (and thus map in Go)
 type Ulimits struct {
 	Elements []Ulimit
@@ -141,7 +141,7 @@ func (u *Ulimits) UnmarshalYAML(tag string, value interface{}) error {
 	return nil
 }
 
-// Ulimit represent ulimit inforation.
+// Ulimit represents ulimit information.
 type Ulimit struct {
 	ulimitValues
 	Name string
@@ -202,7 +202,7 @@ func (s *Command) Slice() []string {
 	return s.parts
 }
 
-// NewCommand create a Command based on the specified parts (as strings).
+// NewCommand creates a Command based on the specified parts (as strings).
 func NewCommand(parts ...string) Command {
 	return Command{parts}
 }
@@ -258,7 +258,7 @@ func (s *SliceorMap) UnmarshalYAML(tag string, value interface{}) error {
 	return nil
 }
 
-// MapParts get the parts of the SliceorMap as a Map of string.
+// MapParts gets the parts of the SliceorMap as a Map of string.
 func (s *SliceorMap) MapParts() map[string]string {
 	if s == nil {
 		return nil
