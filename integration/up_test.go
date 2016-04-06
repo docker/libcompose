@@ -3,7 +3,6 @@ package integration
 import (
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -297,24 +296,6 @@ func (s *RunSuite) TestLink(c *C) {
 		fmt.Sprintf("/%s:/%s/%s", serverName, clientName, "server"),
 		fmt.Sprintf("/%s:/%s/%s", serverName, clientName, serverName),
 	}))
-}
-
-func (s *RunSuite) TestRelativeVolume(c *C) {
-	p := s.ProjectFromText(c, "up", `
-	server:
-	  image: busybox
-	  volumes:
-	    - .:/path
-	`)
-
-	absPath, err := filepath.Abs(".")
-	c.Assert(err, IsNil)
-	serverName := fmt.Sprintf("%s_%s_1", p, "server")
-	cn := s.GetContainerByName(c, serverName)
-
-	c.Assert(cn, NotNil)
-	c.Assert(len(cn.Mounts), DeepEquals, 1)
-	c.Assert(cn.Mounts[0].Source, DeepEquals, absPath)
 }
 
 func (s *RunSuite) TestUpNoBuildFailIfImageNotPresent(c *C) {
