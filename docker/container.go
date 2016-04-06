@@ -553,7 +553,7 @@ func (c *Container) populateAdditionalHostConfig(hostConfig *container.HostConfi
 	links := map[string]string{}
 
 	for _, link := range c.service.DependentServices() {
-		if _, ok := c.service.context.Project.Configs[link.Target]; !ok {
+		if !c.service.context.Project.Configs.Has(link.Target) {
 			continue
 		}
 

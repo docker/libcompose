@@ -61,7 +61,7 @@ func GetContainerFromIpcLikeConfig(p *Project, conf string) string {
 		return ""
 	}
 
-	if _, ok := p.Configs[name]; ok {
+	if p.Configs.Has(name) {
 		return name
 	}
 	return ""

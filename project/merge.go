@@ -57,9 +57,9 @@ func mergeProject(p *Project, file string, bytes []byte) (map[string]*ServiceCon
 			return nil, err
 		}
 
-		if _, ok := p.Configs[name]; ok {
+		if serviceConfig, ok := p.Configs.Get(name); ok {
 			var rawExistingService RawService
-			if err := utils.Convert(p.Configs[name], &rawExistingService); err != nil {
+			if err := utils.Convert(serviceConfig, &rawExistingService); err != nil {
 				return nil, err
 			}
 

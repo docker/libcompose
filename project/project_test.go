@@ -59,8 +59,10 @@ func TestTwoCall(t *testing.T) {
 	p := NewProject(&Context{
 		ServiceFactory: factory,
 	})
-	p.Configs = map[string]*ServiceConfig{
-		"foo": {},
+	p.Configs = &Configs{
+		m: map[string]*ServiceConfig{
+			"foo": {},
+		},
 	}
 
 	if err := p.Create("foo"); err != nil {
@@ -137,13 +139,15 @@ func TestEnvironmentResolve(t *testing.T) {
 		ServiceFactory:    factory,
 		EnvironmentLookup: &TestEnvironmentLookup{},
 	})
-	p.Configs = map[string]*ServiceConfig{
-		"foo": {
-			Environment: NewMaporEqualSlice([]string{
-				"A",
-				"A=",
-				"A=B",
-			}),
+	p.Configs = &Configs{
+		m: map[string]*ServiceConfig{
+			"foo": {
+				Environment: NewMaporEqualSlice([]string{
+					"A",
+					"A=",
+					"A=B",
+				}),
+			},
 		},
 	}
 
@@ -186,9 +190,10 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, "busybox", p.Configs["multiple"].Image)
-	assert.Equal(t, "multi", p.Configs["multiple"].ContainerName)
-	assert.Equal(t, []string{"8000", "9000"}, p.Configs["multiple"].Ports)
+	multipleConfig, _ := p.Configs.Get("multiple")
+	assert.Equal(t, "busybox", multipleConfig.Image)
+	assert.Equal(t, "multi", multipleConfig.ContainerName)
+	assert.Equal(t, []string{"8000", "9000"}, multipleConfig.Ports)
 
 	p = NewProject(&Context{
 		ComposeBytes: [][]byte{configTwo, configOne},
@@ -198,9 +203,10 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, "tianon/true", p.Configs["multiple"].Image)
-	assert.Equal(t, "multi", p.Configs["multiple"].ContainerName)
-	assert.Equal(t, []string{"9000", "8000"}, p.Configs["multiple"].Ports)
+	multipleConfig, _ = p.Configs.Get("multiple")
+	assert.Equal(t, "tianon/true", multipleConfig.Image)
+	assert.Equal(t, "multi", multipleConfig.ContainerName)
+	assert.Equal(t, []string{"9000", "8000"}, multipleConfig.Ports)
 
 	p = NewProject(&Context{
 		ComposeBytes: [][]byte{configOne, configTwo, configThree},
@@ -210,8 +216,9 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, "busybox", p.Configs["multiple"].Image)
-	assert.Equal(t, "multi", p.Configs["multiple"].ContainerName)
-	assert.Equal(t, []string{"8000", "9000", "10000"}, p.Configs["multiple"].Ports)
-	assert.Equal(t, int64(40000000), p.Configs["multiple"].MemLimit)
+	multipleConfig, _ = p.Configs.Get("multiple")
+	assert.Equal(t, "busybox", multipleConfig.Image)
+	assert.Equal(t, "multi", multipleConfig.ContainerName)
+	assert.Equal(t, []string{"8000", "9000", "10000"}, multipleConfig.Ports)
+	assert.Equal(t, int64(40000000), multipleConfig.MemLimit)
 }
