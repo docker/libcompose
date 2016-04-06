@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/docker/docker/runconfig/opts"
@@ -122,6 +123,14 @@ func Convert(c *project.ServiceConfig, ctx project.Context) (*container.Config, 
 		return nil, nil, err
 	}
 
+	var volumesFrom []string
+	if c.VolumesFrom != nil {
+		volumesFrom, err = getVolumesFrom(c.VolumesFrom, ctx.Project.Configs, ctx.ProjectName)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
 	config := &container.Config{
 		Entrypoint:   strslice.StrSlice(utils.CopySlice(c.Entrypoint.Slice())),
 		Hostname:     c.Hostname,
@@ -162,7 +171,7 @@ func Convert(c *project.ServiceConfig, ctx project.Context) (*container.Config, 
 	}
 
 	hostConfig := &container.HostConfig{
-		VolumesFrom: utils.CopySlice(c.VolumesFrom),
+		VolumesFrom: volumesFrom,
 		CapAdd:      strslice.StrSlice(utils.CopySlice(c.CapAdd)),
 		CapDrop:     strslice.StrSlice(utils.CopySlice(c.CapDrop)),
 		ExtraHosts:  utils.CopySlice(c.ExtraHosts),
@@ -187,6 +196,20 @@ func Convert(c *project.ServiceConfig, ctx project.Context) (*container.Config, 
 	}
 
 	return config, hostConfig, nil
+}
+
+func getVolumesFrom(volumesFrom []string, services map[string]*project.ServiceConfig, projectName string) ([]string, error) {
+	volumes := []string{}
+	for _, volumeFrom := range volumesFrom {
+		if _, ok := services[volumeFrom]; ok {
+			// It's a service - Use the first one
+			name := fmt.Sprintf("%s_%s_1", projectName, volumeFrom)
+			volumes = append(volumes, name)
+		} else {
+			volumes = append(volumes, volumeFrom)
+		}
+	}
+	return volumes, nil
 }
 
 func parseDevices(devices []string) ([]container.DeviceMapping, error) {
