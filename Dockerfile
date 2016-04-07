@@ -11,7 +11,6 @@ RUN go get github.com/mitchellh/gox
 RUN go get github.com/aktau/github-release
 RUN go get golang.org/x/tools/cmd/cover
 RUN go get github.com/golang/lint/golint
-RUN go get golang.org/x/tools/cmd/vet
 
 # virtualenv is necessary to run acceptance tests
 RUN apt-get install -y python-setuptools
