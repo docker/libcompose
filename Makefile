@@ -19,46 +19,31 @@ DOCKER_RUN_LIBCOMPOSE := docker run --rm -it --privileged $(LIBCOMPOSE_ENVS) $(L
 
 default: binary
 
-all: build
+all: build ## validate all checks, build linux binary, run all tests\ncross build non-linux binaries
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh
 
-binary: build
+binary: build ## build the linux binary
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary
 
-cross-binary: build
+cross-binary: build ## cross build the non linux binaries (windows, darwin)
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh cross-binary
 
-test: build
+test: build ## run the unit, integration and acceptance tests
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-unit test-integration test-acceptance
 
-test-unit: build
+test-unit: build ## run the unit tests
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh test-unit
 
-test-integration: build
+test-integration: build ## run the integration tests
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-integration
 
-test-acceptance: build
+test-acceptance: build ## run the acceptance tests
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-acceptance
 
-validate-dco: build
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-dco
-
-validate-gofmt: build
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-gofmt
-
-validate-lint: build
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-lint
-
-validate-vet: build
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-vet
-
-validate-git-marks: build
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-git-marks
-
-validate: build
+validate: build ## validate DCO, git conflicts marks, gofmt, golint and go vet
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-dco validate-git-marks validate-gofmt validate-lint validate-vet
 
-shell: build
+shell: build ## start a shell inside the build env
 	$(DOCKER_RUN_LIBCOMPOSE) bash
 
 # Build the docker image, should be prior almost any other goals
@@ -71,3 +56,5 @@ bundles:
 clean: 
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh clean
 
+help: ## this help
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {sub("\\\\n",sprintf("\n%22c"," "), $$2);printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
