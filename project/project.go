@@ -39,7 +39,7 @@ type serviceAction func(service Service) error
 func NewProject(context *Context) *Project {
 	p := &Project{
 		context: context,
-		Configs: make(map[string]*ServiceConfig),
+		Configs: NewConfigs(),
 	}
 
 	if context.LoggerFactory == nil {
@@ -87,7 +87,7 @@ func (p *Project) Parse() error {
 // CreateService creates a service with the specified name based. If there
 // is no config in the project for this service, it will return an error.
 func (p *Project) CreateService(name string) (Service, error) {
-	existing, ok := p.Configs[name]
+	existing, ok := p.Configs.Get(name)
 	if !ok {
 		return nil, fmt.Errorf("Failed to find service: %s", name)
 	}
@@ -122,7 +122,7 @@ func (p *Project) CreateService(name string) (Service, error) {
 func (p *Project) AddConfig(name string, config *ServiceConfig) error {
 	p.Notify(EventServiceAdd, name, nil)
 
-	p.Configs[name] = config
+	p.Configs.Add(name, config)
 	p.reload = append(p.reload, name)
 
 	return nil
@@ -415,7 +415,7 @@ func (p *Project) traverse(start bool, selected map[string]bool, wrappers map[st
 	wrapperList := []string{}
 
 	if start {
-		for name := range p.Configs {
+		for _, name := range p.Configs.Keys() {
 			wrapperList = append(wrapperList, name)
 		}
 	} else {

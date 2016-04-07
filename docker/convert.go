@@ -198,10 +198,10 @@ func Convert(c *project.ServiceConfig, ctx project.Context) (*container.Config, 
 	return config, hostConfig, nil
 }
 
-func getVolumesFrom(volumesFrom []string, services map[string]*project.ServiceConfig, projectName string) ([]string, error) {
+func getVolumesFrom(volumesFrom []string, serviceConfigs *project.Configs, projectName string) ([]string, error) {
 	volumes := []string{}
 	for _, volumeFrom := range volumesFrom {
-		if _, ok := services[volumeFrom]; ok {
+		if serviceConfigs.Has(volumeFrom) {
 			// It's a service - Use the first one
 			name := fmt.Sprintf("%s_%s_1", projectName, volumeFrom)
 			volumes = append(volumes, name)

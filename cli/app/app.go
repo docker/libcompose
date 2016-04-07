@@ -47,7 +47,7 @@ func WithProject(factory ProjectFactory, action ProjectAction) func(context *cli
 func ProjectPs(p *project.Project, c *cli.Context) {
 	allInfo := project.InfoSet{}
 	qFlag := c.Bool("q")
-	for name := range p.Configs {
+	for _, name := range p.Configs.Keys() {
 		service, err := p.CreateService(name)
 		if err != nil {
 			logrus.Fatal(err)
@@ -147,7 +147,7 @@ func ProjectRun(p *project.Project, c *cli.Context) {
 	serviceName := c.Args()[0]
 	commandParts := c.Args()[1:]
 
-	if _, ok := p.Configs[serviceName]; !ok {
+	if !p.Configs.Has(serviceName) {
 		logrus.Fatalf("%s is not defined in the template", serviceName)
 	}
 
@@ -263,7 +263,7 @@ func ProjectScale(p *project.Project, c *cli.Context) {
 			logrus.Fatalf("Invalid scale parameter: %v", err)
 		}
 
-		if _, ok := p.Configs[name]; !ok {
+		if !p.Configs.Has(name) {
 			logrus.Fatalf("%s is not defined in the template", name)
 		}
 

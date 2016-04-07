@@ -97,8 +97,8 @@ func (d *DaemonBuilder) Build(imageName string, p *project.Project, service proj
 // CreateTar create a build context tar for the specified project and service name.
 func CreateTar(p *project.Project, name string) (io.ReadCloser, error) {
 	// This code was ripped off from docker/api/client/build.go
+	serviceConfig, _ := p.Configs.Get(name)
 
-	serviceConfig := p.Configs[name]
 	root := serviceConfig.Build
 	dockerfileName := filepath.Join(root, serviceConfig.Dockerfile)
 

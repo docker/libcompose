@@ -1,6 +1,9 @@
 package project
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 // EventType defines a type of libcompose event.
 type EventType int
@@ -246,10 +249,64 @@ type ResourceLookup interface {
 	ResolvePath(path, inFile string) string
 }
 
+// NewConfigs initializes a new Configs struct
+func NewConfigs() *Configs {
+	return &Configs{
+		m: make(map[string]*ServiceConfig),
+	}
+}
+
+// Configs holds a concurrent safe map of ServiceConfig
+type Configs struct {
+	m  map[string]*ServiceConfig
+	mu sync.RWMutex
+}
+
+// Has checks if the config map has the specified name
+func (c *Configs) Has(name string) bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	_, ok := c.m[name]
+	return ok
+}
+
+// Get returns the config and the presence of the specified name
+func (c *Configs) Get(name string) (*ServiceConfig, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	service, ok := c.m[name]
+	return service, ok
+}
+
+// Add add the specifed config with the specified name
+func (c *Configs) Add(name string, service *ServiceConfig) {
+	c.mu.Lock()
+	c.m[name] = service
+	c.mu.Unlock()
+}
+
+// Len returns the len of the configs
+func (c *Configs) Len() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return len(c.m)
+}
+
+// Keys returns the names of the config
+func (c *Configs) Keys() []string {
+	keys := []string{}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	for name := range c.m {
+		keys = append(keys, name)
+	}
+	return keys
+}
+
 // Project holds libcompose project information.
 type Project struct {
 	Name           string
-	Configs        map[string]*ServiceConfig
+	Configs        *Configs
 	Files          []string
 	ReloadCallback func() error
 	context        *Context
