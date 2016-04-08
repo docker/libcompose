@@ -61,12 +61,13 @@ func TestInParallelError(t *testing.T) {
 	for i := 0; i < size; i++ {
 		task := func(index int) func() error {
 			return func() error {
-				booleanMap.Add(index, true)
+				booleanMap.Add(index, false)
 				t.Log("index", index)
 				if index%2 == 0 {
 					t.Log("return an error for", index)
 					return fmt.Errorf("Error with %v", index)
 				}
+				booleanMap.Add(index, true)
 				return nil
 			}
 		}(i)
