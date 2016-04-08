@@ -1,8 +1,8 @@
 package app
 
 import (
-	"github.com/codegangsta/cli"
-	"github.com/docker/libcompose/cli/command"
+	"github.com/spf13/cobra"
+	"github.com/docker/libcompose/cli/app"
 	"github.com/docker/libcompose/cli/logger"
 	"github.com/docker/libcompose/docker"
 	"github.com/docker/libcompose/project"
@@ -13,11 +13,11 @@ type ProjectFactory struct {
 }
 
 // Create implements ProjectFactory.Create using docker client.
-func (p *ProjectFactory) Create(c *cli.Context) (*project.Project, error) {
+func (p *ProjectFactory) Create(c *cobra.Command) (*project.Project, error) {
 	context := &docker.Context{}
 	context.LoggerFactory = logger.NewColorLoggerFactory()
 	Populate(context, c)
-	command.Populate(&context.Context, c)
+	app.Populate(&context.Context, c)
 
 	return docker.NewProject(context)
 }

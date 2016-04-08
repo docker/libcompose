@@ -2,10 +2,10 @@ package app
 
 import (
 	"github.com/Sirupsen/logrus"
-	"github.com/codegangsta/cli"
+	"github.com/spf13/cobra"
 	"github.com/docker/libcompose/docker"
 )
-
+/*
 // DockerClientFlags defines the flags that are specific to the docker client,
 // like configdir or tls related flags.
 func DockerClientFlags() []cli.Flag {
@@ -37,18 +37,19 @@ func DockerClientFlags() []cli.Flag {
 		},
 	}
 }
+*/
 
 // Populate updates the specified docker context based on command line arguments and subcommands.
-func Populate(context *docker.Context, c *cli.Context) {
-	context.ConfigDir = c.String("configdir")
+func Populate(context *docker.Context, c *cobra.Command) {
+	//context.ConfigDir = c.String("configdir")
 
 	opts := docker.ClientOpts{}
-	opts.TLS = c.GlobalBool("tls")
+/*	opts.TLS = c.GlobalBool("tls")
 	opts.TLSVerify = c.GlobalBool("tlsverify")
 	opts.TLSOptions.CAFile = c.GlobalString("tlscacert")
 	opts.TLSOptions.CertFile = c.GlobalString("tlscert")
 	opts.TLSOptions.KeyFile = c.GlobalString("tlskey")
-
+*/
 	clientFactory, err := docker.NewDefaultClientFactory(opts)
 	if err != nil {
 		logrus.Fatalf("Failed to construct Docker client: %v", err)
