@@ -4,8 +4,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/lookup"
-	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/yaml"
 	shlex "github.com/flynn/go-shlex"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,7 +25,7 @@ func TestParseBindsAndVolumes(t *testing.T) {
 
 	abs, err := filepath.Abs(".")
 	assert.Nil(t, err)
-	cfg, hostCfg, err := Convert(&project.ServiceConfig{
+	cfg, hostCfg, err := Convert(&config.ServiceConfig{
 		Volumes: []string{"/foo", "/home:/home", "/bar/baz", ".:/home", "/usr/lib:/usr/lib:ro"},
 	}, ctx.Context)
 	assert.Nil(t, err)
@@ -39,9 +40,9 @@ func TestParseLabels(t *testing.T) {
 	bashCmd := "bash"
 	fooLabel := "foo.label"
 	fooLabelValue := "service.config.value"
-	sc := &project.ServiceConfig{
-		Entrypoint: project.NewCommand(bashCmd),
-		Labels:     project.NewSliceorMap(map[string]string{fooLabel: "service.config.value"}),
+	sc := &config.ServiceConfig{
+		Entrypoint: yaml.NewCommand(bashCmd),
+		Labels:     yaml.NewSliceorMap(map[string]string{fooLabel: "service.config.value"}),
 	}
 	cfg, _, err := Convert(sc, ctx.Context)
 	assert.Nil(t, err)

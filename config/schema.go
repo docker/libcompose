@@ -1,4 +1,4 @@
-package project
+package config
 
 var schemaString = `{
   "$schema": "http://json-schema.org/draft-04/schema#",

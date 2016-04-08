@@ -1,4 +1,4 @@
-package project
+package yaml
 
 import (
 	"testing"

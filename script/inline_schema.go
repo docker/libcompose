@@ -15,7 +15,7 @@ func main() {
 
 	schema, err := ioutil.ReadFile("./script/config_schema_v1.json")
 
-	inlinedFile, err := os.Create("project/schema.go")
+	inlinedFile, err := os.Create("config/schema.go")
 
 	if err != nil {
 		panic(err)
