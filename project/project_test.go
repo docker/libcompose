@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/docker/libcompose/config"
+	"github.com/docker/libcompose/yaml"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,12 +18,12 @@ type TestServiceFactory struct {
 type TestService struct {
 	factory *TestServiceFactory
 	name    string
-	config  *ServiceConfig
+	config  *config.ServiceConfig
 	EmptyService
 	Count int
 }
 
-func (t *TestService) Config() *ServiceConfig {
+func (t *TestService) Config() *config.ServiceConfig {
 	return t.config
 }
 
@@ -43,7 +45,7 @@ func (t *TestService) DependentServices() []ServiceRelationship {
 	return nil
 }
 
-func (t *TestServiceFactory) Create(project *Project, name string, serviceConfig *ServiceConfig) (Service, error) {
+func (t *TestServiceFactory) Create(project *Project, name string, serviceConfig *config.ServiceConfig) (Service, error) {
 	return &TestService{
 		factory: t,
 		config:  serviceConfig,
@@ -59,11 +61,8 @@ func TestTwoCall(t *testing.T) {
 	p := NewProject(&Context{
 		ServiceFactory: factory,
 	})
-	p.Configs = &Configs{
-		m: map[string]*ServiceConfig{
-			"foo": {},
-		},
-	}
+	p.Configs = config.NewConfigs()
+	p.Configs.Add("foo", &config.ServiceConfig{})
 
 	if err := p.Create("foo"); err != nil {
 		t.Fatal(err)
@@ -126,7 +125,7 @@ func TestParseWithGoodContent(t *testing.T) {
 type TestEnvironmentLookup struct {
 }
 
-func (t *TestEnvironmentLookup) Lookup(key, serviceName string, config *ServiceConfig) []string {
+func (t *TestEnvironmentLookup) Lookup(key, serviceName string, config *config.ServiceConfig) []string {
 	return []string{fmt.Sprintf("%s=X", key)}
 }
 
@@ -139,17 +138,14 @@ func TestEnvironmentResolve(t *testing.T) {
 		ServiceFactory:    factory,
 		EnvironmentLookup: &TestEnvironmentLookup{},
 	})
-	p.Configs = &Configs{
-		m: map[string]*ServiceConfig{
-			"foo": {
-				Environment: NewMaporEqualSlice([]string{
-					"A",
-					"A=",
-					"A=B",
-				}),
-			},
-		},
-	}
+	p.Configs = config.NewConfigs()
+	p.Configs.Add("foo", &config.ServiceConfig{
+		Environment: yaml.NewMaporEqualSlice([]string{
+			"A",
+			"A=",
+			"A=B",
+		}),
+	})
 
 	service, err := p.CreateService("foo")
 	if err != nil {

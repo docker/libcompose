@@ -10,6 +10,7 @@ import (
 	"github.com/docker/engine-api/types/strslice"
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/go-units"
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
 )
@@ -54,7 +55,7 @@ func ConvertToAPI(s *Service) (*ConfigWrapper, error) {
 	return &result, nil
 }
 
-func volumes(c *project.ServiceConfig, ctx project.Context) map[string]struct{} {
+func volumes(c *config.ServiceConfig, ctx project.Context) map[string]struct{} {
 	volumes := make(map[string]struct{}, len(c.Volumes))
 	for k, v := range c.Volumes {
 		vol := ctx.ResourceLookup.ResolvePath(v, ctx.ComposeFiles[0])
@@ -67,7 +68,7 @@ func volumes(c *project.ServiceConfig, ctx project.Context) map[string]struct{} 
 	return volumes
 }
 
-func restartPolicy(c *project.ServiceConfig) (*container.RestartPolicy, error) {
+func restartPolicy(c *config.ServiceConfig) (*container.RestartPolicy, error) {
 	restart, err := opts.ParseRestartPolicy(c.Restart)
 	if err != nil {
 		return nil, err
@@ -75,7 +76,7 @@ func restartPolicy(c *project.ServiceConfig) (*container.RestartPolicy, error) {
 	return &container.RestartPolicy{Name: restart.Name, MaximumRetryCount: restart.MaximumRetryCount}, nil
 }
 
-func ports(c *project.ServiceConfig) (map[nat.Port]struct{}, nat.PortMap, error) {
+func ports(c *config.ServiceConfig) (map[nat.Port]struct{}, nat.PortMap, error) {
 	ports, binding, err := nat.ParsePortSpecs(c.Ports)
 	if err != nil {
 		return nil, nil, err
@@ -107,7 +108,7 @@ func ports(c *project.ServiceConfig) (map[nat.Port]struct{}, nat.PortMap, error)
 }
 
 // Convert converts a service configuration to an docker API structures (Config and HostConfig)
-func Convert(c *project.ServiceConfig, ctx project.Context) (*container.Config, *container.HostConfig, error) {
+func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *container.HostConfig, error) {
 	restartPolicy, err := restartPolicy(c)
 	if err != nil {
 		return nil, nil, err
@@ -198,7 +199,7 @@ func Convert(c *project.ServiceConfig, ctx project.Context) (*container.Config, 
 	return config, hostConfig, nil
 }
 
-func getVolumesFrom(volumesFrom []string, serviceConfigs *project.Configs, projectName string) ([]string, error) {
+func getVolumesFrom(volumesFrom []string, serviceConfigs *config.Configs, projectName string) ([]string, error) {
 	volumes := []string{}
 	for _, volumeFrom := range volumesFrom {
 		if serviceConfigs.Has(volumeFrom) {

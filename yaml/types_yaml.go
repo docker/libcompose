@@ -1,4 +1,4 @@
-package project
+package yaml
 
 import (
 	"fmt"
@@ -158,6 +158,17 @@ func (u Ulimit) MarshalYAML() (tag string, value interface{}, err error) {
 		return "", u.Soft, nil
 	}
 	return "", u.ulimitValues, err
+}
+
+// NewUlimit creates a Ulimit based on the specified parts.
+func NewUlimit(name string, soft int64, hard int64) Ulimit {
+	return Ulimit{
+		Name: name,
+		ulimitValues: ulimitValues{
+			Soft: soft,
+			Hard: hard,
+		},
+	}
 }
 
 // Command represents a docker command, can be a string or an array of strings.

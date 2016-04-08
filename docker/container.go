@@ -23,6 +23,7 @@ import (
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/container"
 	"github.com/docker/go-connections/nat"
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project"
 	util "github.com/docker/libcompose/utils"
@@ -175,7 +176,7 @@ func (c *Container) Create(imageName string) (*types.Container, error) {
 // CreateWithOverride create container and override parts of the config to
 // allow special situations to override the config generated from the compose
 // file
-func (c *Container) CreateWithOverride(imageName string, configOverride *project.ServiceConfig) (*types.Container, error) {
+func (c *Container) CreateWithOverride(imageName string, configOverride *config.ServiceConfig) (*types.Container, error) {
 	container, err := c.findExisting()
 	if err != nil {
 		return nil, err
@@ -285,7 +286,7 @@ func (c *Container) IsRunning() (bool, error) {
 // Run creates, start and attach to the container based on the image name,
 // the specified configuration.
 // It will always create a new container.
-func (c *Container) Run(imageName string, configOverride *project.ServiceConfig) (int, error) {
+func (c *Container) Run(imageName string, configOverride *config.ServiceConfig) (int, error) {
 	var (
 		errCh       chan error
 		out, stderr io.Writer
@@ -476,7 +477,7 @@ func (c *Container) OutOfSync(imageName string) (bool, error) {
 }
 
 func (c *Container) getHash() string {
-	return project.GetServiceHash(c.service.Name(), c.service.Config())
+	return config.GetServiceHash(c.service.Name(), c.service.Config())
 }
 
 func volumeBinds(volumes map[string]struct{}, container *types.ContainerJSON) []string {
@@ -489,7 +490,7 @@ func volumeBinds(volumes map[string]struct{}, container *types.ContainerJSON) []
 	return result
 }
 
-func (c *Container) createContainer(imageName, oldContainer string, configOverride *project.ServiceConfig) (*types.Container, error) {
+func (c *Container) createContainer(imageName, oldContainer string, configOverride *config.ServiceConfig) (*types.Container, error) {
 	serviceConfig := c.service.serviceConfig
 	if configOverride != nil {
 		serviceConfig.Command = configOverride.Command

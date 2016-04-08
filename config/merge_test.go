@@ -1,4 +1,4 @@
-package project
+package config
 
 import "testing"
 
@@ -14,11 +14,7 @@ func (n *NullLookup) ResolvePath(path, inFile string) string {
 }
 
 func TestExtendsInheritImage(t *testing.T) {
-	p := NewProject(&Context{
-		ResourceLookup: &NullLookup{},
-	})
-
-	config, err := mergeProject(p, "", []byte(`
+	config, err := MergeServices(NewConfigs(), nil, &NullLookup{}, "", []byte(`
 parent:
   image: foo
 child:
@@ -47,11 +43,7 @@ child:
 }
 
 func TestExtendsInheritBuild(t *testing.T) {
-	p := NewProject(&Context{
-		ResourceLookup: &NullLookup{},
-	})
-
-	config, err := mergeProject(p, "", []byte(`
+	config, err := MergeServices(NewConfigs(), nil, &NullLookup{}, "", []byte(`
 parent:
   build: .
 child:
@@ -80,11 +72,7 @@ child:
 }
 
 func TestExtendBuildOverImage(t *testing.T) {
-	p := NewProject(&Context{
-		ResourceLookup: &NullLookup{},
-	})
-
-	config, err := mergeProject(p, "", []byte(`
+	config, err := MergeServices(NewConfigs(), nil, &NullLookup{}, "", []byte(`
 parent:
   image: foo
 child:
@@ -114,11 +102,7 @@ child:
 }
 
 func TestExtendImageOverBuild(t *testing.T) {
-	p := NewProject(&Context{
-		ResourceLookup: &NullLookup{},
-	})
-
-	config, err := mergeProject(p, "", []byte(`
+	config, err := MergeServices(NewConfigs(), nil, &NullLookup{}, "", []byte(`
 parent:
   build: .
 child:
@@ -152,11 +136,7 @@ child:
 }
 
 func TestRestartNo(t *testing.T) {
-	p := NewProject(&Context{
-		ResourceLookup: &NullLookup{},
-	})
-
-	config, err := mergeProject(p, "", []byte(`
+	config, err := MergeServices(NewConfigs(), nil, &NullLookup{}, "", []byte(`
 test:
   restart: "no"
   image: foo
@@ -174,11 +154,7 @@ test:
 }
 
 func TestRestartAlways(t *testing.T) {
-	p := NewProject(&Context{
-		ResourceLookup: &NullLookup{},
-	})
-
-	config, err := mergeProject(p, "", []byte(`
+	config, err := MergeServices(NewConfigs(), nil, &NullLookup{}, "", []byte(`
 test:
   restart: always
   image: foo

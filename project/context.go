@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/logger"
 )
 
@@ -31,8 +32,8 @@ type Context struct {
 	ProjectName         string
 	isOpen              bool
 	ServiceFactory      ServiceFactory
-	EnvironmentLookup   EnvironmentLookup
-	ResourceLookup      ResourceLookup
+	EnvironmentLookup   config.EnvironmentLookup
+	ResourceLookup      config.ResourceLookup
 	LoggerFactory       logger.Factory
 	IgnoreMissingConfig bool
 	Project             *Project

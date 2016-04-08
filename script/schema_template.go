@@ -1,3 +1,3 @@
-package project
+package config
 
 var schemaString = `{{.schemaString}}`

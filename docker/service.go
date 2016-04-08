@@ -9,19 +9,21 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
+	"github.com/docker/libcompose/yaml"
 )
 
 // Service is a project.Service implementations.
 type Service struct {
 	name          string
-	serviceConfig *project.ServiceConfig
+	serviceConfig *config.ServiceConfig
 	context       *Context
 }
 
 // NewService creates a service
-func NewService(name string, serviceConfig *project.ServiceConfig, context *Context) *Service {
+func NewService(name string, serviceConfig *config.ServiceConfig, context *Context) *Service {
 	return &Service{
 		name:          name,
 		serviceConfig: serviceConfig,
@@ -34,8 +36,8 @@ func (s *Service) Name() string {
 	return s.name
 }
 
-// Config returns the configuration of the service (project.ServiceConfig).
-func (s *Service) Config() *project.ServiceConfig {
+// Config returns the configuration of the service (config.ServiceConfig).
+func (s *Service) Config() *config.ServiceConfig {
 	return s.serviceConfig
 }
 
@@ -221,7 +223,7 @@ func (s *Service) Run(commandParts []string) (int, error) {
 
 	c := NewContainer(client, containerName, s)
 
-	return c.Run(imageName, &project.ServiceConfig{Command: project.NewCommand(commandParts...), Tty: true, StdinOpen: true})
+	return c.Run(imageName, &config.ServiceConfig{Command: yaml.NewCommand(commandParts...), Tty: true, StdinOpen: true})
 }
 
 // Info implements Service.Info. It returns an project.InfoSet with the containers

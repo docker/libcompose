@@ -1,4 +1,4 @@
-package project
+package config
 
 import (
 	"bufio"
@@ -28,13 +28,8 @@ var (
 	}
 )
 
-// RawService is represent a Service in map form unparsed
-type RawService map[string]interface{}
-
-// RawServiceMap is a collection of RawServices
-type RawServiceMap map[string]RawService
-
-func mergeProject(p *Project, file string, bytes []byte) (map[string]*ServiceConfig, error) {
+// MergeServices merges a compose file into an existing set of service configs
+func MergeServices(existingServices *Configs, environmentLookup EnvironmentLookup, resourceLookup ResourceLookup, file string, bytes []byte) (map[string]*ServiceConfig, error) {
 	configs := make(map[string]*ServiceConfig)
 
 	datas := make(RawServiceMap)
@@ -42,7 +37,7 @@ func mergeProject(p *Project, file string, bytes []byte) (map[string]*ServiceCon
 		return nil, err
 	}
 
-	if err := Interpolate(p.context.EnvironmentLookup, &datas); err != nil {
+	if err := Interpolate(environmentLookup, &datas); err != nil {
 		return nil, err
 	}
 
@@ -51,13 +46,13 @@ func mergeProject(p *Project, file string, bytes []byte) (map[string]*ServiceCon
 	}
 
 	for name, data := range datas {
-		data, err := parse(p.context.ResourceLookup, p.context.EnvironmentLookup, file, data, datas)
+		data, err := parse(resourceLookup, environmentLookup, file, data, datas)
 		if err != nil {
 			logrus.Errorf("Failed to parse service %s: %v", name, err)
 			return nil, err
 		}
 
-		if serviceConfig, ok := p.Configs.Get(name); ok {
+		if serviceConfig, ok := existingServices.Get(name); ok {
 			var rawExistingService RawService
 			if err := utils.Convert(serviceConfig, &rawExistingService); err != nil {
 				return nil, err

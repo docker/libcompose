@@ -6,8 +6,10 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/utils"
+	"github.com/docker/libcompose/yaml"
 )
 
 // ServiceState holds the state of a service.
@@ -39,7 +41,7 @@ type serviceAction func(service Service) error
 func NewProject(context *Context) *Project {
 	p := &Project{
 		context: context,
-		Configs: NewConfigs(),
+		Configs: config.NewConfigs(),
 	}
 
 	if context.LoggerFactory == nil {
@@ -112,14 +114,14 @@ func (p *Project) CreateService(name string) (Service, error) {
 			}
 		}
 
-		config.Environment = NewMaporEqualSlice(parsedEnv)
+		config.Environment = yaml.NewMaporEqualSlice(parsedEnv)
 	}
 
 	return p.context.ServiceFactory.Create(p, name, &config)
 }
 
 // AddConfig adds the specified service config for the specified name.
-func (p *Project) AddConfig(name string, config *ServiceConfig) error {
+func (p *Project) AddConfig(name string, config *config.ServiceConfig) error {
 	p.Notify(EventServiceAdd, name, nil)
 
 	p.Configs.Add(name, config)
@@ -136,8 +138,8 @@ func (p *Project) Load(bytes []byte) error {
 }
 
 func (p *Project) load(file string, bytes []byte) error {
-	configs := make(map[string]*ServiceConfig)
-	configs, err := mergeProject(p, file, bytes)
+	configs := make(map[string]*config.ServiceConfig)
+	configs, err := config.MergeServices(p.Configs, p.context.EnvironmentLookup, p.context.ResourceLookup, file, bytes)
 	if err != nil {
 		log.Errorf("Could not parse config for project %s : %v", p.Name, err)
 		return err
