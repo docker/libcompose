@@ -49,47 +49,34 @@ func GetServiceHash(name string, config *ServiceConfig) string {
 		switch s := serviceValue.(type) {
 		case yaml.SliceorMap:
 			sliceKeys := []string{}
-			for lkey := range s.MapParts() {
+			for lkey := range s {
 				sliceKeys = append(sliceKeys, lkey)
 			}
 			sort.Strings(sliceKeys)
 
 			for _, sliceKey := range sliceKeys {
-				io.WriteString(hash, fmt.Sprintf("%s=%v, ", sliceKey, s.MapParts()[sliceKey]))
+				io.WriteString(hash, fmt.Sprintf("%s=%v, ", sliceKey, s[sliceKey]))
 			}
 		case yaml.MaporEqualSlice:
-			sliceKeys := s.Slice()
-			// do not sort keys as the order matters
-
-			for _, sliceKey := range sliceKeys {
+			for _, sliceKey := range s {
 				io.WriteString(hash, fmt.Sprintf("%s, ", sliceKey))
 			}
 		case yaml.MaporColonSlice:
-			sliceKeys := s.Slice()
-			// do not sort keys as the order matters
-
-			for _, sliceKey := range sliceKeys {
+			for _, sliceKey := range s {
 				io.WriteString(hash, fmt.Sprintf("%s, ", sliceKey))
 			}
 		case yaml.MaporSpaceSlice:
-			sliceKeys := s.Slice()
-			// do not sort keys as the order matters
-
-			for _, sliceKey := range sliceKeys {
+			for _, sliceKey := range s {
 				io.WriteString(hash, fmt.Sprintf("%s, ", sliceKey))
 			}
 		case yaml.Command:
-			sliceKeys := s.Slice()
-			// do not sort keys as the order matters
-
-			for _, sliceKey := range sliceKeys {
+			for _, sliceKey := range s {
 				io.WriteString(hash, fmt.Sprintf("%s, ", sliceKey))
 			}
 		case yaml.Stringorslice:
-			sliceKeys := s.Slice()
-			sort.Strings(sliceKeys)
+			sort.Strings(s)
 
-			for _, sliceKey := range sliceKeys {
+			for _, sliceKey := range s {
 				io.WriteString(hash, fmt.Sprintf("%s, ", sliceKey))
 			}
 		case []string:

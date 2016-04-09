@@ -9,7 +9,6 @@ import (
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/utils"
-	"github.com/docker/libcompose/yaml"
 )
 
 // ServiceState holds the state of a service.
@@ -98,9 +97,9 @@ func (p *Project) CreateService(name string) (Service, error) {
 	config := *existing
 
 	if p.context.EnvironmentLookup != nil {
-		parsedEnv := make([]string, 0, len(config.Environment.Slice()))
+		parsedEnv := make([]string, 0, len(config.Environment))
 
-		for _, env := range config.Environment.Slice() {
+		for _, env := range config.Environment {
 			parts := strings.SplitN(env, "=", 2)
 			if len(parts) > 1 && parts[1] != "" {
 				parsedEnv = append(parsedEnv, env)
@@ -114,7 +113,7 @@ func (p *Project) CreateService(name string) (Service, error) {
 			}
 		}
 
-		config.Environment = yaml.NewMaporEqualSlice(parsedEnv)
+		config.Environment = parsedEnv
 	}
 
 	return p.context.ServiceFactory.Create(p, name, &config)

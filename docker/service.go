@@ -12,7 +12,6 @@ import (
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
-	"github.com/docker/libcompose/yaml"
 )
 
 // Service is a project.Service implementations.
@@ -223,7 +222,7 @@ func (s *Service) Run(commandParts []string) (int, error) {
 
 	c := NewContainer(client, containerName, s)
 
-	return c.Run(imageName, &config.ServiceConfig{Command: yaml.NewCommand(commandParts...), Tty: true, StdinOpen: true})
+	return c.Run(imageName, &config.ServiceConfig{Command: commandParts, Tty: true, StdinOpen: true})
 }
 
 // Info implements Service.Info. It returns an project.InfoSet with the containers
