@@ -58,11 +58,13 @@ func ConvertToAPI(s *Service) (*ConfigWrapper, error) {
 func volumes(c *config.ServiceConfig, ctx project.Context) map[string]struct{} {
 	volumes := make(map[string]struct{}, len(c.Volumes))
 	for k, v := range c.Volumes {
-		vol := ctx.ResourceLookup.ResolvePath(v, ctx.ComposeFiles[0])
+		if len(ctx.ComposeFiles) > 0 {
+			v = ctx.ResourceLookup.ResolvePath(v, ctx.ComposeFiles[0])
+		}
 
-		c.Volumes[k] = vol
-		if isVolume(vol) {
-			volumes[vol] = struct{}{}
+		c.Volumes[k] = v
+		if isVolume(v) {
+			volumes[v] = struct{}{}
 		}
 	}
 	return volumes
