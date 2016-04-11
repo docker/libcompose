@@ -13,7 +13,7 @@ clone git github.com/docker/docker 9e530247e066ef7a32e35a1f0f818c1e4048ad54
 clone git github.com/docker/go-units 651fc226e7441360384da338d0fd37f2440ffbe3
 clone git github.com/docker/go-connections v0.2.0
 clone git github.com/docker/libtrust 9cbd2a1374f46905c68a4eb3694a130610adc62a
-clone git github.com/docker/engine-api 6de18e18540cda038b00e71a1f2946d779e83f87
+clone git github.com/docker/engine-api 6156954c5d57a1728c65593b13f50c405d9de9ed
 clone git github.com/flynn/go-shlex 3f9db97f856818214da2e1057f8ad84803971cff
 clone git github.com/gorilla/context 14f550f51a
 clone git github.com/gorilla/mux e444e69cbd
