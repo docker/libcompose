@@ -15,7 +15,7 @@ func DefaultDependentServices(p *Project, s Service) []ServiceRelationship {
 	}
 
 	result := []ServiceRelationship{}
-	for _, link := range config.Links.Slice() {
+	for _, link := range config.Links {
 		result = append(result, NewServiceRelationship(link, RelTypeLink))
 	}
 

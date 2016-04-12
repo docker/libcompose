@@ -133,14 +133,14 @@ func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *
 	}
 
 	config := &container.Config{
-		Entrypoint:   strslice.StrSlice(utils.CopySlice(c.Entrypoint.Slice())),
+		Entrypoint:   strslice.StrSlice(utils.CopySlice(c.Entrypoint)),
 		Hostname:     c.Hostname,
 		Domainname:   c.DomainName,
 		User:         c.User,
-		Env:          utils.CopySlice(c.Environment.Slice()),
-		Cmd:          strslice.StrSlice(utils.CopySlice(c.Command.Slice())),
+		Env:          utils.CopySlice(c.Environment),
+		Cmd:          strslice.StrSlice(utils.CopySlice(c.Command)),
 		Image:        c.Image,
-		Labels:       utils.CopyMap(c.Labels.MapParts()),
+		Labels:       utils.CopyMap(c.Labels),
 		ExposedPorts: exposedPorts,
 		Tty:          c.Tty,
 		OpenStdin:    c.StdinOpen,
@@ -178,8 +178,8 @@ func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *
 		ExtraHosts:  utils.CopySlice(c.ExtraHosts),
 		Privileged:  c.Privileged,
 		Binds:       Filter(c.Volumes, isBind),
-		DNS:         utils.CopySlice(c.DNS.Slice()),
-		DNSSearch:   utils.CopySlice(c.DNSSearch.Slice()),
+		DNS:         utils.CopySlice(c.DNS),
+		DNSSearch:   utils.CopySlice(c.DNSSearch),
 		LogConfig: container.LogConfig{
 			Type:   c.LogDriver,
 			Config: utils.CopyMap(c.LogOpt),

@@ -20,14 +20,14 @@ func newTestConfig() TestConfig {
 				Restart:    "always",
 				Net:        "host",
 				Privileged: true,
-				DNS:        yamlTypes.NewStringorslice("8.8.8.8", "8.8.4.4"),
-				Environment: yamlTypes.NewMaporEqualSlice([]string{
+				DNS:        []string{"8.8.8.8", "8.8.4.4"},
+				Environment: yamlTypes.MaporEqualSlice([]string{
 					"DAEMON=true",
 				}),
-				Labels: yamlTypes.NewSliceorMap(map[string]string{
+				Labels: yamlTypes.SliceorMap{
 					"io.rancher.os.detach": "true",
 					"io.rancher.os.scope":  "system",
-				}),
+				},
 				VolumesFrom: []string{
 					"system-volumes",
 				},
@@ -42,10 +42,10 @@ func newTestConfig() TestConfig {
 				Net:        "none",
 				ReadOnly:   true,
 				Privileged: true,
-				Labels: yamlTypes.NewSliceorMap(map[string]string{
+				Labels: yamlTypes.SliceorMap{
 					"io.rancher.os.createonly": "true",
 					"io.rancher.os.scope":      "system",
-				}),
+				},
 				Volumes: []string{
 					"/dev:/host/dev",
 					"/var/lib/rancher/conf:/var/lib/rancher/conf",

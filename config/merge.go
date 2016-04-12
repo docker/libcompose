@@ -96,7 +96,7 @@ func readEnvFile(resourceLookup ResourceLookup, inFile string, serviceData RawSe
 		return nil, err
 	}
 
-	if len(config.EnvFile.Slice()) == 0 {
+	if len(config.EnvFile) == 0 {
 		return serviceData, nil
 	}
 
@@ -104,10 +104,10 @@ func readEnvFile(resourceLookup ResourceLookup, inFile string, serviceData RawSe
 		return nil, fmt.Errorf("Can not use env_file in file %s no mechanism provided to load files", inFile)
 	}
 
-	vars := config.Environment.Slice()
+	vars := config.Environment
 
-	for i := len(config.EnvFile.Slice()) - 1; i >= 0; i-- {
-		envFile := config.EnvFile.Slice()[i]
+	for i := len(config.EnvFile) - 1; i >= 0; i-- {
+		envFile := config.EnvFile[i]
 		content, _, err := resourceLookup.Lookup(envFile, inFile)
 		if err != nil {
 			return nil, err

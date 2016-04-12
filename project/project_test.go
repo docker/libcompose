@@ -140,7 +140,7 @@ func TestEnvironmentResolve(t *testing.T) {
 	})
 	p.Configs = config.NewConfigs()
 	p.Configs.Add("foo", &config.ServiceConfig{
-		Environment: yaml.NewMaporEqualSlice([]string{
+		Environment: yaml.MaporEqualSlice([]string{
 			"A",
 			"A=",
 			"A=B",
@@ -152,8 +152,8 @@ func TestEnvironmentResolve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(service.Config().Environment.Slice(), []string{"A=X", "A=X", "A=B"}) {
-		t.Fatal("Invalid environment", service.Config().Environment.Slice())
+	if !reflect.DeepEqual(service.Config().Environment, yaml.MaporEqualSlice{"A=X", "A=X", "A=B"}) {
+		t.Fatal("Invalid environment", service.Config().Environment)
 	}
 }
 
