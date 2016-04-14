@@ -49,6 +49,10 @@ var (
 	// to be created which would result in a layer depth
 	// greater than the 125 max.
 	ErrMaxDepthExceeded = errors.New("max depth exceeded")
+
+	// ErrNotSupported is used when the action is not supppoted
+	// on the current platform
+	ErrNotSupported = errors.New("not support on this platform")
 )
 
 // ChainID is the content-addressable ID of a layer.
@@ -170,6 +174,7 @@ type Store interface {
 	CreateRWLayer(id string, parent ChainID, mountLabel string, initFunc MountInit) (RWLayer, error)
 	GetRWLayer(id string) (RWLayer, error)
 	GetMountID(id string) (string, error)
+	ReinitRWLayer(l RWLayer) error
 	ReleaseRWLayer(RWLayer) ([]Metadata, error)
 
 	Cleanup() error
