@@ -153,8 +153,7 @@ func (c *Container) Recreate(imageName string) (*types.Container, error) {
 	}
 	logrus.Debugf("Created replacement container %s", newContainer.ID)
 
-	if err := c.client.ContainerRemove(context.Background(), types.ContainerRemoveOptions{
-		ContainerID:   info.ID,
+	if err := c.client.ContainerRemove(context.Background(), info.ID, types.ContainerRemoveOptions{
 		Force:         true,
 		RemoveVolumes: false,
 	}); err != nil {
@@ -209,8 +208,7 @@ func (c *Container) Down() error {
 	}
 
 	return c.withContainer(func(container *types.Container) error {
-		return c.client.ContainerRemove(context.Background(), types.ContainerRemoveOptions{
-			ContainerID:   container.ID,
+		return c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
 			Force:         true,
 			RemoveVolumes: c.service.context.Volume,
 		})
@@ -258,8 +256,7 @@ func (c *Container) Delete() error {
 	}
 
 	if !info.State.Running {
-		return c.client.ContainerRemove(context.Background(), types.ContainerRemoveOptions{
-			ContainerID:   container.ID,
+		return c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
 			Force:         true,
 			RemoveVolumes: c.service.context.Volume,
 		})
@@ -314,14 +311,13 @@ func (c *Container) Run(imageName string, configOverride *config.ServiceConfig) 
 	}
 
 	options := types.ContainerAttachOptions{
-		ContainerID: container.ID,
-		Stream:      true,
-		Stdin:       configOverride.StdinOpen,
-		Stdout:      configOverride.Tty,
-		Stderr:      configOverride.Tty,
+		Stream: true,
+		Stdin:  configOverride.StdinOpen,
+		Stdout: configOverride.Tty,
+		Stderr: configOverride.Tty,
 	}
 
-	resp, err := c.client.ContainerAttach(context.Background(), options)
+	resp, err := c.client.ContainerAttach(context.Background(), container.ID, options)
 	if err != nil {
 		return -1, err
 	}
@@ -674,13 +670,12 @@ func (c *Container) Log() error {
 	l := c.service.context.LoggerFactory.Create(c.name)
 
 	options := types.ContainerLogsOptions{
-		ContainerID: c.name,
-		ShowStdout:  true,
-		ShowStderr:  true,
-		Follow:      true,
-		Tail:        "all",
+		ShowStdout: true,
+		ShowStderr: true,
+		Follow:     true,
+		Tail:       "all",
 	}
-	responseBody, err := c.client.ContainerLogs(context.Background(), options)
+	responseBody, err := c.client.ContainerLogs(context.Background(), c.name, options)
 	if err != nil {
 		return err
 	}
@@ -701,14 +696,9 @@ func (c *Container) pull(image string) error {
 }
 
 func pullImage(client client.APIClient, service *Service, image string) error {
-	tag := reference.DefaultTag
 	distributionRef, err := reference.ParseNamed(image)
 	if err != nil {
 		return err
-	}
-
-	if named, ok := distributionRef.(reference.NamedTagged); ok {
-		tag = named.Tag()
 	}
 
 	repoInfo, err := registry.ParseRepositoryInfo(distributionRef)
@@ -727,11 +717,9 @@ func pullImage(client client.APIClient, service *Service, image string) error {
 	}
 
 	options := types.ImagePullOptions{
-		ImageID:      distributionRef.Name(),
-		Tag:          tag,
 		RegistryAuth: encodedAuth,
 	}
-	responseBody, err := client.ImagePull(context.Background(), options, nil)
+	responseBody, err := client.ImagePull(context.Background(), distributionRef.String(), options)
 	if err != nil {
 		logrus.Errorf("Failed to pull image %s: %v", image, err)
 		return err

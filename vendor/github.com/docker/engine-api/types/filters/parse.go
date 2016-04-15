@@ -69,6 +69,8 @@ func ToParam(a Args) (string, error) {
 	return string(buf), nil
 }
 
+// ToParamWithVersion packs the Args into a string for easy transport from client to server.
+// The generated string will depend on the specified version (corresponding to the API version).
 func ToParamWithVersion(version string, a Args) (string, error) {
 	// this way we don't URL encode {}, just empty space
 	if a.Len() == 0 {
@@ -281,7 +283,7 @@ func convertArgsToSlice(f map[string]map[string]bool) map[string][]string {
 	m := map[string][]string{}
 	for k, v := range f {
 		values := []string{}
-		for kk, _ := range v {
+		for kk := range v {
 			if v[kk] {
 				values = append(values, kk)
 			}

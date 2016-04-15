@@ -90,8 +90,7 @@ func (s *RunSuite) TearDownTest(c *C) {
 		// Unpause container (if paused) and ignore error (if wasn't paused)
 		client.ContainerUnpause(context.Background(), container.ID)
 		// And remove force \o/
-		err := client.ContainerRemove(context.Background(), types.ContainerRemoveOptions{
-			ContainerID:   container.ID,
+		err := client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
 			Force:         true,
 			RemoveVolumes: true,
 		})

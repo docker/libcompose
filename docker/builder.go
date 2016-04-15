@@ -71,8 +71,7 @@ func (d *DaemonBuilder) Build(imageName string, p *project.Project, service proj
 
 	outFd, isTerminalOut := term.GetFdInfo(os.Stdout)
 
-	response, err := client.ImageBuild(context.Background(), types.ImageBuildOptions{
-		Context:     body,
+	response, err := client.ImageBuild(context.Background(), body, types.ImageBuildOptions{
 		Tags:        []string{imageName},
 		NoCache:     d.context.NoCache,
 		Remove:      true,
