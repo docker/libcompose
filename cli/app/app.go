@@ -181,7 +181,9 @@ func ProjectLog(p *project.Project, c *cli.Context) {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	wait()
+	if c.Bool("follow") {
+		wait()
+	}
 }
 
 // ProjectPull pulls images for services.

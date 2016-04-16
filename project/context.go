@@ -21,6 +21,7 @@ var projectRegexp = regexp.MustCompile("[^a-zA-Z0-9_.-]")
 type Context struct {
 	Timeout             uint
 	Log                 bool
+	FollowLog           bool
 	Volume              bool
 	ForceRecreate       bool
 	NoRecreate          bool

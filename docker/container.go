@@ -672,7 +672,7 @@ func (c *Container) Log() error {
 	options := types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
-		Follow:     true,
+		Follow:     c.service.context.FollowLog,
 		Tail:       "all",
 	}
 	responseBody, err := c.client.ContainerLogs(context.Background(), c.name, options)
