@@ -30,20 +30,26 @@ TESTS_FAILED=()
 
 set +e
 for dir in $TESTDIRS; do
-    echo '+ go test' $TESTFLAGS "${LIBCOMPOSE_PKG}/${dir#./}"
-    go test ${TESTFLAGS} "${LIBCOMPOSE_PKG}/${dir#./}"
+    echo '+ go test -race' $TESTFLAGS "${LIBCOMPOSE_PKG}/${dir#./}"
+    go test -race ${TESTFLAGS} "${LIBCOMPOSE_PKG}/${dir#./}"
     if [ $? != 0 ]; then
         TESTS_FAILED+=("$dir")
         echo
         echo "${RED}Tests failed: ${LIBCOMPOSE_PKG}${TEXTRESET}"
         sleep 1 # give it a second, so observers watching can take note
-    else
-        echo '+ go test -race' $TESTFLAGS "${LIBCOMPOSE_PKG}/${dir#./}"
-        go test -race ${TESTFLAGS} "${LIBCOMPOSE_PKG}/${dir#./}"
+    fi
+done
+
+echo
+echo "Run non-race test (if any)"
+for dir in $TESTDIRS; do
+    if [ -n "$(grep --include '*_test.go' -l -ri '!race' ${dir})" ]; then
+        echo '+ go test ' $TESTFLAGS "${LIBCOMPOSE_PKG}/${dir#./}"
+        go test ${TESTFLAGS} "${LIBCOMPOSE_PKG}/${dir#./}"
         if [ $? != 0 ]; then
             TESTS_FAILED+=("$dir")
             echo
-            echo "${RED}Tests failed (race): ${LIBCOMPOSE_PKG}${TEXTRESET}"
+            echo "${RED}Tests failed: ${LIBCOMPOSE_PKG}${TEXTRESET}"
             sleep 1 # give it a second, so observers watching can take note
         fi
     fi
