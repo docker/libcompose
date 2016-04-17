@@ -4,14 +4,10 @@ set -e
 export SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export DEST=.
 
-bundle .integration-daemon-start
+# Temporarly only test on DEFAULT_DOCKER_VERSION
+export DOCKER_DAEMON_VERSION="${DEFAULT_DOCKER_VERSION}"
 
-rm -rf venv
-virtualenv venv
-git clone https://github.com/docker/compose.git venv/compose
-venv/bin/pip install \
-    -r venv/compose/requirements.txt \
-    -r venv/compose/requirements-dev.txt
+bundle .integration-daemon-start
 
 cp bundles/libcompose-cli venv/bin/docker-compose
 . venv/bin/activate

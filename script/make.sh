@@ -5,19 +5,18 @@ export LIBCOMPOSE_PKG='github.com/docker/libcompose'
 
 # List of bundles to create when no argument is passed
 DEFAULT_BUNDLES=(
-	validate-gofmt
-	#validate-git-marks
-	validate-dco
-	validate-git-marks
-	validate-lint
-	validate-vet
-	binary
+    validate-gofmt
+    validate-dco
+    validate-git-marks
+    validate-lint
+    validate-vet
+    binary
 
-	test-unit
-	test-integration
-	test-acceptance
+    test-unit
+    test-integration
+    test-acceptance
 
-	cross-binary
+    cross-binary
 )
 bundle() {
     local bundle="$1"; shift
