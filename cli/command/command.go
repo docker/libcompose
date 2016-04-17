@@ -155,6 +155,10 @@ func LogsCommand(factory app.ProjectFactory) cli.Command {
 				Usage: "number of lines to tail",
 				Value: 100,
 			},
+			cli.BoolFlag{
+				Name:  "follow",
+				Usage: "Follow log output.",
+			},
 		},
 	}
 }
@@ -306,6 +310,7 @@ func Populate(context *project.Context, c *cli.Context) {
 
 	if c.Command.Name == "logs" {
 		context.Log = true
+		context.FollowLog = c.Bool("follow")
 	} else if c.Command.Name == "up" || c.Command.Name == "create" {
 		context.Log = !c.Bool("d")
 		context.NoRecreate = c.Bool("no-recreate")
