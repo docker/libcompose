@@ -4,7 +4,7 @@
 export PATH="$ABS_DEST/../binary:/usr/local/bin/docker-${DOCKER_DAEMON_VERSION}:$PATH"
 
 if ! command -v docker &> /dev/null; then
-    echo >&2 'error: binary must be run before .integration-daemon-start'
+    echo >&2 'error: docker binary should be present to be able to run test-integration'
     false
 fi
 

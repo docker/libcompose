@@ -43,10 +43,21 @@ RUN set -e; \
 # Set the default Docker to be run
 RUN ln -s /usr/local/bin/docker-${DEFAULT_DOCKER_VERSION} /usr/local/bin/docker
 
+WORKDIR /go/src/github.com/docker/libcompose
+
+# Compose COMMIT for acceptance test version, update that commit when
+# you want to update the acceptance test version to support.
+ENV COMPOSE_COMMIT e2cb7b0237085415ce48900309a61c73b5938520
+RUN virtualenv venv && \
+    git clone https://github.com/docker/compose.git venv/compose && \
+    cd venv/compose && \
+    git checkout -q "$COMPOSE_COMMIT" && \
+    ../bin/pip install \
+               -r requirements.txt \
+               -r requirements-dev.txt
+
 ENV COMPOSE_BINARY /go/src/github.com/docker/libcompose/libcompose-cli
 ENV USER root
-
-WORKDIR /go/src/github.com/docker/libcompose
 
 # Wrap all commands in the "docker-in-docker" script to allow nested containers
 ENTRYPOINT ["script/dind"]
