@@ -14,7 +14,7 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-func (s *RunSuite) TestUp(c *C) {
+func (s *CliSuite) TestUp(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -24,7 +24,7 @@ func (s *RunSuite) TestUp(c *C) {
 	c.Assert(cn.State.Running, Equals, true)
 }
 
-func (s *RunSuite) TestUpNotExistService(c *C) {
+func (s *CliSuite) TestUpNotExistService(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "not_exist")
@@ -32,7 +32,7 @@ func (s *RunSuite) TestUpNotExistService(c *C) {
 	c.Assert(cn, IsNil)
 }
 
-func (s *RunSuite) TestRecreateForceRecreate(c *C) {
+func (s *CliSuite) TestRecreateForceRecreate(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -52,7 +52,7 @@ func mountSet(slice []types.MountPoint) map[string]bool {
 	return result
 }
 
-func (s *RunSuite) TestRecreateVols(c *C) {
+func (s *CliSuite) TestRecreateVols(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplateWithVols)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -83,7 +83,7 @@ func (s *RunSuite) TestRecreateVols(c *C) {
 	c.Assert(cn2Mounts["/root:/root"], Equals, false)
 }
 
-func (s *RunSuite) TestRecreateNoRecreate(c *C) {
+func (s *CliSuite) TestRecreateNoRecreate(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -104,7 +104,7 @@ func (s *RunSuite) TestRecreateNoRecreate(c *C) {
 	c.Assert(ok, Equals, false)
 }
 
-func (s *RunSuite) TestRecreate(c *C) {
+func (s *CliSuite) TestRecreate(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -176,7 +176,7 @@ func (s *RunSuite) TestRecreate(c *C) {
 	c.Assert(cn.State.Running, Equals, true)
 }
 
-func (s *RunSuite) TestUpAfterImageTagDeleted(c *C) {
+func (s *CliSuite) TestUpAfterImageTagDeleted(c *C) {
 	client := GetClient(c)
 	label := RandStr(7)
 	repo := "busybox"
@@ -208,7 +208,7 @@ func (s *RunSuite) TestUpAfterImageTagDeleted(c *C) {
 	c.Assert(firstContainer.ID, Equals, latestContainer.ID)
 }
 
-func (s *RunSuite) TestRecreateImageChanging(c *C) {
+func (s *CliSuite) TestRecreateImageChanging(c *C) {
 	client := GetClient(c)
 	label := "buildroot-2013.08.1"
 	repo := "busybox"
@@ -255,7 +255,7 @@ func (s *RunSuite) TestRecreateImageChanging(c *C) {
 	s.FromText(c, p, "rm", "-f", template)
 }
 
-func (s *RunSuite) TestLink(c *C) {
+func (s *CliSuite) TestLink(c *C) {
 	p := s.ProjectFromText(c, "up", `
         server:
           image: busybox
@@ -288,7 +288,7 @@ func (s *RunSuite) TestLink(c *C) {
 	}))
 }
 
-func (s *RunSuite) TestUpNoBuildFailIfImageNotPresent(c *C) {
+func (s *CliSuite) TestUpNoBuildFailIfImageNotPresent(c *C) {
 	p := s.RandomProject()
 	cmd := exec.Command(s.command, "-f", "./assets/build/docker-compose.yml", "-p", p, "up", "--no-build")
 	err := cmd.Run()
@@ -296,7 +296,7 @@ func (s *RunSuite) TestUpNoBuildFailIfImageNotPresent(c *C) {
 	c.Assert(err, NotNil)
 }
 
-func (s *RunSuite) TestUpNoBuildShouldWorkIfImageIsPresent(c *C) {
+func (s *CliSuite) TestUpNoBuildShouldWorkIfImageIsPresent(c *C) {
 	p := s.RandomProject()
 	cmd := exec.Command(s.command, "-f", "./assets/simple-build/docker-compose.yml", "-p", p, "build")
 	err := cmd.Run()

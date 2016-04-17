@@ -6,7 +6,7 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-func (s *RunSuite) TestDown(c *C) {
+func (s *CliSuite) TestDown(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -21,7 +21,7 @@ func (s *RunSuite) TestDown(c *C) {
 	c.Assert(len(containers), Equals, 0)
 }
 
-func (s *RunSuite) TestDownMultiple(c *C) {
+func (s *CliSuite) TestDownMultiple(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	s.FromText(c, p, "scale", "hello=2", SimpleTemplate)

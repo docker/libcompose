@@ -10,7 +10,7 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-func (s *RunSuite) TestBuild(c *C) {
+func (s *CliSuite) TestBuild(c *C) {
 	p := s.RandomProject()
 	cmd := exec.Command(s.command, "-f", "./assets/build/docker-compose.yml", "-p", p, "build")
 	err := cmd.Run()
@@ -30,7 +30,7 @@ func (s *RunSuite) TestBuild(c *C) {
 	c.Assert([]string(two.Config.Cmd), DeepEquals, []string{"echo", "two"})
 }
 
-func (s *RunSuite) TestBuildWithNoCache1(c *C) {
+func (s *CliSuite) TestBuildWithNoCache1(c *C) {
 	p := s.RandomProject()
 	cmd := exec.Command(s.command, "-f", "./assets/build/docker-compose.yml", "-p", p, "build")
 
@@ -46,7 +46,7 @@ func (s *RunSuite) TestBuildWithNoCache1(c *C) {
 		Equals, true, Commentf("%s", out))
 }
 
-func (s *RunSuite) TestBuildWithNoCache2(c *C) {
+func (s *CliSuite) TestBuildWithNoCache2(c *C) {
 	p := s.RandomProject()
 	cmd := exec.Command(s.command, "-f", "./assets/build/docker-compose.yml", "-p", p, "build")
 
@@ -62,7 +62,7 @@ func (s *RunSuite) TestBuildWithNoCache2(c *C) {
 		Equals, false, Commentf("%s", out))
 }
 
-func (s *RunSuite) TestBuildWithNoCache3(c *C) {
+func (s *CliSuite) TestBuildWithNoCache3(c *C) {
 	p := s.RandomProject()
 	cmd := exec.Command(s.command, "-f", "./assets/build/docker-compose.yml", "-p", p, "build", "--no-cache")
 	err := cmd.Run()

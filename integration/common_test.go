@@ -54,31 +54,18 @@ const (
 
 func Test(t *testing.T) { TestingT(t) }
 
-func asMap(items []string) map[string]bool {
-	result := map[string]bool{}
-	for _, item := range items {
-		result[item] = true
-	}
-	return result
+func init() {
+	Suite(&CliSuite{
+		command: "../bundles/libcompose-cli",
+	})
 }
 
-var random = rand.New(rand.NewSource(time.Now().Unix()))
-
-func RandStr(n int) string {
-	letters := []rune("abcdefghijklmnopqrstuvwxyz")
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[random.Intn(len(letters))]
-	}
-	return string(b)
-}
-
-type RunSuite struct {
+type CliSuite struct {
 	command  string
 	projects []string
 }
 
-func (s *RunSuite) TearDownTest(c *C) {
+func (s *CliSuite) TearDownTest(c *C) {
 	// Delete all containers
 	client := GetClient(c)
 
@@ -98,24 +85,20 @@ func (s *RunSuite) TearDownTest(c *C) {
 	}
 }
 
-var _ = Suite(&RunSuite{
-	command: "../bundles/libcompose-cli",
-})
-
-func (s *RunSuite) CreateProjectFromText(c *C, input string) string {
+func (s *CliSuite) CreateProjectFromText(c *C, input string) string {
 	return s.ProjectFromText(c, "create", input)
 }
 
-func (s *RunSuite) RandomProject() string {
+func (s *CliSuite) RandomProject() string {
 	return "test-project-" + RandStr(7)
 }
 
-func (s *RunSuite) ProjectFromText(c *C, command, input string) string {
+func (s *CliSuite) ProjectFromText(c *C, command, input string) string {
 	projectName := s.RandomProject()
 	return s.FromText(c, projectName, command, input)
 }
 
-func (s *RunSuite) FromText(c *C, projectName, command string, argsAndInput ...string) string {
+func (s *CliSuite) FromText(c *C, projectName, command string, argsAndInput ...string) string {
 	command, args, input := s.createCommand(c, projectName, command, argsAndInput)
 
 	cmd := exec.Command(s.command, args...)
@@ -132,7 +115,7 @@ func (s *RunSuite) FromText(c *C, projectName, command string, argsAndInput ...s
 }
 
 // Doesn't assert that command runs successfully
-func (s *RunSuite) FromTextCaptureOutput(c *C, projectName, command string, argsAndInput ...string) (string, string) {
+func (s *CliSuite) FromTextCaptureOutput(c *C, projectName, command string, argsAndInput ...string) (string, string) {
 	command, args, input := s.createCommand(c, projectName, command, argsAndInput)
 
 	cmd := exec.Command(s.command, args...)
@@ -146,7 +129,7 @@ func (s *RunSuite) FromTextCaptureOutput(c *C, projectName, command string, args
 	return projectName, string(output[:])
 }
 
-func (s *RunSuite) createCommand(c *C, projectName, command string, argsAndInput []string) (string, []string, string) {
+func (s *CliSuite) createCommand(c *C, projectName, command string, argsAndInput []string) (string, []string, string) {
 	args := []string{"--verbose", "-p", projectName, "-f", "-", command}
 	args = append(args, argsAndInput[0:len(argsAndInput)-1]...)
 
@@ -173,7 +156,7 @@ func GetClient(c *C) client.APIClient {
 	return client
 }
 
-func (s *RunSuite) GetContainerByName(c *C, name string) *types.ContainerJSON {
+func (s *CliSuite) GetContainerByName(c *C, name string) *types.ContainerJSON {
 	client := GetClient(c)
 	container, err := docker.GetContainerByName(client, name)
 
@@ -190,11 +173,30 @@ func (s *RunSuite) GetContainerByName(c *C, name string) *types.ContainerJSON {
 	return &info
 }
 
-func (s *RunSuite) GetContainersByProject(c *C, project string) []types.Container {
+func (s *CliSuite) GetContainersByProject(c *C, project string) []types.Container {
 	client := GetClient(c)
 	containers, err := docker.GetContainersByFilter(client, docker.PROJECT.Eq(project))
 
 	c.Assert(err, IsNil)
 
 	return containers
+}
+
+func asMap(items []string) map[string]bool {
+	result := map[string]bool{}
+	for _, item := range items {
+		result[item] = true
+	}
+	return result
+}
+
+var random = rand.New(rand.NewSource(time.Now().Unix()))
+
+func RandStr(n int) string {
+	letters := []rune("abcdefghijklmnopqrstuvwxyz")
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[random.Intn(len(letters))]
+	}
+	return string(b)
 }

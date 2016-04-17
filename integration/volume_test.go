@@ -8,7 +8,7 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-func (s *RunSuite) TestVolumeFromService(c *C) {
+func (s *CliSuite) TestVolumeFromService(c *C) {
 	p := s.RandomProject()
 	cmd := exec.Command(s.command, "-f", "./assets/regression/60-volume_from.yml", "-p", p, "create")
 	err := cmd.Run()
@@ -24,7 +24,7 @@ func (s *RunSuite) TestVolumeFromService(c *C) {
 	c.Assert(cn.HostConfig.VolumesFrom[0], Equals, volumeFromContainer)
 }
 
-func (s *RunSuite) TestRelativeVolume(c *C) {
+func (s *CliSuite) TestRelativeVolume(c *C) {
 	p := s.ProjectFromText(c, "up", `
 	server:
 	  image: busybox

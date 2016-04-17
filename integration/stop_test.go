@@ -6,7 +6,7 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-func (s *RunSuite) TestStop(c *C) {
+func (s *CliSuite) TestStop(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")

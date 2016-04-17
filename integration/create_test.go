@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 )
 
-func (s *RunSuite) TestFields(c *C) {
+func (s *CliSuite) TestFields(c *C) {
 	p := s.CreateProjectFromText(c, `
         hello:
           image: tianon/true
@@ -27,7 +27,7 @@ func (s *RunSuite) TestFields(c *C) {
 	c.Assert(cn.HostConfig.Memory, Equals, int64(4194304))
 }
 
-func (s *RunSuite) TestEmptyEntrypoint(c *C) {
+func (s *CliSuite) TestEmptyEntrypoint(c *C) {
 	p := s.CreateProjectFromText(c, `
         nil-cmd:
           image: busybox
@@ -41,7 +41,7 @@ func (s *RunSuite) TestEmptyEntrypoint(c *C) {
 	c.Assert(cn.Config.Entrypoint, IsNil)
 }
 
-func (s *RunSuite) TestHelloWorld(c *C) {
+func (s *CliSuite) TestHelloWorld(c *C) {
 	p := s.CreateProjectFromText(c, `
         hello:
           image: tianon/true
@@ -54,7 +54,7 @@ func (s *RunSuite) TestHelloWorld(c *C) {
 	c.Assert(cn.Name, Equals, "/"+name)
 }
 
-func (s *RunSuite) TestContainerName(c *C) {
+func (s *CliSuite) TestContainerName(c *C) {
 	containerName := "containerName"
 	template := fmt.Sprintf(`hello:
     image: busybox
@@ -68,7 +68,7 @@ func (s *RunSuite) TestContainerName(c *C) {
 	c.Assert(cn.Name, Equals, "/"+containerName)
 }
 
-func (s *RunSuite) TestContainerNameWithScale(c *C) {
+func (s *CliSuite) TestContainerNameWithScale(c *C) {
 	containerName := "containerName"
 	template := fmt.Sprintf(`hello:
     image: busybox
@@ -82,7 +82,7 @@ func (s *RunSuite) TestContainerNameWithScale(c *C) {
 
 }
 
-func (s *RunSuite) TestInterpolation(c *C) {
+func (s *CliSuite) TestInterpolation(c *C) {
 	os.Setenv("IMAGE", "tianon/true")
 
 	p := s.CreateProjectFromText(c, `
@@ -108,7 +108,7 @@ func (s *RunSuite) TestInterpolation(c *C) {
 	os.Unsetenv("IMAGE")
 }
 
-func (s *RunSuite) TestInterpolationWithExtends(c *C) {
+func (s *CliSuite) TestInterpolationWithExtends(c *C) {
 	os.Setenv("IMAGE", "tianon/true")
 	os.Setenv("TEST_PORT", "8000")
 
@@ -142,7 +142,7 @@ func (s *RunSuite) TestInterpolationWithExtends(c *C) {
 	os.Unsetenv("IMAGE")
 }
 
-func (s *RunSuite) TestFieldTypeConversions(c *C) {
+func (s *CliSuite) TestFieldTypeConversions(c *C) {
 	os.Setenv("LIMIT", "40000000")
 
 	p := s.CreateProjectFromText(c, `
@@ -172,7 +172,7 @@ func (s *RunSuite) TestFieldTypeConversions(c *C) {
 	os.Unsetenv("LIMIT")
 }
 
-func (s *RunSuite) TestMultipleComposeFilesOneTwo(c *C) {
+func (s *CliSuite) TestMultipleComposeFilesOneTwo(c *C) {
 	p := "multiple"
 	cmd := exec.Command(s.command, "-f", "./assets/multiple/one.yml", "-f", "./assets/multiple/two.yml", "create")
 	cmd.Stdout = os.Stdout
@@ -200,7 +200,7 @@ func (s *RunSuite) TestMultipleComposeFilesOneTwo(c *C) {
 	c.Assert(contains(container.Config.Env, "KEY1=VAL1"), Equals, true)
 }
 
-func (s *RunSuite) TestMultipleComposeFilesTwoOne(c *C) {
+func (s *CliSuite) TestMultipleComposeFilesTwoOne(c *C) {
 	p := "multiple"
 	cmd := exec.Command(s.command, "-f", "./assets/multiple/two.yml", "-f", "./assets/multiple/one.yml", "create")
 	cmd.Stdout = os.Stdout
@@ -237,7 +237,7 @@ func contains(s []string, e string) bool {
 	return false
 }
 
-func (s *RunSuite) TestDefaultMultipleComposeFiles(c *C) {
+func (s *CliSuite) TestDefaultMultipleComposeFiles(c *C) {
 	p := s.RandomProject()
 	cmd := exec.Command(filepath.Join("../../", s.command), "-p", p, "create")
 	cmd.Stdout = os.Stdout
@@ -258,7 +258,7 @@ func (s *RunSuite) TestDefaultMultipleComposeFiles(c *C) {
 	}
 }
 
-func (s *RunSuite) TestValidation(c *C) {
+func (s *CliSuite) TestValidation(c *C) {
 	template := `
   test:
     image: busybox
@@ -293,7 +293,7 @@ func (s *RunSuite) TestValidation(c *C) {
 	c.Assert(strings.Contains(output, "Service 'test' configuration key 'devices' value [/dev/foo:/dev/foo /dev/foo:/dev/foo] has non-unique elements"), Equals, true)
 }
 
-func (s *RunSuite) TestValidationWithExtends(c *C) {
+func (s *CliSuite) TestValidationWithExtends(c *C) {
 	template := `
   base:
     image: busybox

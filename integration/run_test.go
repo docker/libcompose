@@ -16,7 +16,7 @@ import (
 )
 
 // FIXME find out why it fails with "inappropriate ioctl for device"
-func (s *RunSuite) TestRun(c *C) {
+func (s *CliSuite) TestRun(c *C) {
 	p := s.RandomProject()
 	cmd := exec.Command(s.command, "-f", "./assets/run/docker-compose.yml", "-p", p, "run", "hello", "echo", "test")
 	var b bytes.Buffer

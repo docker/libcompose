@@ -6,7 +6,7 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-func (s *RunSuite) TestPause(c *C) {
+func (s *CliSuite) TestPause(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -23,7 +23,7 @@ func (s *RunSuite) TestPause(c *C) {
 	c.Assert(cn.State.Paused, Equals, true)
 }
 
-func (s *RunSuite) TestPauseAlreadyPausedService(c *C) {
+func (s *CliSuite) TestPauseAlreadyPausedService(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -48,7 +48,7 @@ func (s *RunSuite) TestPauseAlreadyPausedService(c *C) {
 	c.Assert(cn.State.Paused, Equals, true)
 }
 
-func (s *RunSuite) TestUnpause(c *C) {
+func (s *CliSuite) TestUnpause(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -73,7 +73,7 @@ func (s *RunSuite) TestUnpause(c *C) {
 	c.Assert(cn.State.Paused, Equals, false)
 }
 
-func (s *RunSuite) TestUnpauseNotPausedService(c *C) {
+func (s *CliSuite) TestUnpauseNotPausedService(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
