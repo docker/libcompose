@@ -701,6 +701,16 @@ func pullImage(client client.APIClient, service *Service, image string) error {
 		return err
 	}
 
+	switch distributionRef.(type) {
+	case reference.Canonical:
+	case reference.NamedTagged:
+	default:
+		distributionRef, err = reference.WithTag(distributionRef, "latest")
+		if err != nil {
+			return err
+		}
+	}
+
 	repoInfo, err := registry.ParseRepositoryInfo(distributionRef)
 	if err != nil {
 		return err

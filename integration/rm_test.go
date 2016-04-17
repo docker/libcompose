@@ -6,7 +6,7 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-func (s *RunSuite) TestDelete(c *C) {
+func (s *CliSuite) TestDelete(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -22,7 +22,7 @@ func (s *RunSuite) TestDelete(c *C) {
 	c.Assert(cn, IsNil)
 }
 
-func (s *RunSuite) TestDeleteOnlyRemovesStopped(c *C) {
+func (s *CliSuite) TestDeleteOnlyRemovesStopped(c *C) {
 	projectTemplate := `
 hello:
   image: busybox
@@ -62,7 +62,7 @@ bye:
 	c.Assert(helloContainer, NotNil)
 }
 
-func (s *RunSuite) TestDeleteWithVol(c *C) {
+func (s *CliSuite) TestDeleteWithVol(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")

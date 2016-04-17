@@ -7,7 +7,13 @@ import (
 	"github.com/docker/libcompose/project"
 )
 
-func (s *RunSuite) TestVolumeWithoutComposeFile(c *C) {
+func init() {
+	Suite(&APISuite{})
+}
+
+type APISuite struct{}
+
+func (s *APISuite) TestVolumeWithoutComposeFile(c *C) {
 	service := `
 service:
   image: busybox

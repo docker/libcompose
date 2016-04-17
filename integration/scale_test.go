@@ -7,7 +7,7 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-func (s *RunSuite) TestScale(c *C) {
+func (s *CliSuite) TestScale(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -43,7 +43,7 @@ func (s *RunSuite) TestScale(c *C) {
 	c.Assert(cn.State.Running, Equals, true)
 }
 
-func (s *RunSuite) TestScaleWithHostPortWarning(c *C) {
+func (s *CliSuite) TestScaleWithHostPortWarning(c *C) {
 	template := `
 	test:
 	  image: busybox

@@ -7,7 +7,7 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-func (s *RunSuite) TestPs(c *C) {
+func (s *CliSuite) TestPs(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
@@ -19,7 +19,7 @@ func (s *RunSuite) TestPs(c *C) {
 		Equals, true, Commentf("%s", out))
 }
 
-func (s *RunSuite) TestPsQuiet(c *C) {
+func (s *CliSuite) TestPsQuiet(c *C) {
 	p := s.ProjectFromText(c, "up", SimpleTemplate)
 
 	name := fmt.Sprintf("%s_%s_1", p, "hello")
