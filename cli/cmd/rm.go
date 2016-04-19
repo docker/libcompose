@@ -21,6 +21,6 @@ Any data which is not in a volume will be lost.`,
 func init() {
 	RootCmd.AddCommand(rmCmd)
 	rmCmd.SetUsageTemplate(subCommandTemplate)
-	rmCmd.Flags().BoolP("force", "", false, "Don't ask to confirm removal")
+	rmCmd.Flags().BoolP("force", "f", false, "Don't ask to confirm removal")
 	rmCmd.Flags().BoolP("volume", "v", false, "Remove volumes associated with containers")
 }

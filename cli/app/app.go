@@ -183,7 +183,7 @@ func ProjectLog(p *project.Project, c *cobra.Command) {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	if c.Bool("follow") {
+	if follow, _ := c.Flags().GetBool("follow"); follow {
 		wait()
 	}
 }

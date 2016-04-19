@@ -16,5 +16,6 @@ func init() {
 	RootCmd.AddCommand(logsCmd)
 
 	logsCmd.Flags().Int("lines", 100, "number of lines to tail")
+	logsCmd.Flags().Bool("Follow", false, "Follow log output")
 
 }
