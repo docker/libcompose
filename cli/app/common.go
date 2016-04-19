@@ -3,9 +3,8 @@ package app
 import (
 	"os"
 
-	"github.com/spf13/cobra"
-	//	"github.com/docker/libcompose/newcli/app"
 	"github.com/docker/libcompose/project"
+	"github.com/spf13/cobra"
 )
 
 // Populate updates the specified project context based on command line arguments and subcommands.
@@ -31,10 +30,10 @@ func Populate(context *project.Context, c *cobra.Command) {
 		context.NoRecreate, _ = args.GetBool("no-recreate")
 		context.ForceRecreate, _ = args.GetBool("force-recreate")
 		context.NoBuild, _ = args.GetBool("no-build")
-		//	} else if c.Name() == "stop" || c.Name() == "restart" || c.Name() == "scale" {
-		//		context.Timeout, _ = args.GetInt("timeout")
-		//} else if c.Name() == "kill" {
-		//	context.Signal, _ = args.GetBool("signal")
+	} else if c.Name() == "stop" || c.Name() == "restart" || c.Name() == "scale" {
+		context.Timeout, _ = args.GetUint("timeout")
+	} else if c.Name() == "kill" {
+		context.Signal, _ = args.GetString("signal")
 	} else if c.Name() == "rm" {
 		context.Volume, _ = args.GetBool("v")
 	} else if c.Name() == "build" {
