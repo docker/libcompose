@@ -83,3 +83,8 @@ func (e *EmptyService) Pause() error {
 func (e *EmptyService) Unpause() error {
 	return nil
 }
+
+// Run implements Service.Run but does nothing.
+func (e *EmptyService) Run(commandParts []string) (int, error) {
+	return 0, nil
+}
