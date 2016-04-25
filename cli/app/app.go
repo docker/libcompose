@@ -301,7 +301,7 @@ func exitOnSignal(p *project.Project, c *cli.Context) {
 	go func() {
 		for range signalChan {
 			fmt.Printf("\nGracefully stopping...\n")
-			ProjectDown(p, c)
+			ProjectStop(p, c)
 			cleanupDone <- true
 		}
 	}()
