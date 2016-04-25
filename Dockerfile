@@ -1,5 +1,5 @@
 # This file describes the standard way to build libcompose, using docker
-FROM golang:1.6.0
+FROM golang:1.6.2
 
 
 # virtualenv is necessary to run acceptance tests
