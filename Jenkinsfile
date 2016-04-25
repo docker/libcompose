@@ -1,22 +1,33 @@
+
 wrappedNode(label: 'linux && x86_64') {
   deleteDir()
   checkout scm
   def image
   try {
-    // TODO: split up into phases, create real test reports, etc.
     stage "build image"
     image = docker.build("dockerbuildbot/libcompose:${gitCommit()}")
 
-    stage "validate, test, build"
-    withEnv(["TESTVERBOSE=1", "LIBCOMPOSE_IMAGE=${image.id}"]) {
-      withChownWorkspace {
-        timeout(60) {
-          sh "make -e all"
-        }
-      }
-    }
+    stage "validate"
+    makeTask(image, "validate")
+
+    stage "test"
+    makeTask(image, "test", ["TESTVERBOSE=1", "DAEMON_VERSION=all"])
+
+    stage "build"
+    makeTask(image, "cross-binary")
   } finally {
     try { archive "bundles" } catch (Exception exc) {}
     if (image) { sh "docker rmi ${image.id} ||:" }
+  }
+}
+
+def makeTask(image, task, envVars=null) {
+  // could send in the full list of envVars for each call or provide default env vars like this:
+  withEnv((envVars ?: []) + ["LIBCOMPOSE_IMAGE=${image.id}"]) { // would need `def image` at top level of file instead of in the nested block
+    withChownWorkspace {
+      timeout(60) {
+        sh "make -e ${task}"
+      }
+    }
   }
 }
