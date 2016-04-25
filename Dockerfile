@@ -1,7 +1,6 @@
 # This file describes the standard way to build libcompose, using docker
 FROM golang:1.6.2
 
-
 # virtualenv is necessary to run acceptance tests
 RUN apt-get update && \
     apt-get install -y iptables build-essential --no-install-recommends && \

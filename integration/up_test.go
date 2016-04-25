@@ -252,7 +252,7 @@ func (s *CliSuite) TestRecreateImageChanging(c *C) {
 	latestContainer = s.GetContainerByName(c, name)
 	c.Assert(firstContainer.ID, Not(Equals), latestContainer.ID)
 
-	s.FromText(c, p, "rm", "-f", template)
+	s.FromText(c, p, "rm", "--force", template)
 }
 
 func (s *CliSuite) TestLink(c *C) {

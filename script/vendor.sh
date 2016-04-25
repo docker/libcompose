@@ -6,7 +6,8 @@ rm -rf vendor/
 source 'script/.vendor-helpers.sh'
 
 clone git github.com/Sirupsen/logrus v0.9.0
-clone git github.com/codegangsta/cli 6086d7927ec35315964d9fea46df6c04e6d697c1
+clone git github.com/spf13/cobra 4c05eb1145f16d0e6bb4a3e1b6d769f4713cb41f
+clone git github.com/spf13/pflag 8f6a28b0916586e7f22fe931ae2fcfc380b1c0e6
 clone git github.com/docker/distribution d06d6d3b093302c02a93153ac7b06ebc0ffd1793
 clone git github.com/vbatts/tar-split v0.9.11
 clone git github.com/docker/docker v1.11.0

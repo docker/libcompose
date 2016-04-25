@@ -10,4 +10,4 @@ go generate
 go build \
    -ldflags="-w -X github.com/docker/libcompose/version.GITCOMMIT=`git rev-parse --short HEAD`" \
    -o bundles/libcompose-cli \
-   ./cli/main
+   ./cli
