@@ -405,12 +405,6 @@ func holdHijackedConnection(tty bool, inputStream io.ReadCloser, outputStream, e
 func (c *Container) Up(imageName string) error {
 	var err error
 
-	defer func() {
-		if err == nil && c.service.context.Log {
-			go c.Log()
-		}
-	}()
-
 	container, err := c.Create(imageName)
 	if err != nil {
 		return err

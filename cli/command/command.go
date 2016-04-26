@@ -309,10 +309,8 @@ func Populate(context *project.Context, c *cli.Context) {
 	context.ProjectName = c.GlobalString("project-name")
 
 	if c.Command.Name == "logs" {
-		context.Log = true
 		context.FollowLog = c.Bool("follow")
 	} else if c.Command.Name == "up" || c.Command.Name == "create" {
-		context.Log = !c.Bool("d")
 		context.NoRecreate = c.Bool("no-recreate")
 		context.ForceRecreate = c.Bool("force-recreate")
 		context.NoBuild = c.Bool("no-build")
