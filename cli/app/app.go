@@ -133,11 +133,27 @@ func ProjectUp(p *project.Project, c *cli.Context) {
 		logrus.Fatal(err)
 	}
 	if !c.Bool("d") {
-		err = p.Log(c.Args()...)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-		exitOnSignal(p, c)
+		signalChan := make(chan os.Signal, 1)
+		cleanupDone := make(chan bool)
+		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+		errChan := make(chan error)
+		go func() {
+			errChan <- p.Log(c.Args()...)
+		}()
+		go func() {
+			select {
+			case <-signalChan:
+				fmt.Printf("\nGracefully stopping...\n")
+				ProjectStop(p, c)
+				cleanupDone <- true
+			case err := <-errChan:
+				if err != nil {
+					logrus.Fatal(err)
+				}
+				cleanupDone <- true
+			}
+		}()
+		<-cleanupDone
 	}
 }
 
@@ -183,9 +199,6 @@ func ProjectLog(p *project.Project, c *cli.Context) {
 	err := p.Log(c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
-	}
-	if c.Bool("follow") {
-		wait()
 	}
 }
 
@@ -290,23 +303,4 @@ func ProjectScale(p *project.Project, c *cli.Context) {
 			logrus.Fatalf("Failed to set the scale %s=%d: %v", name, scale, err)
 		}
 	}
-}
-
-func wait() {
-	<-make(chan interface{})
-}
-
-func exitOnSignal(p *project.Project, c *cli.Context) {
-	signalChan := make(chan os.Signal, 1)
-	cleanupDone := make(chan bool)
-	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		for range signalChan {
-			fmt.Printf("\nGracefully stopping...\n")
-			ProjectStop(p, c)
-			cleanupDone <- true
-		}
-	}()
-	<-cleanupDone
 }

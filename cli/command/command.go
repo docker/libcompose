@@ -314,6 +314,7 @@ func Populate(context *project.Context, c *cli.Context) {
 		context.NoRecreate = c.Bool("no-recreate")
 		context.ForceRecreate = c.Bool("force-recreate")
 		context.NoBuild = c.Bool("no-build")
+		context.FollowLog = !c.Bool("d")
 	} else if c.Command.Name == "stop" || c.Command.Name == "restart" || c.Command.Name == "scale" {
 		context.Timeout = uint(c.Int("timeout"))
 	} else if c.Command.Name == "kill" {
