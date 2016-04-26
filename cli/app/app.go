@@ -132,8 +132,11 @@ func ProjectUp(p *project.Project, c *cli.Context) {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-
 	if !c.Bool("d") {
+		err = p.Log(c.Args()...)
+		if err != nil {
+			logrus.Fatal(err)
+		}
 		exitOnSignal(p, c)
 	}
 }
