@@ -638,7 +638,7 @@ func (c *Container) Restart() error {
 }
 
 // Log forwards container logs to the project configured logger.
-func (c *Container) Log() error {
+func (c *Container) Log(follow bool) error {
 	container, err := c.findExisting()
 	if container == nil || err != nil {
 		return err
@@ -654,7 +654,7 @@ func (c *Container) Log() error {
 	options := types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
-		Follow:     c.service.context.FollowLog,
+		Follow:     follow,
 		Tail:       "all",
 	}
 	responseBody, err := c.client.ContainerLogs(context.Background(), c.name, options)

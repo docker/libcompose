@@ -212,7 +212,7 @@ type Service interface {
 	Down() error
 	Delete() error
 	Restart() error
-	Log() error
+	Log(follow bool) error
 	Pull() error
 	Kill() error
 	Config() *config.ServiceConfig

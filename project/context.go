@@ -20,7 +20,6 @@ var projectRegexp = regexp.MustCompile("[^a-zA-Z0-9_.-]")
 // the project name, the compose file, etc.
 type Context struct {
 	Timeout             uint
-	FollowLog           bool
 	Volume              bool
 	ForceRecreate       bool
 	NoRecreate          bool

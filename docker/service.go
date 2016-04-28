@@ -357,9 +357,9 @@ func (s *Service) Delete() error {
 }
 
 // Log implements Service.Log. It returns the docker logs for each container related to the service.
-func (s *Service) Log() error {
+func (s *Service) Log(follow bool) error {
 	return s.eachContainer(func(c *Container) error {
-		return c.Log()
+		return c.Log(follow)
 	})
 }
 

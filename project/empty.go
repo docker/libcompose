@@ -45,7 +45,7 @@ func (e *EmptyService) Restart() error {
 }
 
 // Log implements Service.Log but does nothing.
-func (e *EmptyService) Log() error {
+func (e *EmptyService) Log(follow bool) error {
 	return nil
 }
 

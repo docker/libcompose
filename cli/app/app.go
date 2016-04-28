@@ -138,7 +138,7 @@ func ProjectUp(p *project.Project, c *cli.Context) {
 		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 		errChan := make(chan error)
 		go func() {
-			errChan <- p.Log(c.Args()...)
+			errChan <- p.Log(true, c.Args()...)
 		}()
 		go func() {
 			select {
@@ -196,7 +196,7 @@ func ProjectRestart(p *project.Project, c *cli.Context) {
 
 // ProjectLog gets services logs.
 func ProjectLog(p *project.Project, c *cli.Context) {
-	err := p.Log(c.Args()...)
+	err := p.Log(c.Bool("follow"), c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
