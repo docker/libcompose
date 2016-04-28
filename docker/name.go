@@ -41,7 +41,7 @@ func NewNamer(client client.APIClient, project, service string) Namer {
 	go func() {
 		for i := 1; true; i++ {
 			name := fmt.Sprintf(format, project, service, i)
-			c, err := GetContainerByName(client, name)
+			c, err := GetContainer(client, name)
 			if err != nil {
 				// Sleep here to avoid crazy tight loop when things go south
 				time.Sleep(time.Second * 1)

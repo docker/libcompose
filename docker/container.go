@@ -54,35 +54,33 @@ func NewContainer(client client.APIClient, name string, service *Service) *Conta
 	}
 }
 
-func (c *Container) findExisting() (*types.Container, error) {
-	return GetContainerByName(c.client, c.name)
-}
-
-func (c *Container) findInfo() (types.ContainerJSON, error) {
-	container, err := c.findExisting()
-	if err != nil {
-		return types.ContainerJSON{}, err
-	}
-
-	return c.client.ContainerInspect(context.Background(), container.ID)
+func (c *Container) findExisting() (*types.ContainerJSON, error) {
+	return GetContainer(c.client, c.name)
 }
 
 // Info returns info about the container, like name, command, state or ports.
 func (c *Container) Info(qFlag bool) (project.Info, error) {
 	container, err := c.findExisting()
-	if err != nil {
+	if err != nil || container == nil {
 		return nil, err
 	}
 
-	result := project.Info{}
+	infos, err := GetContainersByFilter(c.client, map[string][]string{
+		"name": {container.Name},
+	})
+	if err != nil || len(infos) == 0 {
+		return nil, err
+	}
+	info := infos[0]
 
+	result := project.Info{}
 	if qFlag {
 		result = append(result, project.InfoPart{Key: "Id", Value: container.ID})
 	} else {
-		result = append(result, project.InfoPart{Key: "Name", Value: name(container.Names)})
-		result = append(result, project.InfoPart{Key: "Command", Value: container.Command})
-		result = append(result, project.InfoPart{Key: "State", Value: container.Status})
-		result = append(result, project.InfoPart{Key: "Ports", Value: portString(container.Ports)})
+		result = append(result, project.InfoPart{Key: "Name", Value: name(info.Names)})
+		result = append(result, project.InfoPart{Key: "Command", Value: info.Command})
+		result = append(result, project.InfoPart{Key: "State", Value: info.Status})
+		result = append(result, project.InfoPart{Key: "Ports", Value: portString(info.Ports)})
 	}
 
 	return result, nil
@@ -128,39 +126,39 @@ func getContainerNumber(c *Container) string {
 
 // Recreate will not refresh the container by means of relaxation and enjoyment,
 // just delete it and create a new one with the current configuration
-func (c *Container) Recreate(imageName string) (*types.Container, error) {
-	info, err := c.findInfo()
-	if err != nil {
+func (c *Container) Recreate(imageName string) (*types.ContainerJSON, error) {
+	container, err := c.findExisting()
+	if err != nil || container == nil {
 		return nil, err
 	}
 
-	hash := info.Config.Labels[HASH.Str()]
+	hash := container.Config.Labels[HASH.Str()]
 	if hash == "" {
-		return nil, fmt.Errorf("Failed to find hash on old container: %s", info.Name)
+		return nil, fmt.Errorf("Failed to find hash on old container: %s", container.Name)
 	}
 
-	name := info.Name[1:]
-	newName := fmt.Sprintf("%s_%s", name, info.ID[:12])
+	name := container.Name[1:]
+	newName := fmt.Sprintf("%s_%s", name, container.ID[:12])
 	logrus.Debugf("Renaming %s => %s", name, newName)
-	if err := c.client.ContainerRename(context.Background(), info.ID, newName); err != nil {
+	if err := c.client.ContainerRename(context.Background(), container.ID, newName); err != nil {
 		logrus.Errorf("Failed to rename old container %s", c.name)
 		return nil, err
 	}
 
-	newContainer, err := c.createContainer(imageName, info.ID, nil)
+	newContainer, err := c.createContainer(imageName, container.ID, nil)
 	if err != nil {
 		return nil, err
 	}
 	logrus.Debugf("Created replacement container %s", newContainer.ID)
 
-	if err := c.client.ContainerRemove(context.Background(), info.ID, types.ContainerRemoveOptions{
+	if err := c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
 		Force:         true,
 		RemoveVolumes: false,
 	}); err != nil {
 		logrus.Errorf("Failed to remove old container %s", c.name)
 		return nil, err
 	}
-	logrus.Debugf("Removed old container %s %s", c.name, info.ID)
+	logrus.Debugf("Removed old container %s %s", c.name, container.ID)
 
 	return newContainer, nil
 }
@@ -168,14 +166,14 @@ func (c *Container) Recreate(imageName string) (*types.Container, error) {
 // Create creates the container based on the specified image name and send an event
 // to notify the container has been created. If the container already exists, does
 // nothing.
-func (c *Container) Create(imageName string) (*types.Container, error) {
+func (c *Container) Create(imageName string) (*types.ContainerJSON, error) {
 	return c.CreateWithOverride(imageName, nil)
 }
 
 // CreateWithOverride create container and override parts of the config to
 // allow special situations to override the config generated from the compose
 // file
-func (c *Container) CreateWithOverride(imageName string, configOverride *config.ServiceConfig) (*types.Container, error) {
+func (c *Container) CreateWithOverride(imageName string, configOverride *config.ServiceConfig) (*types.ContainerJSON, error) {
 	container, err := c.findExisting()
 	if err != nil {
 		return nil, err
@@ -196,7 +194,7 @@ func (c *Container) CreateWithOverride(imageName string, configOverride *config.
 
 // Stop stops the container.
 func (c *Container) Stop() error {
-	return c.withContainer(func(container *types.Container) error {
+	return c.withContainer(func(container *types.ContainerJSON) error {
 		return c.client.ContainerStop(context.Background(), container.ID, int(c.service.context.Timeout))
 	})
 }
@@ -207,7 +205,7 @@ func (c *Container) Down() error {
 		return err
 	}
 
-	return c.withContainer(func(container *types.Container) error {
+	return c.withContainer(func(container *types.ContainerJSON) error {
 		return c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
 			Force:         true,
 			RemoveVolumes: c.service.context.Volume,
@@ -217,8 +215,8 @@ func (c *Container) Down() error {
 
 // Pause pauses the container. If the containers are already paused, don't fail.
 func (c *Container) Pause() error {
-	return c.withContainer(func(container *types.Container) error {
-		if !strings.Contains(container.Status, "Paused") {
+	return c.withContainer(func(container *types.ContainerJSON) error {
+		if !container.State.Paused {
 			return c.client.ContainerPause(context.Background(), container.ID)
 		}
 		return nil
@@ -227,8 +225,8 @@ func (c *Container) Pause() error {
 
 // Unpause unpauses the container. If the containers are not paused, don't fail.
 func (c *Container) Unpause() error {
-	return c.withContainer(func(container *types.Container) error {
-		if strings.Contains(container.Status, "Paused") {
+	return c.withContainer(func(container *types.ContainerJSON) error {
+		if container.State.Paused {
 			return c.client.ContainerUnpause(context.Background(), container.ID)
 		}
 		return nil
@@ -237,7 +235,7 @@ func (c *Container) Unpause() error {
 
 // Kill kill the container.
 func (c *Container) Kill() error {
-	return c.withContainer(func(container *types.Container) error {
+	return c.withContainer(func(container *types.ContainerJSON) error {
 		return c.client.ContainerKill(context.Background(), container.ID, c.service.context.Signal)
 	})
 }
@@ -295,11 +293,6 @@ func (c *Container) Run(imageName string, configOverride *config.ServiceConfig) 
 		return -1, err
 	}
 
-	info, err := c.client.ContainerInspect(context.Background(), container.ID)
-	if err != nil {
-		return -1, err
-	}
-
 	if configOverride.StdinOpen {
 		in = os.Stdin
 	}
@@ -344,12 +337,12 @@ func (c *Container) Run(imageName string, configOverride *config.ServiceConfig) 
 		return -1, err
 	}
 
-	info, err = c.client.ContainerInspect(context.Background(), container.ID)
+	exitedContainer, err := c.client.ContainerInspect(context.Background(), container.ID)
 	if err != nil {
 		return -1, err
 	}
 
-	return info.State.ExitCode, nil
+	return exitedContainer.State.ExitCode, nil
 }
 
 func holdHijackedConnection(tty bool, inputStream io.ReadCloser, outputStream, errorStream io.Writer, resp types.HijackedResponse) error {
@@ -410,12 +403,7 @@ func (c *Container) Up(imageName string) error {
 		return err
 	}
 
-	info, err := c.client.ContainerInspect(context.Background(), container.ID)
-	if err != nil {
-		return err
-	}
-
-	if !info.State.Running {
+	if !container.State.Running {
 		c.Start(container)
 	}
 
@@ -423,7 +411,7 @@ func (c *Container) Up(imageName string) error {
 }
 
 // Start the specified container with the specified host config
-func (c *Container) Start(container *types.Container) error {
+func (c *Container) Start(container *types.ContainerJSON) error {
 	logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Starting container")
 	if err := c.client.ContainerStart(context.Background(), container.ID); err != nil {
 		logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
@@ -438,32 +426,32 @@ func (c *Container) Start(container *types.Container) error {
 // OutOfSync checks if the container is out of sync with the service definition.
 // It looks if the the service hash container label is the same as the computed one.
 func (c *Container) OutOfSync(imageName string) (bool, error) {
-	info, err := c.findInfo()
-	if err != nil {
+	container, err := c.findExisting()
+	if err != nil || container == nil {
 		return false, err
 	}
 
-	if info.Config.Image != imageName {
-		logrus.Debugf("Images for %s do not match %s!=%s", c.name, info.Config.Image, imageName)
+	if container.Config.Image != imageName {
+		logrus.Debugf("Images for %s do not match %s!=%s", c.name, container.Config.Image, imageName)
 		return true, nil
 	}
 
-	if info.Config.Labels[HASH.Str()] != c.getHash() {
-		logrus.Debugf("Hashes for %s do not match %s!=%s", c.name, info.Config.Labels[HASH.Str()], c.getHash())
+	if container.Config.Labels[HASH.Str()] != c.getHash() {
+		logrus.Debugf("Hashes for %s do not match %s!=%s", c.name, container.Config.Labels[HASH.Str()], c.getHash())
 		return true, nil
 	}
 
-	image, _, err := c.client.ImageInspectWithRaw(context.Background(), info.Config.Image, false)
+	image, _, err := c.client.ImageInspectWithRaw(context.Background(), container.Config.Image, false)
 	if err != nil {
 		if client.IsErrImageNotFound(err) {
-			logrus.Debugf("Image %s do not exist, do not know if it's out of sync", info.Config.Image)
+			logrus.Debugf("Image %s do not exist, do not know if it's out of sync", container.Config.Image)
 			return false, nil
 		}
 		return false, err
 	}
 
-	logrus.Debugf("Checking existing image name vs id: %s == %s", image.ID, info.Image)
-	return image.ID != info.Image, err
+	logrus.Debugf("Checking existing image name vs id: %s == %s", image.ID, container.Image)
+	return image.ID != container.Image, err
 }
 
 func (c *Container) getHash() string {
@@ -480,7 +468,7 @@ func volumeBinds(volumes map[string]struct{}, container *types.ContainerJSON) []
 	return result
 }
 
-func (c *Container) createContainer(imageName, oldContainer string, configOverride *config.ServiceConfig) (*types.Container, error) {
+func (c *Container) createContainer(imageName, oldContainer string, configOverride *config.ServiceConfig) (*types.ContainerJSON, error) {
 	serviceConfig := c.service.serviceConfig
 	if configOverride != nil {
 		serviceConfig.Command = configOverride.Command
@@ -537,7 +525,7 @@ func (c *Container) createContainer(imageName, oldContainer string, configOverri
 		}
 	}
 
-	return GetContainerByID(c.client, container.ID)
+	return GetContainer(c.client, container.ID)
 }
 
 func (c *Container) populateAdditionalHostConfig(hostConfig *container.HostConfig) error {
@@ -747,7 +735,7 @@ func encodeAuthToBase64(authConfig types.AuthConfig) (string, error) {
 	return base64.URLEncoding.EncodeToString(buf), nil
 }
 
-func (c *Container) withContainer(action func(*types.Container) error) error {
+func (c *Container) withContainer(action func(*types.ContainerJSON) error) error {
 	container, err := c.findExisting()
 	if err != nil {
 		return err
@@ -762,12 +750,12 @@ func (c *Container) withContainer(action func(*types.Container) error) error {
 
 // Port returns the host port the specified port is mapped on.
 func (c *Container) Port(port string) (string, error) {
-	info, err := c.findInfo()
+	container, err := c.findExisting()
 	if err != nil {
 		return "", err
 	}
 
-	if bindings, ok := info.NetworkSettings.Ports[nat.Port(port)]; ok {
+	if bindings, ok := container.NetworkSettings.Ports[nat.Port(port)]; ok {
 		result := []string{}
 		for _, binding := range bindings {
 			result = append(result, binding.HostIP+":"+binding.HostPort)
