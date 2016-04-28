@@ -158,19 +158,11 @@ func GetClient(c *C) client.APIClient {
 
 func (s *CliSuite) GetContainerByName(c *C, name string) *types.ContainerJSON {
 	client := GetClient(c)
-	container, err := docker.GetContainerByName(client, name)
+	container, err := docker.GetContainer(client, name)
 
 	c.Assert(err, IsNil)
 
-	if container == nil {
-		return nil
-	}
-
-	info, err := client.ContainerInspect(context.Background(), container.ID)
-
-	c.Assert(err, IsNil)
-
-	return &info
+	return container
 }
 
 func (s *CliSuite) GetContainersByProject(c *C, project string) []types.Container {
