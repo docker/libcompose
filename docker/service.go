@@ -330,16 +330,17 @@ func (s *Service) eachContainer(action func(*Container) error) error {
 }
 
 // Stop implements Service.Stop. It stops any containers related to the service.
-func (s *Service) Stop() error {
+func (s *Service) Stop(timeout int) error {
 	return s.eachContainer(func(c *Container) error {
-		return c.Stop()
+		return c.Stop(timeout)
 	})
 }
 
 // Down implements Service.Down. It stops any containers related to the service and removes them.
 func (s *Service) Down(options types.DownOptions) error {
 	return s.eachContainer(func(c *Container) error {
-		if err := c.Stop(); err != nil {
+		// FIXME(vdemeester) bring this backup (project.Down should call Stop and Delete)
+		if err := c.Stop(10); err != nil {
 			return err
 		}
 		return c.Delete(options.RemoveVolume)
@@ -347,9 +348,9 @@ func (s *Service) Down(options types.DownOptions) error {
 }
 
 // Restart implements Service.Restart. It restarts any containers related to the service.
-func (s *Service) Restart() error {
+func (s *Service) Restart(timeout int) error {
 	return s.eachContainer(func(c *Container) error {
-		return c.Restart()
+		return c.Restart(timeout)
 	})
 }
 
@@ -376,7 +377,7 @@ func (s *Service) Log(follow bool) error {
 
 // Scale implements Service.Scale. It creates or removes containers to have the specified number
 // of related container to the service to run.
-func (s *Service) Scale(scale int) error {
+func (s *Service) Scale(scale int, timeout int) error {
 	if s.specificiesHostPort() {
 		logrus.Warnf("The \"%s\" service specifies a port on the host. If multiple containers for this service are created on a single host, the port will clash.", s.Name())
 	}
@@ -385,7 +386,7 @@ func (s *Service) Scale(scale int) error {
 	err := s.eachContainer(func(c *Container) error {
 		foundCount++
 		if foundCount > scale {
-			err := c.Stop()
+			err := c.Stop(timeout)
 			if err != nil {
 				return err
 			}

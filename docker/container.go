@@ -195,7 +195,7 @@ func (c *Container) CreateWithOverride(imageName string, configOverride *config.
 // Stop stops the container.
 func (c *Container) Stop() error {
 	return c.withContainer(func(container *types.ContainerJSON) error {
-		return c.client.ContainerStop(context.Background(), container.ID, int(c.service.context.Timeout))
+		return c.client.ContainerStop(context.Background(), container.ID, timeout)
 	})
 }
 
@@ -614,13 +614,13 @@ func (c *Container) Pull() error {
 }
 
 // Restart restarts the container if existing, does nothing otherwise.
-func (c *Container) Restart() error {
+func (c *Container) Restart(timeout int) error {
 	container, err := c.findExisting()
 	if err != nil || container == nil {
 		return err
 	}
 
-	return c.client.ContainerRestart(context.Background(), container.ID, int(c.service.context.Timeout))
+	return c.client.ContainerRestart(context.Background(), container.ID, timeout)
 }
 
 // Log forwards container logs to the project configured logger.

@@ -29,7 +29,7 @@ func (e *EmptyService) Start() error {
 }
 
 // Stop implements Service.Stop() but does nothing.
-func (e *EmptyService) Stop() error {
+func (e *EmptyService) Stop(timeout int) error {
 	return nil
 }
 
@@ -44,7 +44,7 @@ func (e *EmptyService) Delete(options types.DeleteOptions) error {
 }
 
 // Restart implements Service.Restart but does nothing.
-func (e *EmptyService) Restart() error {
+func (e *EmptyService) Restart(timeout int) error {
 	return nil
 }
 
@@ -69,7 +69,7 @@ func (e *EmptyService) Containers() ([]Container, error) {
 }
 
 // Scale implements Service.Scale but does nothing.
-func (e *EmptyService) Scale(count int) error {
+func (e *EmptyService) Scale(count int, timeout int) error {
 	return nil
 }
 

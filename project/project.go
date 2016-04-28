@@ -186,10 +186,10 @@ func (p *Project) Create(options types.CreateOptions, services ...string) error 
 }
 
 // Stop stops the specified services (like docker stop).
-func (p *Project) Stop(services ...string) error {
+func (p *Project) Stop(timeout int, services ...string) error {
 	return p.perform(EventProjectStopStart, EventProjectStopDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, EventServiceStopStart, EventServiceStop, func(service Service) error {
-			return service.Stop()
+			return service.Stop(timeout)
 		})
 	}), nil)
 }
@@ -204,10 +204,10 @@ func (p *Project) Down(options types.DownOptions, services ...string) error {
 }
 
 // Restart restarts the specified services (like docker restart).
-func (p *Project) Restart(services ...string) error {
+func (p *Project) Restart(timeout int, services ...string) error {
 	return p.perform(EventProjectRestartStart, EventProjectRestartDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, EventServiceRestartStart, EventServiceRestart, func(service Service) error {
-			return service.Restart()
+			return service.Restart(timeout)
 		})
 	}), nil)
 }

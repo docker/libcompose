@@ -210,17 +210,17 @@ type Service interface {
 	Create(options types.CreateOptions) error
 	Up(options types.UpOptions) error
 	Start() error
-	Stop() error
+	Stop(timeout int) error
 	Down(options types.DownOptions) error
 	Delete(options types.DeleteOptions) error
-	Restart() error
+	Restart(timeout int) error
 	Log(follow bool) error
 	Pull() error
 	Kill() error
 	Config() *config.ServiceConfig
 	DependentServices() []ServiceRelationship
 	Containers() ([]Container, error)
-	Scale(count int) error
+	Scale(count int, timeout int) error
 	Pause() error
 	Unpause() error
 	Run(commandParts []string) (int, error)

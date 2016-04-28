@@ -97,7 +97,7 @@ func ProjectPort(p *project.Project, c *cli.Context) {
 
 // ProjectStop stops all services.
 func ProjectStop(p *project.Project, c *cli.Context) {
-	err := p.Stop(c.Args()...)
+	err := p.Stop(c.Int("timeout"), c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -207,7 +207,7 @@ func ProjectStart(p *project.Project, c *cli.Context) {
 
 // ProjectRestart restarts services.
 func ProjectRestart(p *project.Project, c *cli.Context) {
-	err := p.Restart(c.Args()...)
+	err := p.Restart(c.Int("timeout"), c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -320,7 +320,7 @@ func ProjectScale(p *project.Project, c *cli.Context) {
 	for _, name := range order {
 		scale := serviceScale[name]
 		logrus.Infof("Setting scale %s=%d...", name, scale)
-		err := services[name].Scale(scale)
+		err := services[name].Scale(scale, c.Int("timeout"))
 		if err != nil {
 			logrus.Fatalf("Failed to set the scale %s=%d: %v", name, scale, err)
 		}
