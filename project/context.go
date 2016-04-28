@@ -23,7 +23,6 @@ type Context struct {
 	Volume              bool
 	ForceRecreate       bool
 	NoRecreate          bool
-	NoCache             bool
 	NoBuild             bool
 	Signal              string
 	ComposeFiles        []string

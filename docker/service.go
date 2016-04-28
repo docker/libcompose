@@ -10,7 +10,9 @@ import (
 	"github.com/docker/engine-api/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/config"
+	"github.com/docker/libcompose/docker/builder"
 	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/project/types"
 	"github.com/docker/libcompose/utils"
 )
 
@@ -110,7 +112,7 @@ func (s *Service) ensureImageExists() (string, error) {
 		if s.context.NoBuild {
 			return "", fmt.Errorf("Service %q needs to be built, but no-build was specified", s.name)
 		}
-		return s.imageName(), s.build()
+		return s.imageName(), s.build(types.BuildOptions{})
 	}
 
 	return s.imageName(), s.Pull()
@@ -133,19 +135,25 @@ func (s *Service) imageName() string {
 // Build implements Service.Build. If an imageName is specified or if the context has
 // no build to work with it will do nothing. Otherwise it will try to build
 // the image and returns an error if any.
-func (s *Service) Build() error {
+func (s *Service) Build(buildOptions types.BuildOptions) error {
 	if s.Config().Image != "" {
 		return nil
 	}
-	return s.build()
+	return s.build(buildOptions)
 }
 
-func (s *Service) build() error {
-	if s.context.Builder == nil {
-		return fmt.Errorf("Cannot build an image without a builder configured")
+func (s *Service) build(buildOptions types.BuildOptions) error {
+	if s.Config().Build == "" {
+		return fmt.Errorf("Specified service does not have a build section")
 	}
-
-	return s.context.Builder.Build(s.imageName(), s.context.Project, s)
+	builder := &builder.DaemonBuilder{
+		Client:           s.context.ClientFactory.Create(s),
+		ContextDirectory: s.Config().Build,
+		Dockerfile:       s.Config().Dockerfile,
+		AuthConfigs:      s.context.ConfigFile.AuthConfigs,
+		NoCache:          buildOptions.NoCache,
+	}
+	return builder.Build(s.imageName())
 }
 
 func (s *Service) constructContainers(imageName string, count int) ([]*Container, error) {

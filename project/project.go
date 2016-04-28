@@ -8,6 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/logger"
+	"github.com/docker/libcompose/project/types"
 	"github.com/docker/libcompose/utils"
 )
 
@@ -167,10 +168,10 @@ func (p *Project) loadWrappers(wrappers map[string]*serviceWrapper, servicesToCo
 }
 
 // Build builds the specified services (like docker build).
-func (p *Project) Build(services ...string) error {
+func (p *Project) Build(buildOptions types.BuildOptions, services ...string) error {
 	return p.perform(EventProjectBuildStart, EventProjectBuildDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, EventServiceBuildStart, EventServiceBuild, func(service Service) error {
-			return service.Build()
+			return service.Build(buildOptions)
 		})
 	}), nil)
 }

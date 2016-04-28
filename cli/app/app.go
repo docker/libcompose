@@ -11,6 +11,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/project/types"
 )
 
 // ProjectAction is an adapter to allow the use of ordinary functions as libcompose actions.
@@ -112,7 +113,10 @@ func ProjectDown(p *project.Project, c *cli.Context) {
 
 // ProjectBuild builds or rebuilds services.
 func ProjectBuild(p *project.Project, c *cli.Context) {
-	err := p.Build(c.Args()...)
+	config := types.BuildOptions{
+		NoCache: c.Bool("no-cache"),
+	}
+	err := p.Build(config, c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}

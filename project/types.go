@@ -2,7 +2,9 @@ package project
 
 import (
 	"fmt"
+
 	"github.com/docker/libcompose/config"
+	"github.com/docker/libcompose/project/types"
 )
 
 // EventType defines a type of libcompose event.
@@ -204,7 +206,7 @@ type Project struct {
 type Service interface {
 	Info(qFlag bool) (InfoSet, error)
 	Name() string
-	Build() error
+	Build(buildOptions types.BuildOptions) error
 	Create() error
 	Up() error
 	Start() error

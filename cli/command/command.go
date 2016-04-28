@@ -318,7 +318,5 @@ func Populate(context *project.Context, c *cli.Context) {
 		context.Signal = c.String("signal")
 	} else if c.Command.Name == "rm" {
 		context.Volume = c.Bool("v")
-	} else if c.Command.Name == "build" {
-		context.NoCache = c.Bool("no-cache")
 	}
 }

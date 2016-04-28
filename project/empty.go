@@ -1,5 +1,9 @@
 package project
 
+import (
+	"github.com/docker/libcompose/project/types"
+)
+
 // EmptyService is a struct that implements Service but does nothing.
 type EmptyService struct {
 }
@@ -10,7 +14,7 @@ func (e *EmptyService) Create() error {
 }
 
 // Build implements Service.Build but does nothing.
-func (e *EmptyService) Build() error {
+func (e *EmptyService) Build(buildOptions types.BuildOptions) error {
 	return nil
 }
 
