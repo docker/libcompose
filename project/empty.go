@@ -59,7 +59,7 @@ func (e *EmptyService) Pull() error {
 }
 
 // Kill implements Service.Kill but does nothing.
-func (e *EmptyService) Kill() error {
+func (e *EmptyService) Kill(signal string) error {
 	return nil
 }
 

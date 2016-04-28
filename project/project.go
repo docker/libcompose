@@ -311,10 +311,10 @@ func (p *Project) Delete(options types.DeleteOptions, services ...string) error 
 }
 
 // Kill kills the specified services (like docker kill).
-func (p *Project) Kill(services ...string) error {
+func (p *Project) Kill(signal string, services ...string) error {
 	return p.perform(EventProjectKillStart, EventProjectKillDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, EventServiceKillStart, EventServiceKill, func(service Service) error {
-			return service.Kill()
+			return service.Kill(signal)
 		})
 	}), nil)
 }

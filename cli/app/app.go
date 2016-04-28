@@ -261,7 +261,7 @@ func ProjectDelete(p *project.Project, c *cli.Context) {
 
 // ProjectKill forces stop service containers.
 func ProjectKill(p *project.Project, c *cli.Context) {
-	err := p.Kill(c.Args()...)
+	err := p.Kill(c.String("signal"), c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}

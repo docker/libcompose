@@ -216,7 +216,7 @@ type Service interface {
 	Restart(timeout int) error
 	Log(follow bool) error
 	Pull() error
-	Kill() error
+	Kill(signal string) error
 	Config() *config.ServiceConfig
 	DependentServices() []ServiceRelationship
 	Containers() ([]Container, error)

@@ -193,7 +193,7 @@ func (c *Container) CreateWithOverride(imageName string, configOverride *config.
 }
 
 // Stop stops the container.
-func (c *Container) Stop() error {
+func (c *Container) Stop(timeout int) error {
 	return c.withContainer(func(container *types.ContainerJSON) error {
 		return c.client.ContainerStop(context.Background(), container.ID, timeout)
 	})
@@ -220,9 +220,9 @@ func (c *Container) Unpause() error {
 }
 
 // Kill kill the container.
-func (c *Container) Kill() error {
+func (c *Container) Kill(signal string) error {
 	return c.withContainer(func(container *types.ContainerJSON) error {
-		return c.client.ContainerKill(context.Background(), container.ID, c.service.context.Signal)
+		return c.client.ContainerKill(context.Background(), container.ID, signal)
 	})
 }
 

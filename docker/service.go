@@ -355,9 +355,9 @@ func (s *Service) Restart(timeout int) error {
 }
 
 // Kill implements Service.Kill. It kills any containers related to the service.
-func (s *Service) Kill() error {
+func (s *Service) Kill(signal string) error {
 	return s.eachContainer(func(c *Container) error {
-		return c.Kill()
+		return c.Kill(signal)
 	})
 }
 
