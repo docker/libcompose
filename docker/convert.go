@@ -204,9 +204,13 @@ func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *
 func getVolumesFrom(volumesFrom []string, serviceConfigs *config.Configs, projectName string) ([]string, error) {
 	volumes := []string{}
 	for _, volumeFrom := range volumesFrom {
-		if serviceConfigs.Has(volumeFrom) {
+		if serviceConfig, ok := serviceConfigs.Get(volumeFrom); ok {
 			// It's a service - Use the first one
 			name := fmt.Sprintf("%s_%s_1", projectName, volumeFrom)
+			// If a container name is specified, use that instead
+			if serviceConfig.ContainerName != "" {
+				name = serviceConfig.ContainerName
+			}
 			volumes = append(volumes, name)
 		} else {
 			volumes = append(volumes, volumeFrom)

@@ -24,6 +24,22 @@ func (s *CliSuite) TestVolumeFromService(c *C) {
 	c.Assert(cn.HostConfig.VolumesFrom[0], Equals, volumeFromContainer)
 }
 
+func (s *CliSuite) TestVolumeFromServiceWithContainerName(c *C) {
+	p := s.RandomProject()
+	cmd := exec.Command(s.command, "-f", "./assets/regression/volume_from_container_name.yml", "-p", p, "create")
+	err := cmd.Run()
+	c.Assert(err, IsNil)
+
+	volumeFromContainer := "first_container_name"
+	secondContainerName := p + "_second_1"
+
+	cn := s.GetContainerByName(c, secondContainerName)
+	c.Assert(cn, NotNil)
+
+	c.Assert(len(cn.HostConfig.VolumesFrom), Equals, 1)
+	c.Assert(cn.HostConfig.VolumesFrom[0], Equals, volumeFromContainer)
+}
+
 func (s *CliSuite) TestRelativeVolume(c *C) {
 	p := s.ProjectFromText(c, "up", `
 	server:
