@@ -17,6 +17,10 @@ func NewProject(context *Context) (*project.Project, error) {
 		context.EnvironmentLookup = &lookup.OsEnvLookup{}
 	}
 
+	if context.AuthLookup == nil {
+		context.AuthLookup = &ConfigAuthLookup{context}
+	}
+
 	if context.ServiceFactory == nil {
 		context.ServiceFactory = &ServiceFactory{
 			context: context,

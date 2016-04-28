@@ -688,10 +688,7 @@ func pullImage(client client.APIClient, service *Service, image string) error {
 		return err
 	}
 
-	authConfig := types.AuthConfig{}
-	if service.context.ConfigFile != nil && repoInfo != nil && repoInfo.Index != nil {
-		authConfig = registry.ResolveAuthConfig(service.context.ConfigFile.AuthConfigs, repoInfo.Index)
-	}
+	authConfig := service.context.AuthLookup.Lookup(repoInfo)
 
 	encodedAuth, err := encodeAuthToBase64(authConfig)
 	if err != nil {

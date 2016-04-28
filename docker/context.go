@@ -13,6 +13,7 @@ type Context struct {
 	ClientFactory ClientFactory
 	ConfigDir     string
 	ConfigFile    *cliconfig.ConfigFile
+	AuthLookup    AuthLookup
 }
 
 func (c *Context) open() error {
