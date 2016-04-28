@@ -199,20 +199,6 @@ func (c *Container) Stop() error {
 	})
 }
 
-// Down stops and remove the container.
-func (c *Container) Down() error {
-	if err := c.Stop(); err != nil {
-		return err
-	}
-
-	return c.withContainer(func(container *types.ContainerJSON) error {
-		return c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
-			Force:         true,
-			RemoveVolumes: c.service.context.Volume,
-		})
-	})
-}
-
 // Pause pauses the container. If the containers are already paused, don't fail.
 func (c *Container) Pause() error {
 	return c.withContainer(func(container *types.ContainerJSON) error {
@@ -242,7 +228,7 @@ func (c *Container) Kill() error {
 
 // Delete removes the container if existing. If the container is running, it tries
 // to stop it first.
-func (c *Container) Delete() error {
+func (c *Container) Delete(removeVolume bool) error {
 	container, err := c.findExisting()
 	if err != nil || container == nil {
 		return err
@@ -256,7 +242,7 @@ func (c *Container) Delete() error {
 	if !info.State.Running {
 		return c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
 			Force:         true,
-			RemoveVolumes: c.service.context.Volume,
+			RemoveVolumes: removeVolume,
 		})
 	}
 

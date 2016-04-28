@@ -211,8 +211,8 @@ type Service interface {
 	Up() error
 	Start() error
 	Stop() error
-	Down() error
-	Delete() error
+	Down(options types.DownOptions) error
+	Delete(options types.DeleteOptions) error
 	Restart() error
 	Log(follow bool) error
 	Pull() error

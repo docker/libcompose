@@ -195,10 +195,10 @@ func (p *Project) Stop(services ...string) error {
 }
 
 // Down stops the specified services and clean related containers (like docker stop + docker rm).
-func (p *Project) Down(services ...string) error {
+func (p *Project) Down(options types.DownOptions, services ...string) error {
 	return p.perform(EventProjectDownStart, EventProjectDownDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, EventServiceDownStart, EventServiceDown, func(service Service) error {
-			return service.Down()
+			return service.Down(options)
 		})
 	}), nil)
 }
@@ -302,10 +302,10 @@ func (p *Project) ListStoppedContainers(services ...string) ([]string, error) {
 }
 
 // Delete removes the specified services (like docker rm).
-func (p *Project) Delete(services ...string) error {
+func (p *Project) Delete(options types.DeleteOptions, services ...string) error {
 	return p.perform(EventProjectDeleteStart, EventProjectDeleteDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, EventServiceDeleteStart, EventServiceDelete, func(service Service) error {
-			return service.Delete()
+			return service.Delete(options)
 		})
 	}), nil)
 }

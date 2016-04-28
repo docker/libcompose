@@ -34,12 +34,12 @@ func (e *EmptyService) Stop() error {
 }
 
 // Down implements Service.Down but does nothing.
-func (e *EmptyService) Down() error {
+func (e *EmptyService) Down(options types.DownOptions) error {
 	return nil
 }
 
 // Delete implements Service.Delete but does nothing.
-func (e *EmptyService) Delete() error {
+func (e *EmptyService) Delete(options types.DeleteOptions) error {
 	return nil
 }
 

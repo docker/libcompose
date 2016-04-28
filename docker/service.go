@@ -337,9 +337,12 @@ func (s *Service) Stop() error {
 }
 
 // Down implements Service.Down. It stops any containers related to the service and removes them.
-func (s *Service) Down() error {
+func (s *Service) Down(options types.DownOptions) error {
 	return s.eachContainer(func(c *Container) error {
-		return c.Down()
+		if err := c.Stop(); err != nil {
+			return err
+		}
+		return c.Delete(options.RemoveVolume)
 	})
 }
 
@@ -358,9 +361,9 @@ func (s *Service) Kill() error {
 }
 
 // Delete implements Service.Delete. It removes any containers related to the service.
-func (s *Service) Delete() error {
+func (s *Service) Delete(options types.DeleteOptions) error {
 	return s.eachContainer(func(c *Container) error {
-		return c.Delete()
+		return c.Delete(options.RemoveVolume)
 	})
 }
 
@@ -382,12 +385,12 @@ func (s *Service) Scale(scale int) error {
 	err := s.eachContainer(func(c *Container) error {
 		foundCount++
 		if foundCount > scale {
-			err := c.Down()
+			err := c.Stop()
 			if err != nil {
 				return err
 			}
-
-			return c.Delete()
+			// FIXME(vdemeester) remove volume in scale by default ?
+			return c.Delete(false)
 		}
 		return nil
 	})

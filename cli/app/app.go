@@ -105,7 +105,10 @@ func ProjectStop(p *project.Project, c *cli.Context) {
 
 // ProjectDown brings all services down (stops and clean containers).
 func ProjectDown(p *project.Project, c *cli.Context) {
-	err := p.Down(c.Args()...)
+	options := types.DownOptions{
+		RemoveVolume: c.Bool("v"),
+	}
+	err := p.Down(options, c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -235,7 +238,10 @@ func ProjectDelete(p *project.Project, c *cli.Context) {
 			return
 		}
 	}
-	err = p.Delete(c.Args()...)
+	options := types.DeleteOptions{
+		RemoveVolume: c.Bool("v"),
+	}
+	err = p.Delete(options, c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
