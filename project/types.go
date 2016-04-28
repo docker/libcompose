@@ -207,8 +207,8 @@ type Service interface {
 	Info(qFlag bool) (InfoSet, error)
 	Name() string
 	Build(buildOptions types.BuildOptions) error
-	Create() error
-	Up() error
+	Create(options types.CreateOptions) error
+	Up(options types.UpOptions) error
 	Start() error
 	Stop() error
 	Down(options types.DownOptions) error

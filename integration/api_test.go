@@ -5,6 +5,7 @@ import (
 
 	"github.com/docker/libcompose/docker"
 	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/project/types"
 )
 
 func init() {
@@ -30,6 +31,6 @@ service:
 
 	c.Assert(err, IsNil)
 
-	err = project.Up()
+	err = project.Up(types.UpOptions{})
 	c.Assert(err, IsNil)
 }

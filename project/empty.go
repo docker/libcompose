@@ -9,7 +9,7 @@ type EmptyService struct {
 }
 
 // Create implements Service.Create but does nothing.
-func (e *EmptyService) Create() error {
+func (e *EmptyService) Create(options types.CreateOptions) error {
 	return nil
 }
 
@@ -19,7 +19,7 @@ func (e *EmptyService) Build(buildOptions types.BuildOptions) error {
 }
 
 // Up implements Service.Up but does nothing.
-func (e *EmptyService) Up() error {
+func (e *EmptyService) Up(options types.UpOptions) error {
 	return nil
 }
 

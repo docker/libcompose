@@ -177,10 +177,10 @@ func (p *Project) Build(buildOptions types.BuildOptions, services ...string) err
 }
 
 // Create creates the specified services (like docker create).
-func (p *Project) Create(services ...string) error {
+func (p *Project) Create(options types.CreateOptions, services ...string) error {
 	return p.perform(EventProjectCreateStart, EventProjectCreateDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, EventServiceCreateStart, EventServiceCreate, func(service Service) error {
-			return service.Create()
+			return service.Create(options)
 		})
 	}), nil)
 }
@@ -234,19 +234,19 @@ func (p *Project) Run(serviceName string, commandParts []string) (int, error) {
 			return nil
 		})
 	}), func(service Service) error {
-		return service.Create()
+		return service.Create(types.CreateOptions{})
 	})
 	return exitCode, err
 }
 
 // Up creates and starts the specified services (kinda like docker run).
-func (p *Project) Up(services ...string) error {
+func (p *Project) Up(options types.UpOptions, services ...string) error {
 	return p.perform(EventProjectUpStart, EventProjectUpDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, EventServiceUpStart, EventServiceUp, func(service Service) error {
-			return service.Up()
+			return service.Up(options)
 		})
 	}), func(service Service) error {
-		return service.Create()
+		return service.Create(options.CreateOptions)
 	})
 }
 

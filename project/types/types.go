@@ -14,3 +14,16 @@ type DeleteOptions struct {
 type DownOptions struct {
 	RemoveVolume bool
 }
+
+// CreateOptions holds options of compose create.
+type CreateOptions struct {
+	NoRecreate    bool
+	ForceRecreate bool
+	NoBuild       bool
+	// ForceBuild bool
+}
+
+// UpOptions holds options of compose up.
+type UpOptions struct {
+	CreateOptions
+}

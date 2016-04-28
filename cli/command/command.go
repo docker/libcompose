@@ -308,11 +308,7 @@ func Populate(context *project.Context, c *cli.Context) {
 
 	context.ProjectName = c.GlobalString("project-name")
 
-	if c.Command.Name == "up" || c.Command.Name == "create" {
-		context.NoRecreate = c.Bool("no-recreate")
-		context.ForceRecreate = c.Bool("force-recreate")
-		context.NoBuild = c.Bool("no-build")
-	} else if c.Command.Name == "stop" || c.Command.Name == "restart" || c.Command.Name == "scale" {
+	if c.Command.Name == "stop" || c.Command.Name == "restart" || c.Command.Name == "scale" {
 		context.Timeout = uint(c.Int("timeout"))
 	} else if c.Command.Name == "kill" {
 		context.Signal = c.String("signal")

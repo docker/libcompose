@@ -127,7 +127,12 @@ func ProjectBuild(p *project.Project, c *cli.Context) {
 
 // ProjectCreate creates all services but do not start them.
 func ProjectCreate(p *project.Project, c *cli.Context) {
-	err := p.Create(c.Args()...)
+	options := types.CreateOptions{
+		NoRecreate:    c.Bool("no-recreate"),
+		ForceRecreate: c.Bool("force-recreate"),
+		NoBuild:       c.Bool("no-build"),
+	}
+	err := p.Create(options, c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -135,7 +140,14 @@ func ProjectCreate(p *project.Project, c *cli.Context) {
 
 // ProjectUp brings all services up.
 func ProjectUp(p *project.Project, c *cli.Context) {
-	err := p.Up(c.Args()...)
+	options := types.UpOptions{
+		CreateOptions: types.CreateOptions{
+			NoRecreate:    c.Bool("no-recreate"),
+			ForceRecreate: c.Bool("force-recreate"),
+			NoBuild:       c.Bool("no-build"),
+		},
+	}
+	err := p.Up(options, c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}

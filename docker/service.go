@@ -49,20 +49,20 @@ func (s *Service) DependentServices() []project.ServiceRelationship {
 
 // Create implements Service.Create. It ensures the image exists or build it
 // if it can and then create a container.
-func (s *Service) Create() error {
+func (s *Service) Create(options types.CreateOptions) error {
 	containers, err := s.collectContainers()
 	if err != nil {
 		return err
 	}
 
-	imageName, err := s.ensureImageExists()
+	imageName, err := s.ensureImageExists(options.NoBuild)
 	if err != nil {
 		return err
 	}
 
 	if len(containers) != 0 {
 		return s.eachContainer(func(c *Container) error {
-			return s.recreateIfNeeded(imageName, c)
+			return s.recreateIfNeeded(imageName, c, options.NoRecreate, options.ForceRecreate)
 		})
 	}
 
@@ -97,7 +97,7 @@ func (s *Service) createOne(imageName string) (*Container, error) {
 	return containers[0], err
 }
 
-func (s *Service) ensureImageExists() (string, error) {
+func (s *Service) ensureImageExists(noBuild bool) (string, error) {
 	err := s.imageExists()
 
 	if err == nil {
@@ -109,7 +109,7 @@ func (s *Service) ensureImageExists() (string, error) {
 	}
 
 	if s.Config().Build != "" {
-		if s.context.NoBuild {
+		if noBuild {
 			return "", fmt.Errorf("Service %q needs to be built, but no-build was specified", s.name)
 		}
 		return s.imageName(), s.build(types.BuildOptions{})
@@ -197,26 +197,26 @@ func (s *Service) constructContainers(imageName string, count int) ([]*Container
 
 // Up implements Service.Up. It builds the image if needed, creates a container
 // and start it.
-func (s *Service) Up() error {
+func (s *Service) Up(options types.UpOptions) error {
 	containers, err := s.collectContainers()
 	if err != nil {
 		return err
 	}
 
 	var imageName = s.imageName()
-	if len(containers) == 0 || !s.context.NoRecreate {
-		imageName, err = s.ensureImageExists()
+	if len(containers) == 0 || !options.NoRecreate {
+		imageName, err = s.ensureImageExists(options.NoBuild)
 		if err != nil {
 			return err
 		}
 	}
 
-	return s.up(imageName, true)
+	return s.up(imageName, true, options)
 }
 
 // Run implements Service.Run. It runs a one of command within the service container.
 func (s *Service) Run(commandParts []string) (int, error) {
-	imageName, err := s.ensureImageExists()
+	imageName, err := s.ensureImageExists(false)
 	if err != nil {
 		return -1, err
 	}
@@ -255,10 +255,10 @@ func (s *Service) Info(qFlag bool) (project.InfoSet, error) {
 
 // Start implements Service.Start. It tries to start a container without creating it.
 func (s *Service) Start() error {
-	return s.up("", false)
+	return s.up("", false, types.UpOptions{})
 }
 
-func (s *Service) up(imageName string, create bool) error {
+func (s *Service) up(imageName string, create bool, options types.UpOptions) error {
 	containers, err := s.collectContainers()
 	if err != nil {
 		return err
@@ -276,7 +276,7 @@ func (s *Service) up(imageName string, create bool) error {
 
 	return s.eachContainer(func(c *Container) error {
 		if create {
-			if err := s.recreateIfNeeded(imageName, c); err != nil {
+			if err := s.recreateIfNeeded(imageName, c, options.NoRecreate, options.ForceRecreate); err != nil {
 				return err
 			}
 		}
@@ -285,8 +285,8 @@ func (s *Service) up(imageName string, create bool) error {
 	})
 }
 
-func (s *Service) recreateIfNeeded(imageName string, c *Container) error {
-	if s.context.NoRecreate {
+func (s *Service) recreateIfNeeded(imageName string, c *Container, noRecreate, forceRecreate bool) error {
+	if noRecreate {
 		return nil
 	}
 	outOfSync, err := c.OutOfSync(imageName)
@@ -296,10 +296,10 @@ func (s *Service) recreateIfNeeded(imageName string, c *Container) error {
 
 	logrus.WithFields(logrus.Fields{
 		"outOfSync":     outOfSync,
-		"ForceRecreate": s.context.ForceRecreate,
-		"NoRecreate":    s.context.NoRecreate}).Debug("Going to decide if recreate is needed")
+		"ForceRecreate": forceRecreate,
+		"NoRecreate":    noRecreate}).Debug("Going to decide if recreate is needed")
 
-	if s.context.ForceRecreate || outOfSync {
+	if forceRecreate || outOfSync {
 		logrus.Infof("Recreating %s", s.name)
 		if _, err := c.Recreate(imageName); err != nil {
 			return err
@@ -400,7 +400,7 @@ func (s *Service) Scale(scale int) error {
 	}
 
 	if foundCount != scale {
-		imageName, err := s.ensureImageExists()
+		imageName, err := s.ensureImageExists(false)
 		if err != nil {
 			return err
 		}
@@ -410,7 +410,7 @@ func (s *Service) Scale(scale int) error {
 		}
 	}
 
-	return s.up("", false)
+	return s.up("", false, types.UpOptions{})
 }
 
 // Pull implements Service.Pull. It pulls the image of the service and skip the service that
