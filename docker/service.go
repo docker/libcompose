@@ -79,7 +79,7 @@ func (s *Service) collectContainers() ([]*Container, error) {
 
 	for _, container := range containers {
 		// Compose add "/" before name, so Name[1] will store actaul name.
-		name := strings.SplitAfter(container.Names[0], "/")
+		name := strings.SplitAfterN(container.Names[0], "/", 2)
 		result = append(result, NewContainer(client, name[1], s))
 	}
 
