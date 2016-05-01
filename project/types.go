@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/docker/libcompose/config"
-	"github.com/docker/libcompose/project/types"
+	"github.com/docker/libcompose/project/options"
 )
 
 // EventType defines a type of libcompose event.
@@ -206,13 +206,13 @@ type Project struct {
 type Service interface {
 	Info(qFlag bool) (InfoSet, error)
 	Name() string
-	Build(buildOptions types.BuildOptions) error
-	Create(options types.CreateOptions) error
-	Up(options types.UpOptions) error
+	Build(buildOptions options.Build) error
+	Create(options options.Create) error
+	Up(options options.Up) error
 	Start() error
 	Stop(timeout int) error
-	Down(options types.DownOptions) error
-	Delete(options types.DeleteOptions) error
+	Down(options options.Down) error
+	Delete(options options.Delete) error
 	Restart(timeout int) error
 	Log(follow bool) error
 	Pull() error

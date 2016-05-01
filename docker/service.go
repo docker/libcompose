@@ -12,7 +12,7 @@ import (
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/docker/builder"
 	"github.com/docker/libcompose/project"
-	"github.com/docker/libcompose/project/types"
+	"github.com/docker/libcompose/project/options"
 	"github.com/docker/libcompose/utils"
 )
 
@@ -49,7 +49,7 @@ func (s *Service) DependentServices() []project.ServiceRelationship {
 
 // Create implements Service.Create. It ensures the image exists or build it
 // if it can and then create a container.
-func (s *Service) Create(options types.CreateOptions) error {
+func (s *Service) Create(options options.Create) error {
 	containers, err := s.collectContainers()
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func (s *Service) ensureImageExists(noBuild bool) (string, error) {
 		if noBuild {
 			return "", fmt.Errorf("Service %q needs to be built, but no-build was specified", s.name)
 		}
-		return s.imageName(), s.build(types.BuildOptions{})
+		return s.imageName(), s.build(options.Build{})
 	}
 
 	return s.imageName(), s.Pull()
@@ -135,14 +135,14 @@ func (s *Service) imageName() string {
 // Build implements Service.Build. If an imageName is specified or if the context has
 // no build to work with it will do nothing. Otherwise it will try to build
 // the image and returns an error if any.
-func (s *Service) Build(buildOptions types.BuildOptions) error {
+func (s *Service) Build(buildOptions options.Build) error {
 	if s.Config().Image != "" {
 		return nil
 	}
 	return s.build(buildOptions)
 }
 
-func (s *Service) build(buildOptions types.BuildOptions) error {
+func (s *Service) build(buildOptions options.Build) error {
 	if s.Config().Build == "" {
 		return fmt.Errorf("Specified service does not have a build section")
 	}
@@ -197,7 +197,7 @@ func (s *Service) constructContainers(imageName string, count int) ([]*Container
 
 // Up implements Service.Up. It builds the image if needed, creates a container
 // and start it.
-func (s *Service) Up(options types.UpOptions) error {
+func (s *Service) Up(options options.Up) error {
 	containers, err := s.collectContainers()
 	if err != nil {
 		return err
@@ -255,10 +255,10 @@ func (s *Service) Info(qFlag bool) (project.InfoSet, error) {
 
 // Start implements Service.Start. It tries to start a container without creating it.
 func (s *Service) Start() error {
-	return s.up("", false, types.UpOptions{})
+	return s.up("", false, options.Up{})
 }
 
-func (s *Service) up(imageName string, create bool, options types.UpOptions) error {
+func (s *Service) up(imageName string, create bool, options options.Up) error {
 	containers, err := s.collectContainers()
 	if err != nil {
 		return err
@@ -337,7 +337,7 @@ func (s *Service) Stop(timeout int) error {
 }
 
 // Down implements Service.Down. It stops any containers related to the service and removes them.
-func (s *Service) Down(options types.DownOptions) error {
+func (s *Service) Down(options options.Down) error {
 	return s.eachContainer(func(c *Container) error {
 		// FIXME(vdemeester) bring this backup (project.Down should call Stop and Delete)
 		if err := c.Stop(10); err != nil {
@@ -362,7 +362,7 @@ func (s *Service) Kill(signal string) error {
 }
 
 // Delete implements Service.Delete. It removes any containers related to the service.
-func (s *Service) Delete(options types.DeleteOptions) error {
+func (s *Service) Delete(options options.Delete) error {
 	return s.eachContainer(func(c *Container) error {
 		return c.Delete(options.RemoveVolume)
 	})
@@ -411,7 +411,7 @@ func (s *Service) Scale(scale int, timeout int) error {
 		}
 	}
 
-	return s.up("", false, types.UpOptions{})
+	return s.up("", false, options.Up{})
 }
 
 // Pull implements Service.Pull. It pulls the image of the service and skip the service that

@@ -1,7 +1,7 @@
 package project
 
 import (
-	"github.com/docker/libcompose/project/types"
+	"github.com/docker/libcompose/project/options"
 )
 
 // EmptyService is a struct that implements Service but does nothing.
@@ -9,17 +9,17 @@ type EmptyService struct {
 }
 
 // Create implements Service.Create but does nothing.
-func (e *EmptyService) Create(options types.CreateOptions) error {
+func (e *EmptyService) Create(options options.Create) error {
 	return nil
 }
 
 // Build implements Service.Build but does nothing.
-func (e *EmptyService) Build(buildOptions types.BuildOptions) error {
+func (e *EmptyService) Build(buildOptions options.Build) error {
 	return nil
 }
 
 // Up implements Service.Up but does nothing.
-func (e *EmptyService) Up(options types.UpOptions) error {
+func (e *EmptyService) Up(options options.Up) error {
 	return nil
 }
 
@@ -34,12 +34,12 @@ func (e *EmptyService) Stop(timeout int) error {
 }
 
 // Down implements Service.Down but does nothing.
-func (e *EmptyService) Down(options types.DownOptions) error {
+func (e *EmptyService) Down(options options.Down) error {
 	return nil
 }
 
 // Delete implements Service.Delete but does nothing.
-func (e *EmptyService) Delete(options types.DeleteOptions) error {
+func (e *EmptyService) Delete(options options.Delete) error {
 	return nil
 }
 

@@ -11,7 +11,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/project"
-	"github.com/docker/libcompose/project/types"
+	"github.com/docker/libcompose/project/options"
 )
 
 // ProjectAction is an adapter to allow the use of ordinary functions as libcompose actions.
@@ -105,7 +105,7 @@ func ProjectStop(p *project.Project, c *cli.Context) {
 
 // ProjectDown brings all services down (stops and clean containers).
 func ProjectDown(p *project.Project, c *cli.Context) {
-	options := types.DownOptions{
+	options := options.Down{
 		RemoveVolume: c.Bool("v"),
 	}
 	err := p.Down(options, c.Args()...)
@@ -116,7 +116,7 @@ func ProjectDown(p *project.Project, c *cli.Context) {
 
 // ProjectBuild builds or rebuilds services.
 func ProjectBuild(p *project.Project, c *cli.Context) {
-	config := types.BuildOptions{
+	config := options.Build{
 		NoCache: c.Bool("no-cache"),
 	}
 	err := p.Build(config, c.Args()...)
@@ -127,7 +127,7 @@ func ProjectBuild(p *project.Project, c *cli.Context) {
 
 // ProjectCreate creates all services but do not start them.
 func ProjectCreate(p *project.Project, c *cli.Context) {
-	options := types.CreateOptions{
+	options := options.Create{
 		NoRecreate:    c.Bool("no-recreate"),
 		ForceRecreate: c.Bool("force-recreate"),
 		NoBuild:       c.Bool("no-build"),
@@ -140,8 +140,8 @@ func ProjectCreate(p *project.Project, c *cli.Context) {
 
 // ProjectUp brings all services up.
 func ProjectUp(p *project.Project, c *cli.Context) {
-	options := types.UpOptions{
-		CreateOptions: types.CreateOptions{
+	options := options.Up{
+		Create: options.Create{
 			NoRecreate:    c.Bool("no-recreate"),
 			ForceRecreate: c.Bool("force-recreate"),
 			NoBuild:       c.Bool("no-build"),
@@ -250,7 +250,7 @@ func ProjectDelete(p *project.Project, c *cli.Context) {
 			return
 		}
 	}
-	options := types.DeleteOptions{
+	options := options.Delete{
 		RemoveVolume: c.Bool("v"),
 	}
 	err = p.Delete(options, c.Args()...)
