@@ -78,21 +78,6 @@ func TestTwoCall(t *testing.T) {
 	}
 }
 
-func TestEventEquality(t *testing.T) {
-	if fmt.Sprintf("%s", EventServiceStart) != "Started" ||
-		fmt.Sprintf("%v", EventServiceStart) != "Started" {
-		t.Fatalf("EventServiceStart String() doesn't work: %s %v", EventServiceStart, EventServiceStart)
-	}
-
-	if fmt.Sprintf("%s", EventServiceStart) != fmt.Sprintf("%s", EventServiceUp) {
-		t.Fatal("Event messages do not match")
-	}
-
-	if EventServiceStart == EventServiceUp {
-		t.Fatal("Events match")
-	}
-}
-
 func TestParseWithBadContent(t *testing.T) {
 	p := NewProject(&Context{
 		ComposeBytes: [][]byte{
