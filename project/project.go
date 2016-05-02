@@ -8,6 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/logger"
+	"github.com/docker/libcompose/project/options"
 	"github.com/docker/libcompose/utils"
 )
 
@@ -167,46 +168,46 @@ func (p *Project) loadWrappers(wrappers map[string]*serviceWrapper, servicesToCo
 }
 
 // Build builds the specified services (like docker build).
-func (p *Project) Build(services ...string) error {
+func (p *Project) Build(buildOptions options.Build, services ...string) error {
 	return p.perform(EventProjectBuildStart, EventProjectBuildDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, EventServiceBuildStart, EventServiceBuild, func(service Service) error {
-			return service.Build()
+			return service.Build(buildOptions)
 		})
 	}), nil)
 }
 
 // Create creates the specified services (like docker create).
-func (p *Project) Create(services ...string) error {
+func (p *Project) Create(options options.Create, services ...string) error {
 	return p.perform(EventProjectCreateStart, EventProjectCreateDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, EventServiceCreateStart, EventServiceCreate, func(service Service) error {
-			return service.Create()
+			return service.Create(options)
 		})
 	}), nil)
 }
 
 // Stop stops the specified services (like docker stop).
-func (p *Project) Stop(services ...string) error {
+func (p *Project) Stop(timeout int, services ...string) error {
 	return p.perform(EventProjectStopStart, EventProjectStopDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, EventServiceStopStart, EventServiceStop, func(service Service) error {
-			return service.Stop()
+			return service.Stop(timeout)
 		})
 	}), nil)
 }
 
 // Down stops the specified services and clean related containers (like docker stop + docker rm).
-func (p *Project) Down(services ...string) error {
+func (p *Project) Down(options options.Down, services ...string) error {
 	return p.perform(EventProjectDownStart, EventProjectDownDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, EventServiceDownStart, EventServiceDown, func(service Service) error {
-			return service.Down()
+			return service.Down(options)
 		})
 	}), nil)
 }
 
 // Restart restarts the specified services (like docker restart).
-func (p *Project) Restart(services ...string) error {
+func (p *Project) Restart(timeout int, services ...string) error {
 	return p.perform(EventProjectRestartStart, EventProjectRestartDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, EventServiceRestartStart, EventServiceRestart, func(service Service) error {
-			return service.Restart()
+			return service.Restart(timeout)
 		})
 	}), nil)
 }
@@ -233,27 +234,27 @@ func (p *Project) Run(serviceName string, commandParts []string) (int, error) {
 			return nil
 		})
 	}), func(service Service) error {
-		return service.Create()
+		return service.Create(options.Create{})
 	})
 	return exitCode, err
 }
 
 // Up creates and starts the specified services (kinda like docker run).
-func (p *Project) Up(services ...string) error {
+func (p *Project) Up(options options.Up, services ...string) error {
 	return p.perform(EventProjectUpStart, EventProjectUpDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, EventServiceUpStart, EventServiceUp, func(service Service) error {
-			return service.Up()
+			return service.Up(options)
 		})
 	}), func(service Service) error {
-		return service.Create()
+		return service.Create(options.Create)
 	})
 }
 
 // Log aggregates and prints out the logs for the specified services.
-func (p *Project) Log(services ...string) error {
+func (p *Project) Log(follow bool, services ...string) error {
 	return p.forEach(services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, NoEvent, NoEvent, func(service Service) error {
-			return service.Log()
+			return service.Log(follow)
 		})
 	}), nil)
 }
@@ -301,19 +302,19 @@ func (p *Project) ListStoppedContainers(services ...string) ([]string, error) {
 }
 
 // Delete removes the specified services (like docker rm).
-func (p *Project) Delete(services ...string) error {
+func (p *Project) Delete(options options.Delete, services ...string) error {
 	return p.perform(EventProjectDeleteStart, EventProjectDeleteDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, EventServiceDeleteStart, EventServiceDelete, func(service Service) error {
-			return service.Delete()
+			return service.Delete(options)
 		})
 	}), nil)
 }
 
 // Kill kills the specified services (like docker kill).
-func (p *Project) Kill(services ...string) error {
+func (p *Project) Kill(signal string, services ...string) error {
 	return p.perform(EventProjectKillStart, EventProjectKillDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, EventServiceKillStart, EventServiceKill, func(service Service) error {
-			return service.Kill()
+			return service.Kill(signal)
 		})
 	}), nil)
 }

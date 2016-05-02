@@ -1,4 +1,4 @@
-package docker
+package builder
 
 import (
 	"fmt"
@@ -19,8 +19,8 @@ import (
 	"github.com/docker/docker/pkg/progress"
 	"github.com/docker/docker/pkg/streamformatter"
 	"github.com/docker/docker/pkg/term"
+	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
-	"github.com/docker/libcompose/project"
 )
 
 // DefaultDockerfileName is the default name of a Dockerfile
@@ -29,29 +29,22 @@ const DefaultDockerfileName = "Dockerfile"
 // Builder defines methods to provide a docker builder. This makes libcompose
 // not tied up to the docker daemon builder.
 type Builder interface {
-	Build(imageName string, p *project.Project, service project.Service) error
+	Build(imageName string) error
 }
 
 // DaemonBuilder is the daemon "docker build" Builder implementation.
 type DaemonBuilder struct {
-	context *Context
-}
-
-// NewDaemonBuilder creates a DaemonBuilder based on the specified context.
-func NewDaemonBuilder(ctx *Context) *DaemonBuilder {
-	return &DaemonBuilder{
-		context: ctx,
-	}
+	Client           client.APIClient
+	ContextDirectory string
+	Dockerfile       string
+	AuthConfigs      map[string]types.AuthConfig
+	NoCache          bool
 }
 
 // Build implements Builder. It consumes the docker build API endpoint and sends
 // a tar of the specified service build context.
-func (d *DaemonBuilder) Build(imageName string, p *project.Project, service project.Service) error {
-	if service.Config().Build == "" {
-		return fmt.Errorf("Specified service does not have a build section")
-	}
-
-	ctx, err := CreateTar(p, service.Name())
+func (d *DaemonBuilder) Build(imageName string) error {
+	ctx, err := createTar(d.ContextDirectory, d.Dockerfile)
 	if err != nil {
 		return err
 	}
@@ -65,19 +58,20 @@ func (d *DaemonBuilder) Build(imageName string, p *project.Project, service proj
 
 	var body io.Reader = progress.NewProgressReader(ctx, progressOutput, 0, "", "Sending build context to Docker daemon")
 
-	client := d.context.ClientFactory.Create(service)
-
 	logrus.Infof("Building %s...", imageName)
 
 	outFd, isTerminalOut := term.GetFdInfo(os.Stdout)
 
-	response, err := client.ImageBuild(context.Background(), body, types.ImageBuildOptions{
+	response, err := d.Client.ImageBuild(context.Background(), body, types.ImageBuildOptions{
 		Tags:        []string{imageName},
-		NoCache:     d.context.NoCache,
+		NoCache:     d.NoCache,
 		Remove:      true,
-		Dockerfile:  service.Config().Dockerfile,
-		AuthConfigs: d.context.ConfigFile.AuthConfigs,
+		Dockerfile:  d.Dockerfile,
+		AuthConfigs: d.AuthConfigs,
 	})
+	if err != nil {
+		return err
+	}
 
 	err = jsonmessage.DisplayJSONMessagesStream(response.Body, buildBuff, outFd, isTerminalOut, nil)
 	if err != nil {
@@ -86,7 +80,6 @@ func (d *DaemonBuilder) Build(imageName string, p *project.Project, service proj
 			if jerr.Code == 0 {
 				jerr.Code = 1
 			}
-			fmt.Fprintf(os.Stderr, "%s%s", progBuff, buildBuff)
 			return fmt.Errorf("Status: %s, Code: %d", jerr.Message, jerr.Code)
 		}
 	}
@@ -94,29 +87,26 @@ func (d *DaemonBuilder) Build(imageName string, p *project.Project, service proj
 }
 
 // CreateTar create a build context tar for the specified project and service name.
-func CreateTar(p *project.Project, name string) (io.ReadCloser, error) {
+func createTar(contextDirectory, dockerfile string) (io.ReadCloser, error) {
 	// This code was ripped off from docker/api/client/build.go
-	serviceConfig, _ := p.Configs.Get(name)
+	dockerfileName := filepath.Join(contextDirectory, dockerfile)
 
-	root := serviceConfig.Build
-	dockerfileName := filepath.Join(root, serviceConfig.Dockerfile)
-
-	absRoot, err := filepath.Abs(root)
+	absContextDirectory, err := filepath.Abs(contextDirectory)
 	if err != nil {
 		return nil, err
 	}
 
 	filename := dockerfileName
 
-	if dockerfileName == "" {
+	if dockerfile == "" {
 		// No -f/--file was specified so use the default
 		dockerfileName = DefaultDockerfileName
-		filename = filepath.Join(absRoot, dockerfileName)
+		filename = filepath.Join(absContextDirectory, dockerfileName)
 
 		// Just to be nice ;-) look for 'dockerfile' too but only
 		// use it if we found it, otherwise ignore this check
 		if _, err = os.Lstat(filename); os.IsNotExist(err) {
-			tmpFN := path.Join(absRoot, strings.ToLower(dockerfileName))
+			tmpFN := path.Join(absContextDirectory, strings.ToLower(dockerfileName))
 			if _, err = os.Lstat(tmpFN); err == nil {
 				dockerfileName = strings.ToLower(dockerfileName)
 				filename = tmpFN
@@ -130,7 +120,7 @@ func CreateTar(p *project.Project, name string) (io.ReadCloser, error) {
 	}
 
 	// Now reset the dockerfileName to be relative to the build context
-	dockerfileName, err = filepath.Rel(absRoot, filename)
+	dockerfileName, err = filepath.Rel(absContextDirectory, filename)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +137,7 @@ func CreateTar(p *project.Project, name string) (io.ReadCloser, error) {
 	var includes = []string{"."}
 	var excludes []string
 
-	dockerIgnorePath := path.Join(root, ".dockerignore")
+	dockerIgnorePath := path.Join(contextDirectory, ".dockerignore")
 	dockerIgnore, err := os.Open(dockerIgnorePath)
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -174,7 +164,7 @@ func CreateTar(p *project.Project, name string) (io.ReadCloser, error) {
 		includes = append(includes, ".dockerignore", dockerfileName)
 	}
 
-	if err := builder.ValidateContextDirectory(root, excludes); err != nil {
+	if err := builder.ValidateContextDirectory(contextDirectory, excludes); err != nil {
 		return nil, fmt.Errorf("Error checking context is accessible: '%s'. Please check permissions and try again.", err)
 	}
 
@@ -184,5 +174,5 @@ func CreateTar(p *project.Project, name string) (io.ReadCloser, error) {
 		IncludeFiles:    includes,
 	}
 
-	return archive.TarWithOptions(root, options)
+	return archive.TarWithOptions(contextDirectory, options)
 }

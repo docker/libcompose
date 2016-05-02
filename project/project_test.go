@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/docker/libcompose/config"
+	"github.com/docker/libcompose/project/options"
 	"github.com/docker/libcompose/yaml"
 	"github.com/stretchr/testify/assert"
 )
@@ -35,7 +36,7 @@ func (t *TestService) Run(commandParts []string) (int, error) {
 	return 0, nil
 }
 
-func (t *TestService) Create() error {
+func (t *TestService) Create(options options.Create) error {
 	key := t.name + ".create"
 	t.factory.Counts[key] = t.factory.Counts[key] + 1
 	return nil
@@ -64,11 +65,11 @@ func TestTwoCall(t *testing.T) {
 	p.Configs = config.NewConfigs()
 	p.Configs.Add("foo", &config.ServiceConfig{})
 
-	if err := p.Create("foo"); err != nil {
+	if err := p.Create(options.Create{}, "foo"); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := p.Create("foo"); err != nil {
+	if err := p.Create(options.Create{}, "foo"); err != nil {
 		t.Fatal(err)
 	}
 

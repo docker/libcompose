@@ -11,6 +11,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/project/options"
 )
 
 // ProjectAction is an adapter to allow the use of ordinary functions as libcompose actions.
@@ -96,7 +97,7 @@ func ProjectPort(p *project.Project, c *cli.Context) {
 
 // ProjectStop stops all services.
 func ProjectStop(p *project.Project, c *cli.Context) {
-	err := p.Stop(c.Args()...)
+	err := p.Stop(c.Int("timeout"), c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -104,7 +105,10 @@ func ProjectStop(p *project.Project, c *cli.Context) {
 
 // ProjectDown brings all services down (stops and clean containers).
 func ProjectDown(p *project.Project, c *cli.Context) {
-	err := p.Down(c.Args()...)
+	options := options.Down{
+		RemoveVolume: c.Bool("v"),
+	}
+	err := p.Down(options, c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -112,7 +116,10 @@ func ProjectDown(p *project.Project, c *cli.Context) {
 
 // ProjectBuild builds or rebuilds services.
 func ProjectBuild(p *project.Project, c *cli.Context) {
-	err := p.Build(c.Args()...)
+	config := options.Build{
+		NoCache: c.Bool("no-cache"),
+	}
+	err := p.Build(config, c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -120,7 +127,12 @@ func ProjectBuild(p *project.Project, c *cli.Context) {
 
 // ProjectCreate creates all services but do not start them.
 func ProjectCreate(p *project.Project, c *cli.Context) {
-	err := p.Create(c.Args()...)
+	options := options.Create{
+		NoRecreate:    c.Bool("no-recreate"),
+		ForceRecreate: c.Bool("force-recreate"),
+		NoBuild:       c.Bool("no-build"),
+	}
+	err := p.Create(options, c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -128,7 +140,14 @@ func ProjectCreate(p *project.Project, c *cli.Context) {
 
 // ProjectUp brings all services up.
 func ProjectUp(p *project.Project, c *cli.Context) {
-	err := p.Up(c.Args()...)
+	options := options.Up{
+		Create: options.Create{
+			NoRecreate:    c.Bool("no-recreate"),
+			ForceRecreate: c.Bool("force-recreate"),
+			NoBuild:       c.Bool("no-build"),
+		},
+	}
+	err := p.Up(options, c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -138,7 +157,7 @@ func ProjectUp(p *project.Project, c *cli.Context) {
 		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 		errChan := make(chan error)
 		go func() {
-			errChan <- p.Log(c.Args()...)
+			errChan <- p.Log(true, c.Args()...)
 		}()
 		go func() {
 			select {
@@ -188,7 +207,7 @@ func ProjectStart(p *project.Project, c *cli.Context) {
 
 // ProjectRestart restarts services.
 func ProjectRestart(p *project.Project, c *cli.Context) {
-	err := p.Restart(c.Args()...)
+	err := p.Restart(c.Int("timeout"), c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -196,7 +215,7 @@ func ProjectRestart(p *project.Project, c *cli.Context) {
 
 // ProjectLog gets services logs.
 func ProjectLog(p *project.Project, c *cli.Context) {
-	err := p.Log(c.Args()...)
+	err := p.Log(c.Bool("follow"), c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -231,7 +250,10 @@ func ProjectDelete(p *project.Project, c *cli.Context) {
 			return
 		}
 	}
-	err = p.Delete(c.Args()...)
+	options := options.Delete{
+		RemoveVolume: c.Bool("v"),
+	}
+	err = p.Delete(options, c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -239,7 +261,7 @@ func ProjectDelete(p *project.Project, c *cli.Context) {
 
 // ProjectKill forces stop service containers.
 func ProjectKill(p *project.Project, c *cli.Context) {
-	err := p.Kill(c.Args()...)
+	err := p.Kill(c.String("signal"), c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -298,7 +320,7 @@ func ProjectScale(p *project.Project, c *cli.Context) {
 	for _, name := range order {
 		scale := serviceScale[name]
 		logrus.Infof("Setting scale %s=%d...", name, scale)
-		err := services[name].Scale(scale)
+		err := services[name].Scale(scale, c.Int("timeout"))
 		if err != nil {
 			logrus.Fatalf("Failed to set the scale %s=%d: %v", name, scale, err)
 		}

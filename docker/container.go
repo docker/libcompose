@@ -193,23 +193,9 @@ func (c *Container) CreateWithOverride(imageName string, configOverride *config.
 }
 
 // Stop stops the container.
-func (c *Container) Stop() error {
+func (c *Container) Stop(timeout int) error {
 	return c.withContainer(func(container *types.ContainerJSON) error {
-		return c.client.ContainerStop(context.Background(), container.ID, int(c.service.context.Timeout))
-	})
-}
-
-// Down stops and remove the container.
-func (c *Container) Down() error {
-	if err := c.Stop(); err != nil {
-		return err
-	}
-
-	return c.withContainer(func(container *types.ContainerJSON) error {
-		return c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
-			Force:         true,
-			RemoveVolumes: c.service.context.Volume,
-		})
+		return c.client.ContainerStop(context.Background(), container.ID, timeout)
 	})
 }
 
@@ -234,15 +220,15 @@ func (c *Container) Unpause() error {
 }
 
 // Kill kill the container.
-func (c *Container) Kill() error {
+func (c *Container) Kill(signal string) error {
 	return c.withContainer(func(container *types.ContainerJSON) error {
-		return c.client.ContainerKill(context.Background(), container.ID, c.service.context.Signal)
+		return c.client.ContainerKill(context.Background(), container.ID, signal)
 	})
 }
 
 // Delete removes the container if existing. If the container is running, it tries
 // to stop it first.
-func (c *Container) Delete() error {
+func (c *Container) Delete(removeVolume bool) error {
 	container, err := c.findExisting()
 	if err != nil || container == nil {
 		return err
@@ -256,7 +242,7 @@ func (c *Container) Delete() error {
 	if !info.State.Running {
 		return c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
 			Force:         true,
-			RemoveVolumes: c.service.context.Volume,
+			RemoveVolumes: removeVolume,
 		})
 	}
 
@@ -628,17 +614,17 @@ func (c *Container) Pull() error {
 }
 
 // Restart restarts the container if existing, does nothing otherwise.
-func (c *Container) Restart() error {
+func (c *Container) Restart(timeout int) error {
 	container, err := c.findExisting()
 	if err != nil || container == nil {
 		return err
 	}
 
-	return c.client.ContainerRestart(context.Background(), container.ID, int(c.service.context.Timeout))
+	return c.client.ContainerRestart(context.Background(), container.ID, timeout)
 }
 
 // Log forwards container logs to the project configured logger.
-func (c *Container) Log() error {
+func (c *Container) Log(follow bool) error {
 	container, err := c.findExisting()
 	if container == nil || err != nil {
 		return err
@@ -654,7 +640,7 @@ func (c *Container) Log() error {
 	options := types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
-		Follow:     c.service.context.FollowLog,
+		Follow:     follow,
 		Tail:       "all",
 	}
 	responseBody, err := c.client.ContainerLogs(context.Background(), c.name, options)
