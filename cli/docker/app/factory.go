@@ -13,7 +13,7 @@ type ProjectFactory struct {
 }
 
 // Create implements ProjectFactory.Create using docker client.
-func (p *ProjectFactory) Create(c *cli.Context) (*project.Project, error) {
+func (p *ProjectFactory) Create(c *cli.Context) (project.APIProject, error) {
 	context := &docker.Context{}
 	context.LoggerFactory = logger.NewColorLoggerFactory()
 	Populate(context, c)

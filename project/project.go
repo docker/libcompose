@@ -204,6 +204,44 @@ func (p *Project) Restart(timeout int, services ...string) error {
 	}), nil)
 }
 
+// Port returns the public port for a port binding of the specified service.
+func (p *Project) Port(index int, protocol, serviceName, privatePort string) (string, error) {
+	service, err := p.CreateService(serviceName)
+	if err != nil {
+		return "", err
+	}
+
+	containers, err := service.Containers()
+	if err != nil {
+		return "", err
+	}
+
+	if index < 1 || index > len(containers) {
+		return "", fmt.Errorf("Invalid index %d", index)
+	}
+
+	return containers[index-1].Port(fmt.Sprintf("%s/%s", privatePort, protocol))
+}
+
+// Ps list containers for the specified services.
+func (p *Project) Ps(onlyID bool, services ...string) (InfoSet, error) {
+	allInfo := InfoSet{}
+	for _, name := range p.Configs.Keys() {
+		service, err := p.CreateService(name)
+		if err != nil {
+			return nil, err
+		}
+
+		info, err := service.Info(onlyID)
+		if err != nil {
+			return nil, err
+		}
+
+		allInfo = append(allInfo, info...)
+	}
+	return allInfo, nil
+}
+
 // Start starts the specified services (like docker start).
 func (p *Project) Start(services ...string) error {
 	return p.perform(events.ProjectStartStart, events.ProjectStartDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
@@ -215,6 +253,10 @@ func (p *Project) Start(services ...string) error {
 
 // Run executes a one off command (like `docker run image command`).
 func (p *Project) Run(serviceName string, commandParts []string) (int, error) {
+	if !p.Configs.Has(serviceName) {
+		return 1, fmt.Errorf("%s is not defined in the template", serviceName)
+	}
+
 	var exitCode int
 	err := p.forEach([]string{}, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, events.ServiceRunStart, events.ServiceRun, func(service Service) error {
@@ -249,6 +291,37 @@ func (p *Project) Log(follow bool, services ...string) error {
 			return service.Log(follow)
 		})
 	}), nil)
+}
+
+// Scale scales the specified services.
+func (p *Project) Scale(timeout int, servicesScale map[string]int) error {
+	// This code is a bit verbose but I wanted to parse everything up front
+	order := make([]string, 0, 0)
+	services := make(map[string]Service)
+
+	for name := range servicesScale {
+		if !p.Configs.Has(name) {
+			return fmt.Errorf("%s is not defined in the template", name)
+		}
+
+		service, err := p.CreateService(name)
+		if err != nil {
+			return fmt.Errorf("Failed to lookup service: %s: %v", service, err)
+		}
+
+		order = append(order, name)
+		services[name] = service
+	}
+
+	for _, name := range order {
+		scale := servicesScale[name]
+		log.Infof("Setting scale %s=%d...", name, scale)
+		err := services[name].Scale(scale, timeout)
+		if err != nil {
+			return fmt.Errorf("Failed to set the scale %s=%d: %v", name, scale, err)
+		}
+	}
+	return nil
 }
 
 // Pull pulls the specified services (like docker pull).
