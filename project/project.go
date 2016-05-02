@@ -13,23 +13,21 @@ import (
 	"github.com/docker/libcompose/utils"
 )
 
-// ServiceState holds the state of a service.
-type ServiceState string
-
-// State definitions
-var (
-	StateExecuted = ServiceState("executed")
-	StateUnknown  = ServiceState("unknown")
-)
-
-// Error definitions
-var (
-	ErrRestart     = errors.New("Restart execution")
-	ErrUnsupported = errors.New("UnsupportedOperation")
-)
-
 type wrapperAction func(*serviceWrapper, map[string]*serviceWrapper)
 type serviceAction func(service Service) error
+
+// Project holds libcompose project information.
+type Project struct {
+	Name           string
+	Configs        *config.Configs
+	Files          []string
+	ReloadCallback func() error
+	context        *Context
+	reload         []string
+	upCount        int
+	listeners      []chan<- events.Event
+	hasListeners   bool
+}
 
 // NewProject creates a new project with the specified context.
 func NewProject(context *Context) *Project {

@@ -1,34 +1,11 @@
 package project
 
 import (
+	"errors"
+
 	"github.com/docker/libcompose/config"
-	"github.com/docker/libcompose/project/events"
 	"github.com/docker/libcompose/project/options"
 )
-
-// InfoPart holds key/value strings.
-type InfoPart struct {
-	Key, Value string
-}
-
-// InfoSet holds a list of Info.
-type InfoSet []Info
-
-// Info holds a list of InfoPart.
-type Info []InfoPart
-
-// Project holds libcompose project information.
-type Project struct {
-	Name           string
-	Configs        *config.Configs
-	Files          []string
-	ReloadCallback func() error
-	context        *Context
-	reload         []string
-	upCount        int
-	listeners      []chan<- events.Event
-	hasListeners   bool
-}
 
 // Service defines what a libcompose service provides.
 type Service interface {
@@ -54,13 +31,20 @@ type Service interface {
 	Run(commandParts []string) (int, error)
 }
 
-// Container defines what a libcompose container provides.
-type Container interface {
-	ID() (string, error)
-	Name() string
-	Port(port string) (string, error)
-	IsRunning() (bool, error)
-}
+// ServiceState holds the state of a service.
+type ServiceState string
+
+// State definitions
+var (
+	StateExecuted = ServiceState("executed")
+	StateUnknown  = ServiceState("unknown")
+)
+
+// Error definitions
+var (
+	ErrRestart     = errors.New("Restart execution")
+	ErrUnsupported = errors.New("UnsupportedOperation")
+)
 
 // ServiceFactory is an interface factory to create Service object for the specified
 // project, with the specified name and service configuration.
