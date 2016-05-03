@@ -28,10 +28,6 @@ type APIProject interface {
 
 	Parse() error
 
-	// FIXME(vdemeester) move outside this interface. Delete(…) should take a
-	// function for the force thingie (ask a question or not)
-	ListStoppedContainers(services ...string) ([]string, error)
-
 	// FIXME(vdemeester) should be moved outside this interface
 	// The listener/notify mecanism could/should be indenpendant from Project
 	AddListener(c chan<- events.Event)
