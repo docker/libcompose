@@ -26,6 +26,7 @@ import (
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/project/events"
 	util "github.com/docker/libcompose/utils"
 )
 
@@ -184,7 +185,7 @@ func (c *Container) CreateWithOverride(imageName string, configOverride *config.
 		if err != nil {
 			return nil, err
 		}
-		c.service.context.Project.Notify(project.EventContainerCreated, c.service.Name(), map[string]string{
+		c.service.context.Project.Notify(events.ContainerCreated, c.service.Name(), map[string]string{
 			"name": c.Name(),
 		})
 	}
@@ -403,7 +404,7 @@ func (c *Container) Start(container *types.ContainerJSON) error {
 		logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
 		return err
 	}
-	c.service.context.Project.Notify(project.EventContainerStarted, c.service.Name(), map[string]string{
+	c.service.context.Project.Notify(events.ContainerStarted, c.service.Name(), map[string]string{
 		"name": c.Name(),
 	})
 	return nil

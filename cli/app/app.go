@@ -22,7 +22,7 @@ import (
 //		Usage:  "List containers",
 //		Action: app.WithProject(factory, app.ProjectPs),
 //	}
-type ProjectAction func(project *project.Project, c *cli.Context)
+type ProjectAction func(project project.APIProject, c *cli.Context)
 
 // BeforeApp is an action that is executed before any cli command.
 func BeforeApp(c *cli.Context) error {
@@ -45,58 +45,35 @@ func WithProject(factory ProjectFactory, action ProjectAction) func(context *cli
 }
 
 // ProjectPs lists the containers.
-func ProjectPs(p *project.Project, c *cli.Context) {
-	allInfo := project.InfoSet{}
+func ProjectPs(p project.APIProject, c *cli.Context) {
 	qFlag := c.Bool("q")
-	for _, name := range p.Configs.Keys() {
-		service, err := p.CreateService(name)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-
-		info, err := service.Info(qFlag)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-
-		allInfo = append(allInfo, info...)
+	allInfo, err := p.Ps(qFlag, c.Args()...)
+	if err != nil {
+		logrus.Fatal(err)
 	}
-
 	os.Stdout.WriteString(allInfo.String(!qFlag))
 }
 
 // ProjectPort prints the public port for a port binding.
-func ProjectPort(p *project.Project, c *cli.Context) {
+func ProjectPort(p project.APIProject, c *cli.Context) {
 	if len(c.Args()) != 2 {
 		logrus.Fatalf("Please pass arguments in the form: SERVICE PORT")
 	}
 
 	index := c.Int("index")
 	protocol := c.String("protocol")
+	serviceName := c.Args()[0]
+	privatePort := c.Args()[1]
 
-	service, err := p.CreateService(c.Args()[0])
+	port, err := p.Port(index, protocol, serviceName, privatePort)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-
-	containers, err := service.Containers()
-	if err != nil {
-		logrus.Fatal(err)
-	}
-
-	if index < 1 || index > len(containers) {
-		logrus.Fatalf("Invalid index %d", index)
-	}
-
-	output, err := containers[index-1].Port(fmt.Sprintf("%s/%s", c.Args()[1], protocol))
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	fmt.Println(output)
+	fmt.Println(port)
 }
 
 // ProjectStop stops all services.
-func ProjectStop(p *project.Project, c *cli.Context) {
+func ProjectStop(p project.APIProject, c *cli.Context) {
 	err := p.Stop(c.Int("timeout"), c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
@@ -104,7 +81,7 @@ func ProjectStop(p *project.Project, c *cli.Context) {
 }
 
 // ProjectDown brings all services down (stops and clean containers).
-func ProjectDown(p *project.Project, c *cli.Context) {
+func ProjectDown(p project.APIProject, c *cli.Context) {
 	options := options.Down{
 		RemoveVolume: c.Bool("v"),
 	}
@@ -115,7 +92,7 @@ func ProjectDown(p *project.Project, c *cli.Context) {
 }
 
 // ProjectBuild builds or rebuilds services.
-func ProjectBuild(p *project.Project, c *cli.Context) {
+func ProjectBuild(p project.APIProject, c *cli.Context) {
 	config := options.Build{
 		NoCache: c.Bool("no-cache"),
 	}
@@ -126,7 +103,7 @@ func ProjectBuild(p *project.Project, c *cli.Context) {
 }
 
 // ProjectCreate creates all services but do not start them.
-func ProjectCreate(p *project.Project, c *cli.Context) {
+func ProjectCreate(p project.APIProject, c *cli.Context) {
 	options := options.Create{
 		NoRecreate:    c.Bool("no-recreate"),
 		ForceRecreate: c.Bool("force-recreate"),
@@ -139,7 +116,7 @@ func ProjectCreate(p *project.Project, c *cli.Context) {
 }
 
 // ProjectUp brings all services up.
-func ProjectUp(p *project.Project, c *cli.Context) {
+func ProjectUp(p project.APIProject, c *cli.Context) {
 	options := options.Up{
 		Create: options.Create{
 			NoRecreate:    c.Bool("no-recreate"),
@@ -177,17 +154,13 @@ func ProjectUp(p *project.Project, c *cli.Context) {
 }
 
 // ProjectRun runs a given command within a service's container.
-func ProjectRun(p *project.Project, c *cli.Context) {
+func ProjectRun(p project.APIProject, c *cli.Context) {
 	if len(c.Args()) == 1 {
 		logrus.Fatal("No service specified")
 	}
 
 	serviceName := c.Args()[0]
 	commandParts := c.Args()[1:]
-
-	if !p.Configs.Has(serviceName) {
-		logrus.Fatalf("%s is not defined in the template", serviceName)
-	}
 
 	exitCode, err := p.Run(serviceName, commandParts)
 	if err != nil {
@@ -198,7 +171,7 @@ func ProjectRun(p *project.Project, c *cli.Context) {
 }
 
 // ProjectStart starts services.
-func ProjectStart(p *project.Project, c *cli.Context) {
+func ProjectStart(p project.APIProject, c *cli.Context) {
 	err := p.Start(c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
@@ -206,7 +179,7 @@ func ProjectStart(p *project.Project, c *cli.Context) {
 }
 
 // ProjectRestart restarts services.
-func ProjectRestart(p *project.Project, c *cli.Context) {
+func ProjectRestart(p project.APIProject, c *cli.Context) {
 	err := p.Restart(c.Int("timeout"), c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
@@ -214,7 +187,7 @@ func ProjectRestart(p *project.Project, c *cli.Context) {
 }
 
 // ProjectLog gets services logs.
-func ProjectLog(p *project.Project, c *cli.Context) {
+func ProjectLog(p project.APIProject, c *cli.Context) {
 	err := p.Log(c.Bool("follow"), c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
@@ -222,7 +195,7 @@ func ProjectLog(p *project.Project, c *cli.Context) {
 }
 
 // ProjectPull pulls images for services.
-func ProjectPull(p *project.Project, c *cli.Context) {
+func ProjectPull(p project.APIProject, c *cli.Context) {
 	err := p.Pull(c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
@@ -230,7 +203,7 @@ func ProjectPull(p *project.Project, c *cli.Context) {
 }
 
 // ProjectDelete deletes services.
-func ProjectDelete(p *project.Project, c *cli.Context) {
+func ProjectDelete(p project.APIProject, c *cli.Context) {
 	stoppedContainers, err := p.ListStoppedContainers(c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
@@ -260,7 +233,7 @@ func ProjectDelete(p *project.Project, c *cli.Context) {
 }
 
 // ProjectKill forces stop service containers.
-func ProjectKill(p *project.Project, c *cli.Context) {
+func ProjectKill(p project.APIProject, c *cli.Context) {
 	err := p.Kill(c.String("signal"), c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
@@ -268,7 +241,7 @@ func ProjectKill(p *project.Project, c *cli.Context) {
 }
 
 // ProjectPause pauses service containers.
-func ProjectPause(p *project.Project, c *cli.Context) {
+func ProjectPause(p project.APIProject, c *cli.Context) {
 	err := p.Pause(c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
@@ -276,7 +249,7 @@ func ProjectPause(p *project.Project, c *cli.Context) {
 }
 
 // ProjectUnpause unpauses service containers.
-func ProjectUnpause(p *project.Project, c *cli.Context) {
+func ProjectUnpause(p project.APIProject, c *cli.Context) {
 	err := p.Unpause(c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
@@ -284,12 +257,8 @@ func ProjectUnpause(p *project.Project, c *cli.Context) {
 }
 
 // ProjectScale scales services.
-func ProjectScale(p *project.Project, c *cli.Context) {
-	// This code is a bit verbose but I wanted to parse everything up front
-	order := make([]string, 0, 0)
-	serviceScale := make(map[string]int)
-	services := make(map[string]project.Service)
-
+func ProjectScale(p project.APIProject, c *cli.Context) {
+	servicesScale := map[string]int{}
 	for _, arg := range c.Args() {
 		kv := strings.SplitN(arg, "=", 2)
 		if len(kv) != 2 {
@@ -303,26 +272,11 @@ func ProjectScale(p *project.Project, c *cli.Context) {
 			logrus.Fatalf("Invalid scale parameter: %v", err)
 		}
 
-		if !p.Configs.Has(name) {
-			logrus.Fatalf("%s is not defined in the template", name)
-		}
-
-		service, err := p.CreateService(name)
-		if err != nil {
-			logrus.Fatalf("Failed to lookup service: %s: %v", service, err)
-		}
-
-		order = append(order, name)
-		serviceScale[name] = count
-		services[name] = service
+		servicesScale[name] = count
 	}
 
-	for _, name := range order {
-		scale := serviceScale[name]
-		logrus.Infof("Setting scale %s=%d...", name, scale)
-		err := services[name].Scale(scale, c.Int("timeout"))
-		if err != nil {
-			logrus.Fatalf("Failed to set the scale %s=%d: %v", name, scale, err)
-		}
+	err := p.Scale(c.Int("timeout"), servicesScale)
+	if err != nil {
+		logrus.Fatal(err)
 	}
 }

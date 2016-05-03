@@ -8,7 +8,7 @@ import (
 )
 
 // NewProject creates a Project with the specified context.
-func NewProject(context *Context) (*project.Project, error) {
+func NewProject(context *Context) (project.APIProject, error) {
 	if context.ResourceLookup == nil {
 		context.ResourceLookup = &lookup.FileConfigLookup{}
 	}
