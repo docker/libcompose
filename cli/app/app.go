@@ -204,29 +204,24 @@ func ProjectPull(p project.APIProject, c *cli.Context) {
 
 // ProjectDelete deletes services.
 func ProjectDelete(p project.APIProject, c *cli.Context) {
-	stoppedContainers, err := p.ListStoppedContainers(c.Args()...)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	if len(stoppedContainers) == 0 {
-		fmt.Println("No stopped containers")
-		return
-	}
-	if !c.Bool("force") {
-		fmt.Printf("Going to remove %v\nAre you sure? [yN]\n", strings.Join(stoppedContainers, ", "))
-		var answer string
-		_, err := fmt.Scanln(&answer)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-		if answer != "y" && answer != "Y" {
-			return
-		}
-	}
 	options := options.Delete{
 		RemoveVolume: c.Bool("v"),
 	}
-	err = p.Delete(options, c.Args()...)
+	if !c.Bool("force") {
+		options.BeforeDeleteCallback = func(stoppedContainers []string) bool {
+			fmt.Printf("Going to remove %v\nAre you sure? [yN]\n", strings.Join(stoppedContainers, ", "))
+			var answer string
+			_, err := fmt.Scanln(&answer)
+			if err != nil {
+				logrus.Fatal(err)
+			}
+			if answer != "y" && answer != "Y" {
+				return false
+			}
+			return true
+		}
+	}
+	err := p.Delete(options, c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}

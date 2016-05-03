@@ -7,7 +7,8 @@ type Build struct {
 
 // Delete holds options of compose rm.
 type Delete struct {
-	RemoveVolume bool
+	RemoveVolume         bool
+	BeforeDeleteCallback func([]string) bool
 }
 
 // Down holds options of compose down.
