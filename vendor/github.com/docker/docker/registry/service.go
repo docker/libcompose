@@ -37,6 +37,9 @@ func (s *Service) ServiceConfig() *registrytypes.ServiceConfig {
 // It can be used to verify the validity of a client's credentials.
 func (s *Service) Auth(authConfig *types.AuthConfig, userAgent string) (status, token string, err error) {
 	serverAddress := authConfig.ServerAddress
+	if serverAddress == "" {
+		serverAddress = IndexServer
+	}
 	if !strings.HasPrefix(serverAddress, "https://") && !strings.HasPrefix(serverAddress, "http://") {
 		serverAddress = "https://" + serverAddress
 	}
@@ -91,7 +94,7 @@ func splitReposSearchTerm(reposName string) (string, string) {
 // Search queries the public registry for images matching the specified
 // search terms, and returns the results.
 func (s *Service) Search(term string, authConfig *types.AuthConfig, userAgent string, headers map[string][]string) (*registrytypes.SearchResults, error) {
-	if err := validateNoSchema(term); err != nil {
+	if err := validateNoScheme(term); err != nil {
 		return nil, err
 	}
 

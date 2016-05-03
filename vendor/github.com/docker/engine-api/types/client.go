@@ -57,6 +57,7 @@ type ContainerLogsOptions struct {
 	Timestamps bool
 	Follow     bool
 	Tail       string
+	Details    bool
 }
 
 // ContainerRemoveOptions holds parameters to remove containers.
@@ -205,6 +206,7 @@ type ImageRemoveOptions struct {
 type ImageSearchOptions struct {
 	RegistryAuth  string
 	PrivilegeFunc RequestPrivilegeFunc
+	Filters       filters.Args
 }
 
 // ImageTagOptions holds parameters to tag an image
