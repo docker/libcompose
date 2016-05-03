@@ -90,7 +90,7 @@ func (s *CliSuite) CreateProjectFromText(c *C, input string) string {
 }
 
 func (s *CliSuite) RandomProject() string {
-	return "test-project-" + RandStr(7)
+	return "testproject" + RandStr(7)
 }
 
 func (s *CliSuite) ProjectFromText(c *C, command, input string) string {
