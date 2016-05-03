@@ -39,6 +39,7 @@ func main() {
 		command.StopCommand(factory),
 		command.UnpauseCommand(factory),
 		command.UpCommand(factory),
+		command.VersionCommand(factory),
 	}
 
 	app.Run(os.Args)

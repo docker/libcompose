@@ -276,6 +276,21 @@ func UnpauseCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// VersionCommand defines the libcompose version subcommand.
+func VersionCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "version",
+		Usage:  "Show version informations",
+		Action: app.Version,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "short",
+				Usage: "Shows only Compose's version number.",
+			},
+		},
+	}
+}
+
 // CommonFlags defines the flags that are in common for all subcommands.
 func CommonFlags() []cli.Flag {
 	return []cli.Flag{
