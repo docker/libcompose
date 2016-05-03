@@ -636,7 +636,9 @@ func (c *Container) Log(follow bool) error {
 		return err
 	}
 
-	l := c.service.context.LoggerFactory.Create(c.name)
+	// FIXME(vdemeester) update container struct to do less API calls
+	name := c.service.name + "_" + getContainerNumber(c)
+	l := c.service.context.LoggerFactory.Create(name)
 
 	options := types.ContainerLogsOptions{
 		ShowStdout: true,
