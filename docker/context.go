@@ -2,6 +2,7 @@ package docker
 
 import (
 	"github.com/docker/docker/cliconfig"
+	"github.com/docker/docker/cliconfig/configfile"
 	"github.com/docker/libcompose/project"
 )
 
@@ -11,7 +12,7 @@ type Context struct {
 	project.Context
 	ClientFactory ClientFactory
 	ConfigDir     string
-	ConfigFile    *cliconfig.ConfigFile
+	ConfigFile    *configfile.ConfigFile
 	AuthLookup    AuthLookup
 }
 
