@@ -38,13 +38,12 @@ func TestProjectFactoryProjectNameIsNormalized(t *testing.T) {
     image: busybox`), 0700)
 
 	for _, projectCase := range projects {
-		set := flag.NewFlagSet("test", 0)
 		globalSet := flag.NewFlagSet("test", 0)
 		// Set the project-name flag
 		globalSet.String("project-name", projectCase.name, "doc")
 		// Set the compose file flag
 		globalSet.Var(&cli.StringSlice{composeFile}, "file", "doc")
-		c := cli.NewContext(nil, set, globalSet)
+		c := cli.NewContext(nil, globalSet, nil)
 		factory := &ProjectFactory{}
 		p, err := factory.Create(c)
 		if err != nil {
