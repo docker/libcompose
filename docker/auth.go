@@ -7,6 +7,7 @@ import (
 
 // AuthLookup defines a method for looking up authentication information
 type AuthLookup interface {
+	All() map[string]types.AuthConfig
 	Lookup(repoInfo *registry.RepositoryInfo) types.AuthConfig
 }
 
@@ -21,4 +22,12 @@ func (c *ConfigAuthLookup) Lookup(repoInfo *registry.RepositoryInfo) types.AuthC
 		return types.AuthConfig{}
 	}
 	return registry.ResolveAuthConfig(c.context.ConfigFile.AuthConfigs, repoInfo.Index)
+}
+
+// All uses a Docker config file to get all authentication information
+func (c *ConfigAuthLookup) All() map[string]types.AuthConfig {
+	if c.context.ConfigFile == nil {
+		return map[string]types.AuthConfig{}
+	}
+	return c.context.ConfigFile.AuthConfigs
 }

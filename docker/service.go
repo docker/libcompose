@@ -150,7 +150,7 @@ func (s *Service) build(buildOptions options.Build) error {
 		Client:           s.context.ClientFactory.Create(s),
 		ContextDirectory: s.Config().Build,
 		Dockerfile:       s.Config().Dockerfile,
-		AuthConfigs:      s.context.ConfigFile.AuthConfigs,
+		AuthConfigs:      s.context.AuthLookup.All(),
 		NoCache:          buildOptions.NoCache,
 	}
 	return builder.Build(s.imageName())
