@@ -2,7 +2,9 @@ package options
 
 // Build holds options of compose build.
 type Build struct {
-	NoCache bool
+	NoCache     bool
+	ForceRemove bool
+	Pull        bool
 }
 
 // Delete holds options of compose rm.

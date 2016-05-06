@@ -39,6 +39,14 @@ func BuildCommand(factory app.ProjectFactory) cli.Command {
 				Name:  "no-cache",
 				Usage: "Do not use cache when building the image",
 			},
+			cli.BoolFlag{
+				Name:  "force-rm",
+				Usage: "Always remove intermediate containers",
+			},
+			cli.BoolFlag{
+				Name:  "pull",
+				Usage: "Always attempt to pull a newer version of the image",
+			},
 		},
 	}
 }

@@ -152,6 +152,8 @@ func (s *Service) build(buildOptions options.Build) error {
 		Dockerfile:       s.Config().Dockerfile,
 		AuthConfigs:      s.context.AuthLookup.All(),
 		NoCache:          buildOptions.NoCache,
+		ForceRemove:      buildOptions.ForceRemove,
+		Pull:             buildOptions.Pull,
 	}
 	return builder.Build(s.imageName())
 }
