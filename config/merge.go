@@ -9,19 +9,11 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	yaml "github.com/cloudfoundry-incubator/candiedyaml"
+	"github.com/docker/docker/pkg/urlutil"
 	"github.com/docker/libcompose/utils"
 )
 
 var (
-	// ValidRemotes list the of valid prefixes that can be sent to Docker as a build remote location
-	// This is public for consumers of libcompose to use
-	ValidRemotes = []string{
-		"git://",
-		"git@github.com:",
-		"github.com",
-		"http:",
-		"https:",
-	}
 	noMerge = []string{
 		"links",
 		"volumes_from",
@@ -154,10 +146,8 @@ func resolveBuild(inFile string, serviceData RawService) (RawService, error) {
 		return serviceData, nil
 	}
 
-	for _, remote := range ValidRemotes {
-		if strings.HasPrefix(build, remote) {
-			return serviceData, nil
-		}
+	if IsValidRemote(build) {
+		return serviceData, nil
 	}
 
 	current := path.Dir(inFile)
@@ -325,4 +315,9 @@ func asString(obj interface{}) string {
 		return v
 	}
 	return ""
+}
+
+// IsValidRemote checks if the specified string is a valid remote (for builds)
+func IsValidRemote(remote string) bool {
+	return urlutil.IsGitURL(remote) || urlutil.IsURL(remote)
 }

@@ -170,3 +170,36 @@ test:
 		t.Fatal("Invalid restart policy", test.Restart)
 	}
 }
+
+func TestIsValidRemote(t *testing.T) {
+	gitUrls := []string{
+		"git://github.com/docker/docker",
+		"git@github.com:docker/docker.git",
+		"git@bitbucket.org:atlassianlabs/atlassian-docker.git",
+		"https://github.com/docker/docker.git",
+		"http://github.com/docker/docker.git",
+		"http://github.com/docker/docker.git#branch",
+		"http://github.com/docker/docker.git#:dir",
+	}
+	incompleteGitUrls := []string{
+		"github.com/docker/docker",
+	}
+	invalidGitUrls := []string{
+		"http://github.com/docker/docker.git:#branch",
+	}
+	for _, url := range gitUrls {
+		if !IsValidRemote(url) {
+			t.Fatalf("%q should have been a valid remote", url)
+		}
+	}
+	for _, url := range incompleteGitUrls {
+		if !IsValidRemote(url) {
+			t.Fatalf("%q should have been a valid remote", url)
+		}
+	}
+	for _, url := range invalidGitUrls {
+		if !IsValidRemote(url) {
+			t.Fatalf("%q should have been a valid remote", url)
+		}
+	}
+}
