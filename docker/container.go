@@ -30,12 +30,6 @@ import (
 	util "github.com/docker/libcompose/utils"
 )
 
-// DefaultTag is the name of the default tag of an image.
-const DefaultTag = "latest"
-
-// ComposeVersion is name of docker-compose.yml file syntax supported version
-const ComposeVersion = "1.5.0"
-
 // Container holds information about a docker container and the service it is tied on.
 // It implements Service interface by encapsulating a EmptyService.
 type Container struct {

@@ -8,6 +8,9 @@ import (
 	"github.com/docker/libcompose/project"
 )
 
+// ComposeVersion is name of docker-compose.yml file syntax supported version
+const ComposeVersion = "1.5.0"
+
 // NewProject creates a Project with the specified context.
 func NewProject(context *Context) (project.APIProject, error) {
 	if context.ResourceLookup == nil {
