@@ -31,20 +31,25 @@ import (
 )
 
 // Container holds information about a docker container and the service it is tied on.
-// It implements Service interface by encapsulating a EmptyService.
 type Container struct {
-	project.EmptyService
+	name          string
+	eventNotifier events.Notifier
+	client        client.APIClient
 
-	name    string
+	// FIXME(vdemeester) Remove this dependency
 	service *Service
-	client  client.APIClient
 }
 
 // NewContainer creates a container struct with the specified docker client, name and service.
 func NewContainer(client client.APIClient, name string, service *Service) *Container {
 	return &Container{
-		client:  client,
-		name:    name,
+		client: client,
+		name:   name,
+
+		// TODO(vdemeester) Move these to arguments
+		eventNotifier: service.context.Project,
+
+		// TODO(vdemeester) Remove this dependency
 		service: service,
 	}
 }
@@ -179,7 +184,7 @@ func (c *Container) CreateWithOverride(imageName string, configOverride *config.
 		if err != nil {
 			return nil, err
 		}
-		c.service.context.Project.Notify(events.ContainerCreated, c.service.Name(), map[string]string{
+		c.eventNotifier.Notify(events.ContainerCreated, c.service.Name(), map[string]string{
 			"name": c.Name(),
 		})
 	}
@@ -398,7 +403,7 @@ func (c *Container) Start(container *types.ContainerJSON) error {
 		logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
 		return err
 	}
-	c.service.context.Project.Notify(events.ContainerStarted, c.service.Name(), map[string]string{
+	c.eventNotifier.Notify(events.ContainerStarted, c.service.Name(), map[string]string{
 		"name": c.Name(),
 	})
 	return nil
