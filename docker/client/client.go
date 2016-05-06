@@ -1,4 +1,4 @@
-package docker
+package client
 
 import (
 	"fmt"
@@ -34,8 +34,8 @@ func init() {
 	}
 }
 
-// ClientOpts holds docker client options (host, tls, ..)
-type ClientOpts struct {
+// Options holds docker client options (host, tls, ..)
+type Options struct {
 	TLS        bool
 	TLSVerify  bool
 	TLSOptions tlsconfig.Options
@@ -44,8 +44,8 @@ type ClientOpts struct {
 	APIVersion string
 }
 
-// CreateClient creates a docker client based on the specified options.
-func CreateClient(c ClientOpts) (client.APIClient, error) {
+// Create creates a docker client based on the specified options.
+func Create(c Options) (client.APIClient, error) {
 	if c.Host == "" {
 		if os.Getenv("DOCKER_API_VERSION") == "" {
 			os.Setenv("DOCKER_API_VERSION", DefaultAPIVersion)
@@ -95,7 +95,9 @@ func CreateClient(c ClientOpts) (client.APIClient, error) {
 			return nil, err
 		}
 
-		sockets.ConfigureTransport(tr, proto, addr)
+		if err := sockets.ConfigureTransport(tr, proto, addr); err != nil {
+			return nil, err
+		}
 
 		httpClient = &http.Client{
 			Transport: tr,

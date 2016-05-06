@@ -15,6 +15,7 @@ import (
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/libcompose/docker"
+	lclient "github.com/docker/libcompose/docker/client"
 
 	. "gopkg.in/check.v1"
 )
@@ -149,7 +150,7 @@ func (s *CliSuite) createCommand(c *C, projectName, command string, argsAndInput
 }
 
 func GetClient(c *C) client.APIClient {
-	client, err := docker.CreateClient(docker.ClientOpts{})
+	client, err := lclient.Create(lclient.Options{})
 
 	c.Assert(err, IsNil)
 
