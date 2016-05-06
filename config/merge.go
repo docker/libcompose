@@ -7,7 +7,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	yaml "github.com/cloudfoundry-incubator/candiedyaml"
 	"github.com/docker/libcompose/utils"
 )
@@ -48,7 +47,8 @@ func MergeServices(existingServices *Configs, environmentLookup EnvironmentLooku
 	for name, data := range datas {
 		data, err := parse(resourceLookup, environmentLookup, file, data, datas)
 		if err != nil {
-			logrus.Errorf("Failed to parse service %s: %v", name, err)
+			// logrus.Errorf("Failed to parse service %s: %v", name, err)
+			// FIXME(vdemeester) wrap error
 			return nil, err
 		}
 
@@ -216,7 +216,8 @@ func parse(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup, i
 	} else {
 		bytes, resolved, err := resourceLookup.Lookup(file, inFile)
 		if err != nil {
-			logrus.Errorf("Failed to lookup file %s: %v", file, err)
+			// logrus.Errorf("Failed to lookup file %s: %v", file, err)
+			// FIXME(vdemeester) wrap error
 			return nil, err
 		}
 
@@ -248,7 +249,7 @@ func parse(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup, i
 
 	baseService = clone(baseService)
 
-	logrus.Debugf("Merging %#v, %#v", baseService, serviceData)
+	// logrus.Debugf("Merging %#v, %#v", baseService, serviceData)
 
 	for _, k := range noMerge {
 		if _, ok := baseService[k]; ok {
@@ -262,7 +263,7 @@ func parse(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup, i
 
 	baseService = mergeConfig(baseService, serviceData)
 
-	logrus.Debugf("Merged result %#v", baseService)
+	// logrus.Debugf("Merged result %#v", baseService)
 
 	return baseService, nil
 }

@@ -9,7 +9,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/logger"
 )
@@ -26,9 +25,10 @@ type Context struct {
 	ServiceFactory      ServiceFactory
 	EnvironmentLookup   config.EnvironmentLookup
 	ResourceLookup      config.ResourceLookup
-	LoggerFactory       logger.Factory
+	LoggerFactory       logger.LogFormatterFactory
 	IgnoreMissingConfig bool
 	Project             *Project
+	Logger              logger.Logger
 }
 
 func (c *Context) readComposeFiles() error {
@@ -36,13 +36,13 @@ func (c *Context) readComposeFiles() error {
 		return nil
 	}
 
-	logrus.Debugf("Opening compose files: %s", strings.Join(c.ComposeFiles, ","))
+	c.Logger.Debugf("Opening compose files: %s", strings.Join(c.ComposeFiles, ","))
 
 	// Handle STDIN (`-f -`)
 	if len(c.ComposeFiles) == 1 && c.ComposeFiles[0] == "-" {
 		composeBytes, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
-			logrus.Errorf("Failed to read compose file from stdin: %v", err)
+			c.Logger.Errorf("Failed to read compose file from stdin: %v", err)
 			return err
 		}
 		c.ComposeBytes = [][]byte{composeBytes}
@@ -52,11 +52,11 @@ func (c *Context) readComposeFiles() error {
 	for _, composeFile := range c.ComposeFiles {
 		composeBytes, err := ioutil.ReadFile(composeFile)
 		if err != nil && !os.IsNotExist(err) {
-			logrus.Errorf("Failed to open the compose file: %s", composeFile)
+			c.Logger.Errorf("Failed to open the compose file: %s", composeFile)
 			return err
 		}
 		if err != nil && !c.IgnoreMissingConfig {
-			logrus.Errorf("Failed to find the compose file: %s", composeFile)
+			c.Logger.Errorf("Failed to find the compose file: %s", composeFile)
 			return err
 		}
 		c.ComposeBytes = append(c.ComposeBytes, composeBytes)
@@ -100,7 +100,7 @@ func (c *Context) lookupProjectName() (string, error) {
 
 	f, err := filepath.Abs(file)
 	if err != nil {
-		logrus.Errorf("Failed to get absolute directory for: %s", file)
+		c.Logger.Errorf("Failed to get absolute directory for: %s", file)
 		return "", err
 	}
 

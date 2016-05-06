@@ -1,8 +1,7 @@
 package docker
 
 import (
-	"github.com/Sirupsen/logrus"
-
+	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/lookup"
 	"github.com/docker/libcompose/project"
 )
@@ -27,6 +26,13 @@ func NewProject(context *Context) (project.APIProject, error) {
 		}
 	}
 
+	var log logger.Logger = &logger.DefaultLogger{}
+	if context.Logger != nil {
+		log = context.Logger
+	} else {
+		context.Logger = log
+	}
+
 	if context.ClientFactory == nil {
 		factory, err := NewDefaultClientFactory(ClientOpts{})
 		if err != nil {
@@ -35,7 +41,7 @@ func NewProject(context *Context) (project.APIProject, error) {
 		context.ClientFactory = factory
 	}
 
-	p := project.NewProject(&context.Context)
+	p := project.NewProject(&context.Context, log)
 
 	err := p.Parse()
 	if err != nil {
@@ -43,7 +49,7 @@ func NewProject(context *Context) (project.APIProject, error) {
 	}
 
 	if err = context.open(); err != nil {
-		logrus.Errorf("Failed to open project %s: %v", p.Name, err)
+		log.Errorf("Failed to open project %s: %v", p.Name, err)
 		return nil, err
 	}
 

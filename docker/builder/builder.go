@@ -10,7 +10,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/builder"
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/archive"
@@ -57,8 +56,6 @@ func (d *DaemonBuilder) Build(imageName string) error {
 	progressOutput := streamformatter.NewStreamFormatter().NewProgressOutput(progBuff, true)
 
 	var body io.Reader = progress.NewProgressReader(ctx, progressOutput, 0, "", "Sending build context to Docker daemon")
-
-	logrus.Infof("Building %s...", imageName)
 
 	outFd, isTerminalOut := term.GetFdInfo(os.Stdout)
 
@@ -143,7 +140,6 @@ func createTar(contextDirectory, dockerfile string) (io.ReadCloser, error) {
 		if !os.IsNotExist(err) {
 			return nil, err
 		}
-		logrus.Warnf("Error while reading .dockerignore (%s) : %s", dockerIgnorePath, err.Error())
 		excludes = make([]string, 0)
 	} else {
 		excludes, err = dockerignore.ReadAll(dockerIgnore)

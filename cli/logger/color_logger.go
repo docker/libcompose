@@ -9,7 +9,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-// ColorLoggerFactory implements logger.Factory interface using ColorLogger.
+// ColorLoggerFactory implements logger.LogFormatterFactory interface using ColorLogger.
 type ColorLoggerFactory struct {
 	maxLength int
 	tty       bool
@@ -30,7 +30,7 @@ func NewColorLoggerFactory() *ColorLoggerFactory {
 }
 
 // Create implements logger.Factory.Create.
-func (c *ColorLoggerFactory) Create(name string) logger.Logger {
+func (c *ColorLoggerFactory) Create(name string) logger.LogFormatter {
 	if c.maxLength < len(name) {
 		c.maxLength = len(name)
 	}

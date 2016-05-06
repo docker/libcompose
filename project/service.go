@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/docker/libcompose/config"
+	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project/options"
 )
 
@@ -49,7 +50,7 @@ var (
 // ServiceFactory is an interface factory to create Service object for the specified
 // project, with the specified name and service configuration.
 type ServiceFactory interface {
-	Create(project *Project, name string, serviceConfig *config.ServiceConfig) (Service, error)
+	Create(project *Project, name string, serviceConfig *config.ServiceConfig, log logger.Logger) (Service, error)
 }
 
 // ServiceRelationshipType defines the type of service relationship.

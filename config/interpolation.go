@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
-
-	"github.com/Sirupsen/logrus"
 )
 
 func isNum(c uint8) bool {
@@ -145,7 +143,7 @@ func Interpolate(environmentLookup EnvironmentLookup, config *RawServiceMap) err
 				values := environmentLookup.Lookup(s, k, nil)
 
 				if len(values) == 0 {
-					logrus.Warnf("The %s variable is not set. Substituting a blank string.", s)
+					// logrus.Warnf("The %s variable is not set. Substituting a blank string.", s)
 					return ""
 				}
 
