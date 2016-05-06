@@ -3,6 +3,7 @@ package docker
 import (
 	"github.com/Sirupsen/logrus"
 
+	"github.com/docker/libcompose/docker/client"
 	"github.com/docker/libcompose/lookup"
 	"github.com/docker/libcompose/project"
 )
@@ -28,7 +29,7 @@ func NewProject(context *Context) (project.APIProject, error) {
 	}
 
 	if context.ClientFactory == nil {
-		factory, err := NewDefaultClientFactory(ClientOpts{})
+		factory, err := client.NewDefaultFactory(client.Options{})
 		if err != nil {
 			return nil, err
 		}
