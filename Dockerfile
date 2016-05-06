@@ -9,17 +9,9 @@ RUN apt-get update && \
     easy_install pip && pip install virtualenv
 
 # Install build dependencies
-RUN go get github.com/mitchellh/gox && \
-    go get github.com/aktau/github-release && \
+RUN go get github.com/aktau/github-release && \
     go get golang.org/x/tools/cmd/cover && \
     go get github.com/golang/lint/golint
-
-# Compile Go for cross compilation
-ENV DOCKER_CROSSPLATFORMS \
-	linux/386 linux/arm \
-	darwin/amd64 darwin/386 \
-	freebsd/amd64 freebsd/386 freebsd/arm \
-	windows/amd64 windows/386
 
 # Which docker version to test on and what default one to use
 ENV DOCKER_VERSIONS 1.9.1 1.10.3 1.11.0
