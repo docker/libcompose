@@ -98,7 +98,9 @@ func ProjectDown(p project.APIProject, c *cli.Context) error {
 // ProjectBuild builds or rebuilds services.
 func ProjectBuild(p project.APIProject, c *cli.Context) error {
 	config := options.Build{
-		NoCache: c.Bool("no-cache"),
+		NoCache:     c.Bool("no-cache"),
+		ForceRemove: c.Bool("force-rm"),
+		Pull:        c.Bool("pull"),
 	}
 	err := p.Build(config, c.Args()...)
 	if err != nil {
