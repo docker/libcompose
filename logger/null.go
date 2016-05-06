@@ -12,7 +12,7 @@ func (n *NullLogger) Out(_ []byte) {
 func (n *NullLogger) Err(_ []byte) {
 }
 
-// Create implements logger.Factory and returns a NullLogger.
-func (n *NullLogger) Create(_ string) Logger {
+// Create implements logger.LogFormatterFactory and returns a NullLogger.
+func (n *NullLogger) Create(_ string) LogFormatter {
 	return &NullLogger{}
 }

@@ -6,7 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/config"
+	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project/options"
 	"github.com/docker/libcompose/yaml"
 	"github.com/stretchr/testify/assert"
@@ -46,7 +48,7 @@ func (t *TestService) DependentServices() []ServiceRelationship {
 	return nil
 }
 
-func (t *TestServiceFactory) Create(project *Project, name string, serviceConfig *config.ServiceConfig) (Service, error) {
+func (t *TestServiceFactory) Create(project *Project, name string, serviceConfig *config.ServiceConfig, logger logger.Logger) (Service, error) {
 	return &TestService{
 		factory: t,
 		config:  serviceConfig,
@@ -61,7 +63,7 @@ func TestTwoCall(t *testing.T) {
 
 	p := NewProject(&Context{
 		ServiceFactory: factory,
-	})
+	}, logrus.New())
 	p.Configs = config.NewConfigs()
 	p.Configs.Add("foo", &config.ServiceConfig{})
 
@@ -83,7 +85,7 @@ func TestParseWithBadContent(t *testing.T) {
 		ComposeBytes: [][]byte{
 			[]byte("garbage"),
 		},
-	})
+	}, logrus.New())
 
 	err := p.Parse()
 	if err == nil {
@@ -100,7 +102,7 @@ func TestParseWithGoodContent(t *testing.T) {
 		ComposeBytes: [][]byte{
 			[]byte("not-garbage:\n  image: foo"),
 		},
-	})
+	}, logrus.New())
 
 	err := p.Parse()
 	if err != nil {
@@ -123,7 +125,7 @@ func TestEnvironmentResolve(t *testing.T) {
 	p := NewProject(&Context{
 		ServiceFactory:    factory,
 		EnvironmentLookup: &TestEnvironmentLookup{},
-	})
+	}, logrus.New())
 	p.Configs = config.NewConfigs()
 	p.Configs.Add("foo", &config.ServiceConfig{
 		Environment: yaml.MaporEqualSlice([]string{
@@ -166,7 +168,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 
 	p := NewProject(&Context{
 		ComposeBytes: [][]byte{configOne, configTwo},
-	})
+	}, logrus.New())
 
 	err := p.Parse()
 
@@ -179,7 +181,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 
 	p = NewProject(&Context{
 		ComposeBytes: [][]byte{configTwo, configOne},
-	})
+	}, logrus.New())
 
 	err = p.Parse()
 
@@ -192,7 +194,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 
 	p = NewProject(&Context{
 		ComposeBytes: [][]byte{configOne, configTwo, configThree},
-	})
+	}, logrus.New())
 
 	err = p.Parse()
 

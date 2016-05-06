@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project/events"
@@ -27,13 +26,15 @@ type Project struct {
 	upCount        int
 	listeners      []chan<- events.Event
 	hasListeners   bool
+	log            logger.Logger
 }
 
 // NewProject creates a new project with the specified context.
-func NewProject(context *Context) *Project {
+func NewProject(context *Context, log logger.Logger) *Project {
 	p := &Project{
 		context: context,
 		Configs: config.NewConfigs(),
+		log:     log,
 	}
 
 	if context.LoggerFactory == nil {
@@ -109,7 +110,7 @@ func (p *Project) CreateService(name string) (Service, error) {
 		config.Environment = parsedEnv
 	}
 
-	return p.context.ServiceFactory.Create(p, name, &config)
+	return p.context.ServiceFactory.Create(p, name, &config, p.log)
 }
 
 // AddConfig adds the specified service config for the specified name.
@@ -133,7 +134,7 @@ func (p *Project) load(file string, bytes []byte) error {
 	configs := make(map[string]*config.ServiceConfig)
 	configs, err := config.MergeServices(p.Configs, p.context.EnvironmentLookup, p.context.ResourceLookup, file, bytes)
 	if err != nil {
-		log.Errorf("Could not parse config for project %s : %v", p.Name, err)
+		p.log.Errorf("Could not parse config for project %s : %v", p.Name, err)
 		return err
 	}
 
@@ -315,7 +316,7 @@ func (p *Project) Scale(timeout int, servicesScale map[string]int) error {
 
 	for _, name := range order {
 		scale := servicesScale[name]
-		log.Infof("Setting scale %s=%d...", name, scale)
+		p.log.Infof("Setting scale %s=%d...", name, scale)
 		err := services[name].Scale(scale, timeout)
 		if err != nil {
 			return fmt.Errorf("Failed to set the scale %s=%d: %v", name, scale, err)
@@ -346,12 +347,12 @@ func (p *Project) listStoppedContainers(services ...string) ([]string, error) {
 			for _, container := range containers {
 				running, innerErr := container.IsRunning()
 				if innerErr != nil {
-					log.Error(innerErr)
+					p.log.Error(innerErr)
 				}
 				if !running {
 					containerID, innerErr := container.ID()
 					if innerErr != nil {
-						log.Error(innerErr)
+						p.log.Error(innerErr)
 					}
 					stoppedContainers = append(stoppedContainers, containerID)
 				}
@@ -448,18 +449,18 @@ func (p *Project) startService(wrappers map[string]*serviceWrapper, history []st
 	for _, dep := range wrapper.service.DependentServices() {
 		target := wrappers[dep.Target]
 		if target == nil {
-			log.Errorf("Failed to find %s", dep.Target)
+			p.log.Errorf("Failed to find %s", dep.Target)
 			continue
 		}
 
 		if utils.Contains(history, dep.Target) {
 			cycle := strings.Join(append(history, dep.Target), "->")
 			if dep.Optional {
-				log.Debugf("Ignoring cycle for %s", cycle)
+				p.log.Debugf("Ignoring cycle for %s", cycle)
 				wrapper.IgnoreDep(dep.Target)
 				if cycleAction != nil {
 					var err error
-					log.Debugf("Running cycle action for %s", cycle)
+					p.log.Debugf("Running cycle action for %s", cycle)
 					err = cycleAction(target.service)
 					if err != nil {
 						return err
@@ -479,7 +480,7 @@ func (p *Project) startService(wrappers map[string]*serviceWrapper, history []st
 	}
 
 	if isSelected(wrapper, selected) {
-		log.Debugf("Launching action for %s", wrapper.name)
+		p.log.Debugf("Launching action for %s", wrapper.name)
 		go action(wrapper, wrappers)
 	} else {
 		wrapper.Ignore()
@@ -532,7 +533,7 @@ func (p *Project) traverse(start bool, selected map[string]bool, wrappers map[st
 		if err := wrapper.Wait(); err == ErrRestart {
 			restart = true
 		} else if err != nil {
-			log.Errorf("Failed to start: %s : %v", wrapper.name, err)
+			p.log.Errorf("Failed to start: %s : %v", wrapper.name, err)
 			if firstError == nil {
 				firstError = err
 			}
@@ -542,7 +543,7 @@ func (p *Project) traverse(start bool, selected map[string]bool, wrappers map[st
 	if restart {
 		if p.ReloadCallback != nil {
 			if err := p.ReloadCallback(); err != nil {
-				log.Errorf("Failed calling callback: %v", err)
+				p.log.Errorf("Failed calling callback: %v", err)
 			}
 		}
 		return p.traverse(false, selected, wrappers, action, cycleAction)

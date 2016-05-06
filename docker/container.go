@@ -12,7 +12,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/promise"
 	"github.com/docker/docker/pkg/stdcopy"
@@ -30,9 +29,6 @@ import (
 	util "github.com/docker/libcompose/utils"
 )
 
-// DefaultTag is the name of the default tag of an image.
-const DefaultTag = "latest"
-
 // ComposeVersion is name of docker-compose.yml file syntax supported version
 const ComposeVersion = "1.5.0"
 
@@ -44,14 +40,16 @@ type Container struct {
 	name    string
 	service *Service
 	client  client.APIClient
+	logger  logger.Logger
 }
 
 // NewContainer creates a container struct with the specified docker client, name and service.
-func NewContainer(client client.APIClient, name string, service *Service) *Container {
+func NewContainer(client client.APIClient, name string, service *Service, log logger.Logger) *Container {
 	return &Container{
 		client:  client,
 		name:    name,
 		service: service,
+		logger:  log,
 	}
 }
 
@@ -118,7 +116,8 @@ func name(names []string) string {
 func getContainerNumber(c *Container) string {
 	containers, err := c.service.collectContainers()
 	if err != nil {
-		logrus.Errorf("Unable to collect the containers from service")
+		// FIXME(vdemeester) container should not depend on services
+		// c.logger.Errorf("Unable to collect the containers from service")
 		return "1"
 	}
 	// Returns container count + 1
@@ -140,9 +139,9 @@ func (c *Container) Recreate(imageName string) (*types.ContainerJSON, error) {
 
 	name := container.Name[1:]
 	newName := fmt.Sprintf("%s_%s", name, container.ID[:12])
-	logrus.Debugf("Renaming %s => %s", name, newName)
+	c.logger.Debugf("Renaming %s => %s", name, newName)
 	if err := c.client.ContainerRename(context.Background(), container.ID, newName); err != nil {
-		logrus.Errorf("Failed to rename old container %s", c.name)
+		c.logger.Errorf("Failed to rename old container %s", c.name)
 		return nil, err
 	}
 
@@ -150,16 +149,16 @@ func (c *Container) Recreate(imageName string) (*types.ContainerJSON, error) {
 	if err != nil {
 		return nil, err
 	}
-	logrus.Debugf("Created replacement container %s", newContainer.ID)
+	c.logger.Debugf("Created replacement container %s", newContainer.ID)
 
 	if err := c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
 		Force:         true,
 		RemoveVolumes: false,
 	}); err != nil {
-		logrus.Errorf("Failed to remove old container %s", c.name)
+		c.logger.Errorf("Failed to remove old container %s", c.name)
 		return nil, err
 	}
-	logrus.Debugf("Removed old container %s %s", c.name, container.ID)
+	c.logger.Debugf("Removed old container %s %s", c.name, container.ID)
 
 	return newContainer, nil
 }
@@ -320,7 +319,7 @@ func (c *Container) Run(imageName string, configOverride *config.ServiceConfig) 
 	}
 
 	if err := <-errCh; err != nil {
-		logrus.Debugf("Error hijack: %s", err)
+		c.logger.Debugf("Error hijack: %s", err)
 		return -1, err
 	}
 
@@ -343,7 +342,7 @@ func holdHijackedConnection(tty bool, inputStream io.ReadCloser, outputStream, e
 			} else {
 				_, err = stdcopy.StdCopy(outputStream, errorStream, resp.Reader)
 			}
-			logrus.Debugf("[hijack] End of stdout")
+			// c.logger.Debugf("[hijack] End of stdout")
 			receiveStdout <- err
 		}()
 	}
@@ -352,11 +351,11 @@ func holdHijackedConnection(tty bool, inputStream io.ReadCloser, outputStream, e
 	go func() {
 		if inputStream != nil {
 			io.Copy(resp.Conn, inputStream)
-			logrus.Debugf("[hijack] End of stdin")
+			// c.logger.Debugf("[hijack] End of stdin")
 		}
 
 		if err := resp.CloseWrite(); err != nil {
-			logrus.Debugf("Couldn't send EOF: %s", err)
+			// c.logger.Debugf("Couldn't send EOF: %s", err)
 		}
 		close(stdinDone)
 	}()
@@ -364,13 +363,13 @@ func holdHijackedConnection(tty bool, inputStream io.ReadCloser, outputStream, e
 	select {
 	case err := <-receiveStdout:
 		if err != nil {
-			logrus.Debugf("Error receiveStdout: %s", err)
+			// c.logger.Debugf("Error receiveStdout: %s", err)
 			return err
 		}
 	case <-stdinDone:
 		if outputStream != nil || errorStream != nil {
 			if err := <-receiveStdout; err != nil {
-				logrus.Debugf("Error receiveStdout: %s", err)
+				// c.logger.Debugf("Error receiveStdout: %s", err)
 				return err
 			}
 		}
@@ -399,9 +398,9 @@ func (c *Container) Up(imageName string) error {
 
 // Start the specified container with the specified host config
 func (c *Container) Start(container *types.ContainerJSON) error {
-	logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Starting container")
+	c.logger.Debugf("Starting container: container.ID: %s, c.name: %s", container.ID, c.name)
 	if err := c.client.ContainerStart(context.Background(), container.ID); err != nil {
-		logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
+		c.logger.Debugf("Failed to start container: container.ID: %s, c.name: %s", container.ID, c.name)
 		return err
 	}
 	c.service.context.Project.Notify(events.ContainerStarted, c.service.Name(), map[string]string{
@@ -419,25 +418,25 @@ func (c *Container) OutOfSync(imageName string) (bool, error) {
 	}
 
 	if container.Config.Image != imageName {
-		logrus.Debugf("Images for %s do not match %s!=%s", c.name, container.Config.Image, imageName)
+		c.logger.Debugf("Images for %s do not match %s!=%s", c.name, container.Config.Image, imageName)
 		return true, nil
 	}
 
 	if container.Config.Labels[HASH.Str()] != c.getHash() {
-		logrus.Debugf("Hashes for %s do not match %s!=%s", c.name, container.Config.Labels[HASH.Str()], c.getHash())
+		c.logger.Debugf("Hashes for %s do not match %s!=%s", c.name, container.Config.Labels[HASH.Str()], c.getHash())
 		return true, nil
 	}
 
 	image, _, err := c.client.ImageInspectWithRaw(context.Background(), container.Config.Image, false)
 	if err != nil {
 		if client.IsErrImageNotFound(err) {
-			logrus.Debugf("Image %s do not exist, do not know if it's out of sync", container.Config.Image)
+			c.logger.Debugf("Image %s do not exist, do not know if it's out of sync", container.Config.Image)
 			return false, nil
 		}
 		return false, err
 	}
 
-	logrus.Debugf("Checking existing image name vs id: %s == %s", image.ID, container.Image)
+	c.logger.Debugf("Checking existing image name vs id: %s == %s", image.ID, container.Image)
 	return image.ID != container.Image, err
 }
 
@@ -494,12 +493,12 @@ func (c *Container) createContainer(imageName, oldContainer string, configOverri
 		configWrapper.HostConfig.Binds = util.Merge(configWrapper.HostConfig.Binds, volumeBinds(configWrapper.Config.Volumes, &info))
 	}
 
-	logrus.Debugf("Creating container %s %#v", c.name, configWrapper)
+	c.logger.Debugf("Creating container %s %#v", c.name, configWrapper)
 
 	container, err := c.client.ContainerCreate(context.Background(), configWrapper.Config, configWrapper.HostConfig, configWrapper.NetworkingConfig, c.name)
 	if err != nil {
 		if client.IsErrImageNotFound(err) {
-			logrus.Debugf("Not Found, pulling image %s", configWrapper.Config.Image)
+			c.logger.Debugf("Not Found, pulling image %s", configWrapper.Config.Image)
 			if err = c.pull(configWrapper.Config.Image); err != nil {
 				return nil, err
 			}
@@ -507,7 +506,7 @@ func (c *Container) createContainer(imageName, oldContainer string, configOverri
 				return nil, err
 			}
 		} else {
-			logrus.Debugf("Failed to create container %s: %v", c.name, err)
+			c.logger.Debugf("Failed to create container %s: %v", c.name, err)
 			return nil, err
 		}
 	}
@@ -657,7 +656,7 @@ func (c *Container) Log(follow bool) error {
 	} else {
 		_, err = stdcopy.StdCopy(&logger.Wrapper{Logger: l}, &logger.Wrapper{Logger: l, Err: true}, responseBody)
 	}
-	logrus.WithFields(logrus.Fields{"Logger": l, "err": err}).Debug("c.client.Logs() returned error")
+	c.logger.Debugf("c.client.Logs() returned error: logger:%s, err:%s", l, err)
 
 	return err
 }
@@ -689,7 +688,7 @@ func pullImage(client client.APIClient, service *Service, image string) error {
 	}
 	responseBody, err := client.ImagePull(context.Background(), distributionRef.String(), options)
 	if err != nil {
-		logrus.Errorf("Failed to pull image %s: %v", image, err)
+		// c.logger.Errorf("Failed to pull image %s: %v", image, err)
 		return err
 	}
 	defer responseBody.Close()

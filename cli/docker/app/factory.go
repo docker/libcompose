@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/cli/logger"
 	"github.com/docker/libcompose/docker"
@@ -19,6 +20,7 @@ type ProjectFactory struct {
 func (p *ProjectFactory) Create(c *cli.Context) (project.APIProject, error) {
 	context := &docker.Context{}
 	context.LoggerFactory = logger.NewColorLoggerFactory()
+	context.Logger = logrus.New()
 	Populate(context, c)
 
 	context.ComposeFiles = c.GlobalStringSlice("file")

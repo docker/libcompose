@@ -6,11 +6,11 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/docker/builder"
+	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/options"
 	"github.com/docker/libcompose/utils"
@@ -21,14 +21,16 @@ type Service struct {
 	name          string
 	serviceConfig *config.ServiceConfig
 	context       *Context
+	logger        logger.Logger
 }
 
 // NewService creates a service
-func NewService(name string, serviceConfig *config.ServiceConfig, context *Context) *Service {
+func NewService(name string, serviceConfig *config.ServiceConfig, context *Context, log logger.Logger) *Service {
 	return &Service{
 		name:          name,
 		serviceConfig: serviceConfig,
 		context:       context,
+		logger:        log,
 	}
 }
 
@@ -82,7 +84,7 @@ func (s *Service) collectContainers() ([]*Container, error) {
 	for _, container := range containers {
 		// Compose add "/" before name, so Name[1] will store actaul name.
 		name := strings.SplitAfter(container.Names[0], "/")
-		result = append(result, NewContainer(client, name[1], s))
+		result = append(result, NewContainer(client, name[1], s, s.logger))
 	}
 
 	return result, nil
@@ -155,6 +157,7 @@ func (s *Service) build(buildOptions options.Build) error {
 		ForceRemove:      buildOptions.ForceRemove,
 		Pull:             buildOptions.Pull,
 	}
+	s.logger.Infof("Building %s...", s.imageName())
 	return builder.Build(s.imageName())
 }
 
@@ -170,7 +173,7 @@ func (s *Service) constructContainers(imageName string, count int) ([]*Container
 
 	if s.serviceConfig.ContainerName != "" {
 		if count > 1 {
-			logrus.Warnf(`The "%s" service is using the custom container name "%s". Docker requires each container to have a unique name. Remove the custom name to scale the service.`, s.name, s.serviceConfig.ContainerName)
+			s.logger.Warnf(`The "%s" service is using the custom container name "%s". Docker requires each container to have a unique name. Remove the custom name to scale the service.`, s.name, s.serviceConfig.ContainerName)
 		}
 		namer = NewSingleNamer(s.serviceConfig.ContainerName)
 	} else {
@@ -182,16 +185,16 @@ func (s *Service) constructContainers(imageName string, count int) ([]*Container
 	for i := len(result); i < count; i++ {
 		containerName := namer.Next()
 
-		c := NewContainer(client, containerName, s)
+		c := NewContainer(client, containerName, s, s.logger)
 
 		dockerContainer, err := c.Create(imageName)
 		if err != nil {
 			return nil, err
 		}
 
-		logrus.Debugf("Created container %s: %v", dockerContainer.ID, dockerContainer.Name)
+		s.logger.Debugf("Created container %s: %v", dockerContainer.ID, dockerContainer.Name)
 
-		result = append(result, NewContainer(client, containerName, s))
+		result = append(result, NewContainer(client, containerName, s, s.logger))
 	}
 
 	return result, nil
@@ -230,7 +233,7 @@ func (s *Service) Run(commandParts []string) (int, error) {
 
 	containerName := namer.Next()
 
-	c := NewContainer(client, containerName, s)
+	c := NewContainer(client, containerName, s, s.logger)
 
 	return c.Run(imageName, &config.ServiceConfig{Command: commandParts, Tty: true, StdinOpen: true})
 }
@@ -266,7 +269,7 @@ func (s *Service) up(imageName string, create bool, options options.Up) error {
 		return err
 	}
 
-	logrus.Debugf("Found %d existing containers for service %s", len(containers), s.name)
+	s.logger.Debugf("Found %d existing containers for service %s", len(containers), s.name)
 
 	if len(containers) == 0 && create {
 		c, err := s.createOne(imageName)
@@ -296,13 +299,13 @@ func (s *Service) recreateIfNeeded(imageName string, c *Container, noRecreate, f
 		return err
 	}
 
-	logrus.WithFields(logrus.Fields{
-		"outOfSync":     outOfSync,
-		"ForceRecreate": forceRecreate,
-		"NoRecreate":    noRecreate}).Debug("Going to decide if recreate is needed")
+	s.logger.Debugf("Going to decide if recreate is needed based on the following attributes")
+	s.logger.Debug("outOfSync", outOfSync)
+	s.logger.Debug("forceRecreate", forceRecreate)
+	s.logger.Debug("NoRecreate", noRecreate)
 
 	if forceRecreate || outOfSync {
-		logrus.Infof("Recreating %s", s.name)
+		s.logger.Infof("Recreating %s", s.name)
 		if _, err := c.Recreate(imageName); err != nil {
 			return err
 		}
@@ -381,7 +384,7 @@ func (s *Service) Log(follow bool) error {
 // of related container to the service to run.
 func (s *Service) Scale(scale int, timeout int) error {
 	if s.specificiesHostPort() {
-		logrus.Warnf("The \"%s\" service specifies a port on the host. If multiple containers for this service are created on a single host, the port will clash.", s.Name())
+		s.logger.Warnf("The \"%s\" service specifies a port on the host. If multiple containers for this service are created on a single host, the port will clash.", s.Name())
 	}
 
 	foundCount := 0
