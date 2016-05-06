@@ -5,7 +5,6 @@ import (
 	"io"
 	"math"
 	"os"
-	"strconv"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -27,26 +26,42 @@ import (
 
 // Container holds information about a docker container and the service it is tied on.
 type Container struct {
-	name          string
-	eventNotifier events.Notifier
-	client        client.APIClient
+	name            string
+	serviceName     string
+	projectName     string
+	containerNumber int
+	oneOff          bool
+	eventNotifier   events.Notifier
+	loggerFactory   logger.Factory
+	client          client.APIClient
 
 	// FIXME(vdemeester) Remove this dependency
 	service *Service
 }
 
 // NewContainer creates a container struct with the specified docker client, name and service.
-func NewContainer(client client.APIClient, name string, service *Service) *Container {
+func NewContainer(client client.APIClient, name string, containerNumber int, service *Service) *Container {
 	return &Container{
-		client: client,
-		name:   name,
+		client:          client,
+		name:            name,
+		containerNumber: containerNumber,
 
 		// TODO(vdemeester) Move these to arguments
+		serviceName:   service.name,
+		projectName:   service.context.Project.Name,
 		eventNotifier: service.context.Project,
+		loggerFactory: service.context.LoggerFactory,
 
 		// TODO(vdemeester) Remove this dependency
 		service: service,
 	}
+}
+
+// NewOneOffContainer creates a "oneoff" container struct with the specified docker client, name and service.
+func NewOneOffContainer(client client.APIClient, name string, containerNumber int, service *Service) *Container {
+	c := NewContainer(client, name, containerNumber, service)
+	c.oneOff = true
+	return c
 }
 
 func (c *Container) findExisting() (*types.ContainerJSON, error) {
@@ -109,16 +124,6 @@ func name(names []string) string {
 	return current[1:]
 }
 
-func getContainerNumber(c *Container) string {
-	containers, err := c.service.collectContainers()
-	if err != nil {
-		logrus.Errorf("Unable to collect the containers from service")
-		return "1"
-	}
-	// Returns container count + 1
-	return strconv.Itoa(len(containers) + 1)
-}
-
 // Recreate will not refresh the container by means of relaxation and enjoyment,
 // just delete it and create a new one with the current configuration
 func (c *Container) Recreate(imageName string) (*types.ContainerJSON, error) {
@@ -179,7 +184,7 @@ func (c *Container) CreateWithOverride(imageName string, configOverride *config.
 		if err != nil {
 			return nil, err
 		}
-		c.eventNotifier.Notify(events.ContainerCreated, c.service.Name(), map[string]string{
+		c.eventNotifier.Notify(events.ContainerCreated, c.serviceName, map[string]string{
 			"name": c.Name(),
 		})
 	}
@@ -398,7 +403,7 @@ func (c *Container) Start(container *types.ContainerJSON) error {
 		logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
 		return err
 	}
-	c.eventNotifier.Notify(events.ContainerStarted, c.service.Name(), map[string]string{
+	c.eventNotifier.Notify(events.ContainerStarted, c.serviceName, map[string]string{
 		"name": c.Name(),
 	})
 	return nil
@@ -436,7 +441,7 @@ func (c *Container) OutOfSync(imageName string) (bool, error) {
 }
 
 func (c *Container) getHash() string {
-	return config.GetServiceHash(c.service.Name(), c.service.Config())
+	return config.GetServiceHash(c.serviceName, c.service.Config())
 }
 
 func volumeBinds(volumes map[string]struct{}, container *types.ContainerJSON) []string {
@@ -467,12 +472,16 @@ func (c *Container) createContainer(imageName, oldContainer string, configOverri
 		configWrapper.Config.Labels = map[string]string{}
 	}
 
-	configWrapper.Config.Labels[SERVICE.Str()] = c.service.name
-	configWrapper.Config.Labels[PROJECT.Str()] = c.service.context.Project.Name
+	oneOffString := "False"
+	if c.oneOff {
+		oneOffString = "True"
+	}
+
+	configWrapper.Config.Labels[SERVICE.Str()] = c.serviceName
+	configWrapper.Config.Labels[PROJECT.Str()] = c.projectName
 	configWrapper.Config.Labels[HASH.Str()] = c.getHash()
-	// libcompose run command not yet supported, so always "False"
-	configWrapper.Config.Labels[ONEOFF.Str()] = "False"
-	configWrapper.Config.Labels[NUMBER.Str()] = getContainerNumber(c)
+	configWrapper.Config.Labels[ONEOFF.Str()] = oneOffString
+	configWrapper.Config.Labels[NUMBER.Str()] = fmt.Sprint(c.containerNumber)
 	configWrapper.Config.Labels[VERSION.Str()] = ComposeVersion
 
 	err = c.populateAdditionalHostConfig(configWrapper.HostConfig)
@@ -616,8 +625,8 @@ func (c *Container) Log(follow bool) error {
 	}
 
 	// FIXME(vdemeester) update container struct to do less API calls
-	name := c.service.name + "_" + getContainerNumber(c)
-	l := c.service.context.LoggerFactory.Create(name)
+	name := fmt.Sprintf("%s_%d", c.service.name, c.containerNumber)
+	l := c.loggerFactory.Create(name)
 
 	options := types.ContainerLogsOptions{
 		ShowStdout: true,

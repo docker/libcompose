@@ -2,6 +2,7 @@ package docker
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -80,9 +81,13 @@ func (s *Service) collectContainers() ([]*Container, error) {
 	result := []*Container{}
 
 	for _, container := range containers {
+		containerNumber, err := strconv.Atoi(container.Labels[NUMBER.Str()])
+		if err != nil {
+			return nil, err
+		}
 		// Compose add "/" before name, so Name[1] will store actaul name.
 		name := strings.SplitAfter(container.Names[0], "/")
-		result = append(result, NewContainer(client, name[1], s))
+		result = append(result, NewContainer(client, name[1], containerNumber, s))
 	}
 
 	return result, nil
@@ -174,15 +179,16 @@ func (s *Service) constructContainers(imageName string, count int) ([]*Container
 		}
 		namer = NewSingleNamer(s.serviceConfig.ContainerName)
 	} else {
-		namer = NewNamer(client, s.context.Project.Name, s.name)
+		namer, err = NewNamer(client, s.context.Project.Name, s.name, false)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	defer namer.Close()
-
 	for i := len(result); i < count; i++ {
-		containerName := namer.Next()
+		containerName, containerNumber := namer.Next()
 
-		c := NewContainer(client, containerName, s)
+		c := NewContainer(client, containerName, containerNumber, s)
 
 		dockerContainer, err := c.Create(imageName)
 		if err != nil {
@@ -191,7 +197,7 @@ func (s *Service) constructContainers(imageName string, count int) ([]*Container
 
 		logrus.Debugf("Created container %s: %v", dockerContainer.ID, dockerContainer.Name)
 
-		result = append(result, NewContainer(client, containerName, s))
+		result = append(result, NewContainer(client, containerName, containerNumber, s))
 	}
 
 	return result, nil
@@ -225,12 +231,14 @@ func (s *Service) Run(commandParts []string) (int, error) {
 
 	client := s.context.ClientFactory.Create(s)
 
-	namer := NewNamer(client, s.context.Project.Name, s.name+"_run")
-	defer namer.Close()
+	namer, err := NewNamer(client, s.context.Project.Name, s.name, true)
+	if err != nil {
+		return -1, err
+	}
 
-	containerName := namer.Next()
+	containerName, containerNumber := namer.Next()
 
-	c := NewContainer(client, containerName, s)
+	c := NewOneOffContainer(client, containerName, containerNumber, s)
 
 	return c.Run(imageName, &config.ServiceConfig{Command: commandParts, Tty: true, StdinOpen: true})
 }
