@@ -18,6 +18,7 @@ import (
 	"github.com/docker/engine-api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/config"
+	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/events"
@@ -132,7 +133,7 @@ func (c *Container) Recreate(imageName string) (*types.ContainerJSON, error) {
 		return nil, err
 	}
 
-	hash := container.Config.Labels[HASH.Str()]
+	hash := container.Config.Labels[labels.HASH.Str()]
 	if hash == "" {
 		return nil, fmt.Errorf("Failed to find hash on old container: %s", container.Name)
 	}
@@ -422,8 +423,8 @@ func (c *Container) OutOfSync(imageName string) (bool, error) {
 		return true, nil
 	}
 
-	if container.Config.Labels[HASH.Str()] != c.getHash() {
-		logrus.Debugf("Hashes for %s do not match %s!=%s", c.name, container.Config.Labels[HASH.Str()], c.getHash())
+	if container.Config.Labels[labels.HASH.Str()] != c.getHash() {
+		logrus.Debugf("Hashes for %s do not match %s!=%s", c.name, container.Config.Labels[labels.HASH.Str()], c.getHash())
 		return true, nil
 	}
 
@@ -477,12 +478,12 @@ func (c *Container) createContainer(imageName, oldContainer string, configOverri
 		oneOffString = "True"
 	}
 
-	configWrapper.Config.Labels[SERVICE.Str()] = c.serviceName
-	configWrapper.Config.Labels[PROJECT.Str()] = c.projectName
-	configWrapper.Config.Labels[HASH.Str()] = c.getHash()
-	configWrapper.Config.Labels[ONEOFF.Str()] = oneOffString
-	configWrapper.Config.Labels[NUMBER.Str()] = fmt.Sprint(c.containerNumber)
-	configWrapper.Config.Labels[VERSION.Str()] = ComposeVersion
+	configWrapper.Config.Labels[labels.SERVICE.Str()] = c.serviceName
+	configWrapper.Config.Labels[labels.PROJECT.Str()] = c.projectName
+	configWrapper.Config.Labels[labels.HASH.Str()] = c.getHash()
+	configWrapper.Config.Labels[labels.ONEOFF.Str()] = oneOffString
+	configWrapper.Config.Labels[labels.NUMBER.Str()] = fmt.Sprint(c.containerNumber)
+	configWrapper.Config.Labels[labels.VERSION.Str()] = ComposeVersion
 
 	err = c.populateAdditionalHostConfig(configWrapper.HostConfig)
 	if err != nil {

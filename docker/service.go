@@ -12,6 +12,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/docker/builder"
+	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/options"
 	"github.com/docker/libcompose/utils"
@@ -73,7 +74,7 @@ func (s *Service) Create(options options.Create) error {
 
 func (s *Service) collectContainers() ([]*Container, error) {
 	client := s.context.ClientFactory.Create(s)
-	containers, err := GetContainersByFilter(client, SERVICE.Eq(s.name), PROJECT.Eq(s.context.Project.Name))
+	containers, err := GetContainersByFilter(client, labels.SERVICE.Eq(s.name), labels.PROJECT.Eq(s.context.Project.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +82,7 @@ func (s *Service) collectContainers() ([]*Container, error) {
 	result := []*Container{}
 
 	for _, container := range containers {
-		containerNumber, err := strconv.Atoi(container.Labels[NUMBER.Str()])
+		containerNumber, err := strconv.Atoi(container.Labels[labels.NUMBER.Str()])
 		if err != nil {
 			return nil, err
 		}

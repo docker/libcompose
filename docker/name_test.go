@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/docker/engine-api/types"
+	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/test"
 )
 
@@ -66,7 +67,7 @@ func TestDefaultNamerLabelNotANumber(t *testing.T) {
 		containers: []types.Container{
 			{
 				Labels: map[string]string{
-					ONEOFF.Str(): "IAmAString",
+					labels.ONEOFF.Str(): "IAmAString",
 				},
 			},
 		},
@@ -93,9 +94,9 @@ func TestDefaultNamer(t *testing.T) {
 			oneOff:      false,
 			containers:  []types.Container{},
 			expectedLabels: []string{
-				fmt.Sprintf("%s=", PROJECT.Str()),
-				fmt.Sprintf("%s=", SERVICE.Str()),
-				fmt.Sprintf("%s=False", ONEOFF.Str()),
+				fmt.Sprintf("%s=", labels.PROJECT.Str()),
+				fmt.Sprintf("%s=", labels.SERVICE.Str()),
+				fmt.Sprintf("%s=False", labels.ONEOFF.Str()),
 			},
 			expectedName:   "__1",
 			expectedNumber: 1,
@@ -106,9 +107,9 @@ func TestDefaultNamer(t *testing.T) {
 			oneOff:      false,
 			containers:  []types.Container{},
 			expectedLabels: []string{
-				fmt.Sprintf("%s=project", PROJECT.Str()),
-				fmt.Sprintf("%s=service", SERVICE.Str()),
-				fmt.Sprintf("%s=False", ONEOFF.Str()),
+				fmt.Sprintf("%s=project", labels.PROJECT.Str()),
+				fmt.Sprintf("%s=service", labels.SERVICE.Str()),
+				fmt.Sprintf("%s=False", labels.ONEOFF.Str()),
 			},
 			expectedName:   "project_service_1",
 			expectedNumber: 1,
@@ -120,14 +121,14 @@ func TestDefaultNamer(t *testing.T) {
 			containers: []types.Container{
 				{
 					Labels: map[string]string{
-						NUMBER.Str(): "1",
+						labels.NUMBER.Str(): "1",
 					},
 				},
 			},
 			expectedLabels: []string{
-				fmt.Sprintf("%s=project", PROJECT.Str()),
-				fmt.Sprintf("%s=service", SERVICE.Str()),
-				fmt.Sprintf("%s=False", ONEOFF.Str()),
+				fmt.Sprintf("%s=project", labels.PROJECT.Str()),
+				fmt.Sprintf("%s=service", labels.SERVICE.Str()),
+				fmt.Sprintf("%s=False", labels.ONEOFF.Str()),
 			},
 			expectedName:   "project_service_2",
 			expectedNumber: 2,
@@ -139,14 +140,14 @@ func TestDefaultNamer(t *testing.T) {
 			containers: []types.Container{
 				{
 					Labels: map[string]string{
-						NUMBER.Str(): "10",
+						labels.NUMBER.Str(): "10",
 					},
 				},
 			},
 			expectedLabels: []string{
-				fmt.Sprintf("%s=project", PROJECT.Str()),
-				fmt.Sprintf("%s=anotherservice", SERVICE.Str()),
-				fmt.Sprintf("%s=False", ONEOFF.Str()),
+				fmt.Sprintf("%s=project", labels.PROJECT.Str()),
+				fmt.Sprintf("%s=anotherservice", labels.SERVICE.Str()),
+				fmt.Sprintf("%s=False", labels.ONEOFF.Str()),
 			},
 			expectedName:   "project_anotherservice_11",
 			expectedNumber: 11,
