@@ -19,6 +19,7 @@ import (
 )
 
 func pullImage(client client.APIClient, service *Service, image string) error {
+	fmt.Fprintf(os.Stderr, "Pulling %s (%s)...\n", service.name, image)
 	distributionRef, err := reference.ParseNamed(image)
 	if err != nil {
 		return err
@@ -46,9 +47,9 @@ func pullImage(client client.APIClient, service *Service, image string) error {
 	}
 	defer responseBody.Close()
 
-	var writeBuff io.Writer = os.Stdout
+	var writeBuff io.Writer = os.Stderr
 
-	outFd, isTerminalOut := term.GetFdInfo(os.Stdout)
+	outFd, isTerminalOut := term.GetFdInfo(os.Stderr)
 
 	err = jsonmessage.DisplayJSONMessagesStream(responseBody, writeBuff, outFd, isTerminalOut, nil)
 	if err != nil {
