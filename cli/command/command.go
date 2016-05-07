@@ -206,7 +206,20 @@ func DownCommand(factory app.ProjectFactory) cli.Command {
 		Name:   "down",
 		Usage:  "Stop and remove containers, networks, images, and volumes",
 		Action: app.WithProject(factory, app.ProjectDown),
-		Flags:  []cli.Flag{},
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "volumes,v",
+				Usage: "Remove data volumes",
+			},
+			cli.StringFlag{
+				Name:  "rmi",
+				Usage: "Remove images, type may be one of: 'all' to remove all images, or 'local' to remove only images that don't have an custom name set by the `image` field",
+			},
+			cli.BoolFlag{
+				Name:  "remove-orphans",
+				Usage: "Remove containers for services not defined in the Compose file",
+			},
+		},
 	}
 }
 

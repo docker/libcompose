@@ -39,7 +39,8 @@ func NewProject(context *Context) (project.APIProject, error) {
 		context.ClientFactory = factory
 	}
 
-	p := project.NewProject(&context.Context)
+	// FIXME(vdemeester) Remove the context duplication ?
+	p := project.NewProject(context.ClientFactory, &context.Context)
 
 	err := p.Parse()
 	if err != nil {

@@ -18,6 +18,11 @@ import (
 	"github.com/docker/engine-api/types"
 )
 
+func removeImage(client client.APIClient, image string) error {
+	_, err := client.ImageRemove(context.Background(), image, types.ImageRemoveOptions{})
+	return err
+}
+
 func pullImage(client client.APIClient, service *Service, image string) error {
 	distributionRef, err := reference.ParseNamed(image)
 	if err != nil {

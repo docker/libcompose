@@ -59,7 +59,7 @@ func TestTwoCall(t *testing.T) {
 		Counts: map[string]int{},
 	}
 
-	p := NewProject(&Context{
+	p := NewProject(nil, &Context{
 		ServiceFactory: factory,
 	})
 	p.Configs = config.NewConfigs()
@@ -79,7 +79,7 @@ func TestTwoCall(t *testing.T) {
 }
 
 func TestParseWithBadContent(t *testing.T) {
-	p := NewProject(&Context{
+	p := NewProject(nil, &Context{
 		ComposeBytes: [][]byte{
 			[]byte("garbage"),
 		},
@@ -96,7 +96,7 @@ func TestParseWithBadContent(t *testing.T) {
 }
 
 func TestParseWithGoodContent(t *testing.T) {
-	p := NewProject(&Context{
+	p := NewProject(nil, &Context{
 		ComposeBytes: [][]byte{
 			[]byte("not-garbage:\n  image: foo"),
 		},
@@ -120,7 +120,7 @@ func TestEnvironmentResolve(t *testing.T) {
 		Counts: map[string]int{},
 	}
 
-	p := NewProject(&Context{
+	p := NewProject(nil, &Context{
 		ServiceFactory:    factory,
 		EnvironmentLookup: &TestEnvironmentLookup{},
 	})
@@ -164,7 +164,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
     ports:
       - 10000`)
 
-	p := NewProject(&Context{
+	p := NewProject(nil, &Context{
 		ComposeBytes: [][]byte{configOne, configTwo},
 	})
 
@@ -177,7 +177,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	assert.Equal(t, "multi", multipleConfig.ContainerName)
 	assert.Equal(t, []string{"8000", "9000"}, multipleConfig.Ports)
 
-	p = NewProject(&Context{
+	p = NewProject(nil, &Context{
 		ComposeBytes: [][]byte{configTwo, configOne},
 	})
 
@@ -190,7 +190,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	assert.Equal(t, "multi", multipleConfig.ContainerName)
 	assert.Equal(t, []string{"9000", "8000"}, multipleConfig.Ports)
 
-	p = NewProject(&Context{
+	p = NewProject(nil, &Context{
 		ComposeBytes: [][]byte{configOne, configTwo, configThree},
 	})
 

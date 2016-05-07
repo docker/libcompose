@@ -33,11 +33,6 @@ func (e *EmptyService) Stop(timeout int) error {
 	return nil
 }
 
-// Down implements Service.Down but does nothing.
-func (e *EmptyService) Down(options options.Down) error {
-	return nil
-}
-
 // Delete implements Service.Delete but does nothing.
 func (e *EmptyService) Delete(options options.Delete) error {
 	return nil
@@ -91,4 +86,9 @@ func (e *EmptyService) Unpause() error {
 // Run implements Service.Run but does nothing.
 func (e *EmptyService) Run(commandParts []string) (int, error) {
 	return 0, nil
+}
+
+// RemoveImage implements Service.RemoveImage but does nothing.
+func (e *EmptyService) RemoveImage(imageType options.ImageType) error {
+	return nil
 }
