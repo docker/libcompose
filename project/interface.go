@@ -7,6 +7,9 @@ import (
 
 // APIProject is an interface defining the methods a libcompose project should implement.
 type APIProject interface {
+	events.Notifier
+	events.Emitter
+
 	Build(options options.Build, sevice ...string) error
 	Create(options options.Create, services ...string) error
 	Delete(options options.Delete, services ...string) error
@@ -27,9 +30,4 @@ type APIProject interface {
 	Up(options options.Up, services ...string) error
 
 	Parse() error
-
-	// FIXME(vdemeester) should be moved outside this interface
-	// The listener/notify mecanism could/should be indenpendant from Project
-	AddListener(c chan<- events.Event)
-	Notify(eventType events.EventType, serviceName string, data map[string]string)
 }

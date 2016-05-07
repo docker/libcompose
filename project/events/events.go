@@ -5,6 +5,16 @@ import (
 	"fmt"
 )
 
+// Notifier defines the methods an event notifier should have.
+type Notifier interface {
+	Notify(eventType EventType, serviceName string, data map[string]string)
+}
+
+// Emitter defines the methods an event emitter should have.
+type Emitter interface {
+	AddListener(c chan<- Event)
+}
+
 // Event holds project-wide event informations.
 type Event struct {
 	EventType   EventType

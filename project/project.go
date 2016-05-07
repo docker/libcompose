@@ -551,6 +551,7 @@ func (p *Project) traverse(start bool, selected map[string]bool, wrappers map[st
 }
 
 // AddListener adds the specified listener to the project.
+// This implements implicitly events.Emitter.
 func (p *Project) AddListener(c chan<- events.Event) {
 	if !p.hasListeners {
 		for _, l := range p.listeners {
@@ -564,6 +565,7 @@ func (p *Project) AddListener(c chan<- events.Event) {
 }
 
 // Notify notifies all project listener with the specified eventType, service name and datas.
+// This implements implicitly events.Notifier interface.
 func (p *Project) Notify(eventType events.EventType, serviceName string, data map[string]string) {
 	if eventType == events.NoEvent {
 		return

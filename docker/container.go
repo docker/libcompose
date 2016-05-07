@@ -1,24 +1,18 @@
 package docker
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"math"
 	"os"
-	"strconv"
 	"strings"
 
 	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/promise"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/docker/pkg/term"
-	"github.com/docker/docker/reference"
-	"github.com/docker/docker/registry"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/container"
@@ -30,29 +24,44 @@ import (
 	util "github.com/docker/libcompose/utils"
 )
 
-// DefaultTag is the name of the default tag of an image.
-const DefaultTag = "latest"
-
-// ComposeVersion is name of docker-compose.yml file syntax supported version
-const ComposeVersion = "1.5.0"
-
 // Container holds information about a docker container and the service it is tied on.
-// It implements Service interface by encapsulating a EmptyService.
 type Container struct {
-	project.EmptyService
+	name            string
+	serviceName     string
+	projectName     string
+	containerNumber int
+	oneOff          bool
+	eventNotifier   events.Notifier
+	loggerFactory   logger.Factory
+	client          client.APIClient
 
-	name    string
+	// FIXME(vdemeester) Remove this dependency
 	service *Service
-	client  client.APIClient
 }
 
 // NewContainer creates a container struct with the specified docker client, name and service.
-func NewContainer(client client.APIClient, name string, service *Service) *Container {
+func NewContainer(client client.APIClient, name string, containerNumber int, service *Service) *Container {
 	return &Container{
-		client:  client,
-		name:    name,
+		client:          client,
+		name:            name,
+		containerNumber: containerNumber,
+
+		// TODO(vdemeester) Move these to arguments
+		serviceName:   service.name,
+		projectName:   service.context.Project.Name,
+		eventNotifier: service.context.Project,
+		loggerFactory: service.context.LoggerFactory,
+
+		// TODO(vdemeester) Remove this dependency
 		service: service,
 	}
+}
+
+// NewOneOffContainer creates a "oneoff" container struct with the specified docker client, name and service.
+func NewOneOffContainer(client client.APIClient, name string, containerNumber int, service *Service) *Container {
+	c := NewContainer(client, name, containerNumber, service)
+	c.oneOff = true
+	return c
 }
 
 func (c *Container) findExisting() (*types.ContainerJSON, error) {
@@ -115,16 +124,6 @@ func name(names []string) string {
 	return current[1:]
 }
 
-func getContainerNumber(c *Container) string {
-	containers, err := c.service.collectContainers()
-	if err != nil {
-		logrus.Errorf("Unable to collect the containers from service")
-		return "1"
-	}
-	// Returns container count + 1
-	return strconv.Itoa(len(containers) + 1)
-}
-
 // Recreate will not refresh the container by means of relaxation and enjoyment,
 // just delete it and create a new one with the current configuration
 func (c *Container) Recreate(imageName string) (*types.ContainerJSON, error) {
@@ -185,7 +184,7 @@ func (c *Container) CreateWithOverride(imageName string, configOverride *config.
 		if err != nil {
 			return nil, err
 		}
-		c.service.context.Project.Notify(events.ContainerCreated, c.service.Name(), map[string]string{
+		c.eventNotifier.Notify(events.ContainerCreated, c.serviceName, map[string]string{
 			"name": c.Name(),
 		})
 	}
@@ -404,7 +403,7 @@ func (c *Container) Start(container *types.ContainerJSON) error {
 		logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
 		return err
 	}
-	c.service.context.Project.Notify(events.ContainerStarted, c.service.Name(), map[string]string{
+	c.eventNotifier.Notify(events.ContainerStarted, c.serviceName, map[string]string{
 		"name": c.Name(),
 	})
 	return nil
@@ -442,7 +441,7 @@ func (c *Container) OutOfSync(imageName string) (bool, error) {
 }
 
 func (c *Container) getHash() string {
-	return config.GetServiceHash(c.service.Name(), c.service.Config())
+	return config.GetServiceHash(c.serviceName, c.service.Config())
 }
 
 func volumeBinds(volumes map[string]struct{}, container *types.ContainerJSON) []string {
@@ -473,12 +472,16 @@ func (c *Container) createContainer(imageName, oldContainer string, configOverri
 		configWrapper.Config.Labels = map[string]string{}
 	}
 
-	configWrapper.Config.Labels[SERVICE.Str()] = c.service.name
-	configWrapper.Config.Labels[PROJECT.Str()] = c.service.context.Project.Name
+	oneOffString := "False"
+	if c.oneOff {
+		oneOffString = "True"
+	}
+
+	configWrapper.Config.Labels[SERVICE.Str()] = c.serviceName
+	configWrapper.Config.Labels[PROJECT.Str()] = c.projectName
 	configWrapper.Config.Labels[HASH.Str()] = c.getHash()
-	// libcompose run command not yet supported, so always "False"
-	configWrapper.Config.Labels[ONEOFF.Str()] = "False"
-	configWrapper.Config.Labels[NUMBER.Str()] = getContainerNumber(c)
+	configWrapper.Config.Labels[ONEOFF.Str()] = oneOffString
+	configWrapper.Config.Labels[NUMBER.Str()] = fmt.Sprint(c.containerNumber)
 	configWrapper.Config.Labels[VERSION.Str()] = ComposeVersion
 
 	err = c.populateAdditionalHostConfig(configWrapper.HostConfig)
@@ -498,18 +501,8 @@ func (c *Container) createContainer(imageName, oldContainer string, configOverri
 
 	container, err := c.client.ContainerCreate(context.Background(), configWrapper.Config, configWrapper.HostConfig, configWrapper.NetworkingConfig, c.name)
 	if err != nil {
-		if client.IsErrImageNotFound(err) {
-			logrus.Debugf("Not Found, pulling image %s", configWrapper.Config.Image)
-			if err = c.pull(configWrapper.Config.Image); err != nil {
-				return nil, err
-			}
-			if container, err = c.client.ContainerCreate(context.Background(), configWrapper.Config, configWrapper.HostConfig, configWrapper.NetworkingConfig, c.name); err != nil {
-				return nil, err
-			}
-		} else {
-			logrus.Debugf("Failed to create container %s: %v", c.name, err)
-			return nil, err
-		}
+		logrus.Debugf("Failed to create container %s: %v", c.name, err)
+		return nil, err
 	}
 
 	return GetContainer(c.client, container.ID)
@@ -609,11 +602,6 @@ func (c *Container) Name() string {
 	return c.name
 }
 
-// Pull pulls the image the container is based on.
-func (c *Container) Pull() error {
-	return c.pull(c.service.serviceConfig.Image)
-}
-
 // Restart restarts the container if existing, does nothing otherwise.
 func (c *Container) Restart(timeout int) error {
 	container, err := c.findExisting()
@@ -637,8 +625,8 @@ func (c *Container) Log(follow bool) error {
 	}
 
 	// FIXME(vdemeester) update container struct to do less API calls
-	name := c.service.name + "_" + getContainerNumber(c)
-	l := c.service.context.LoggerFactory.Create(name)
+	name := fmt.Sprintf("%s_%d", c.service.name, c.containerNumber)
+	l := c.loggerFactory.Create(name)
 
 	options := types.ContainerLogsOptions{
 		ShowStdout: true,
@@ -660,65 +648,6 @@ func (c *Container) Log(follow bool) error {
 	logrus.WithFields(logrus.Fields{"Logger": l, "err": err}).Debug("c.client.Logs() returned error")
 
 	return err
-}
-
-func (c *Container) pull(image string) error {
-	return pullImage(c.client, c.service, image)
-}
-
-func pullImage(client client.APIClient, service *Service, image string) error {
-	distributionRef, err := reference.ParseNamed(image)
-	if err != nil {
-		return err
-	}
-
-	repoInfo, err := registry.ParseRepositoryInfo(distributionRef)
-	if err != nil {
-		return err
-	}
-
-	authConfig := service.context.AuthLookup.Lookup(repoInfo)
-
-	encodedAuth, err := encodeAuthToBase64(authConfig)
-	if err != nil {
-		return err
-	}
-
-	options := types.ImagePullOptions{
-		RegistryAuth: encodedAuth,
-	}
-	responseBody, err := client.ImagePull(context.Background(), distributionRef.String(), options)
-	if err != nil {
-		logrus.Errorf("Failed to pull image %s: %v", image, err)
-		return err
-	}
-	defer responseBody.Close()
-
-	var writeBuff io.Writer = os.Stdout
-
-	outFd, isTerminalOut := term.GetFdInfo(os.Stdout)
-
-	err = jsonmessage.DisplayJSONMessagesStream(responseBody, writeBuff, outFd, isTerminalOut, nil)
-	if err != nil {
-		if jerr, ok := err.(*jsonmessage.JSONError); ok {
-			// If no error code is set, default to 1
-			if jerr.Code == 0 {
-				jerr.Code = 1
-			}
-			fmt.Fprintf(os.Stderr, "%s", writeBuff)
-			return fmt.Errorf("Status: %s, Code: %d", jerr.Message, jerr.Code)
-		}
-	}
-	return err
-}
-
-// encodeAuthToBase64 serializes the auth configuration as JSON base64 payload
-func encodeAuthToBase64(authConfig types.AuthConfig) (string, error) {
-	buf, err := json.Marshal(authConfig)
-	if err != nil {
-		return "", err
-	}
-	return base64.URLEncoding.EncodeToString(buf), nil
 }
 
 func (c *Container) withContainer(action func(*types.ContainerJSON) error) error {
