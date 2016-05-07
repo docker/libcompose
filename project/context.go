@@ -71,14 +71,10 @@ func (c *Context) determineProject() error {
 		return err
 	}
 
-	c.ProjectName = projectRegexp.ReplaceAllString(strings.ToLower(name), "-")
+	c.ProjectName = normalizeName(name)
 
 	if c.ProjectName == "" {
 		return fmt.Errorf("Falied to determine project name")
-	}
-
-	if strings.ContainsAny(c.ProjectName[0:1], "_.-") {
-		c.ProjectName = "x" + c.ProjectName
 	}
 
 	return nil
@@ -114,6 +110,11 @@ func (c *Context) lookupProjectName() (string, error) {
 	} else {
 		return path.Base(toUnixPath(wd)), nil
 	}
+}
+
+func normalizeName(name string) string {
+	r := regexp.MustCompile("[^a-z0-9]+")
+	return r.ReplaceAllString(strings.ToLower(name), "")
 }
 
 func toUnixPath(p string) string {

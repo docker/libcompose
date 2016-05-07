@@ -2,8 +2,6 @@ package app
 
 import (
 	"os"
-	"regexp"
-	"strings"
 
 	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/cli/logger"
@@ -30,12 +28,7 @@ func (p *ProjectFactory) Create(c *cli.Context) (project.APIProject, error) {
 		}
 	}
 
-	context.ProjectName = normalizeName(c.GlobalString("project-name"))
+	context.ProjectName = c.GlobalString("project-name")
 
 	return docker.NewProject(context)
-}
-
-func normalizeName(name string) string {
-	r := regexp.MustCompile("[^a-z0-9]+")
-	return r.ReplaceAllString(strings.ToLower(name), "")
 }
