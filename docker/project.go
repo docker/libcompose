@@ -32,7 +32,7 @@ func NewProject(context *Context) (project.APIProject, error) {
 	}
 
 	if context.ClientFactory == nil {
-		factory, err := client.NewDefaultFactory(client.Options{})
+		factory, err := project.NewDefaultClientFactory(client.Options{})
 		if err != nil {
 			return nil, err
 		}
