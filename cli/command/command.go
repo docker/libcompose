@@ -145,6 +145,12 @@ func PullCommand(factory app.ProjectFactory) cli.Command {
 		Name:   "pull",
 		Usage:  "Pulls images for services",
 		Action: app.WithProject(factory, app.ProjectPull),
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "ignore-pull-failures",
+				Usage: "Pull what it can and ignores images with pull failures.",
+			},
+		},
 	}
 }
 

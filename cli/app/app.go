@@ -209,7 +209,7 @@ func ProjectLog(p project.APIProject, c *cli.Context) error {
 // ProjectPull pulls images for services.
 func ProjectPull(p project.APIProject, c *cli.Context) error {
 	err := p.Pull(c.Args()...)
-	if err != nil {
+	if err != nil && !c.Bool("ignore-pull-failures") {
 		return cli.NewExitError(err.Error(), 1)
 	}
 	return nil
