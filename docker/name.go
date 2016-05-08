@@ -9,6 +9,7 @@ import (
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/filters"
+	"github.com/docker/libcompose/labels"
 )
 
 const format = "%s_%s_%d"
@@ -44,12 +45,12 @@ func NewNamer(client client.APIClient, project, service string, oneOff bool) (Na
 	}
 
 	filter := filters.NewArgs()
-	filter.Add("label", fmt.Sprintf("%s=%s", PROJECT.Str(), project))
-	filter.Add("label", fmt.Sprintf("%s=%s", SERVICE.Str(), service))
+	filter.Add("label", fmt.Sprintf("%s=%s", labels.PROJECT.Str(), project))
+	filter.Add("label", fmt.Sprintf("%s=%s", labels.SERVICE.Str(), service))
 	if oneOff {
-		filter.Add("label", fmt.Sprintf("%s=%s", ONEOFF.Str(), "True"))
+		filter.Add("label", fmt.Sprintf("%s=%s", labels.ONEOFF.Str(), "True"))
 	} else {
-		filter.Add("label", fmt.Sprintf("%s=%s", ONEOFF.Str(), "False"))
+		filter.Add("label", fmt.Sprintf("%s=%s", labels.ONEOFF.Str(), "False"))
 	}
 
 	containers, err := client.ContainerList(context.Background(), types.ContainerListOptions{
@@ -62,7 +63,7 @@ func NewNamer(client client.APIClient, project, service string, oneOff bool) (Na
 
 	maxNumber := 0
 	for _, container := range containers {
-		number, err := strconv.Atoi(container.Labels[NUMBER.Str()])
+		number, err := strconv.Atoi(container.Labels[labels.NUMBER.Str()])
 		if err != nil {
 			return nil, err
 		}

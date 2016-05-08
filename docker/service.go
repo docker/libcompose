@@ -12,6 +12,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/docker/builder"
+	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/options"
 	"github.com/docker/libcompose/utils"
@@ -73,7 +74,7 @@ func (s *Service) Create(options options.Create) error {
 
 func (s *Service) collectContainers() ([]*Container, error) {
 	client := s.context.ClientFactory.Create(s)
-	containers, err := GetContainersByFilter(client, SERVICE.Eq(s.name), PROJECT.Eq(s.context.Project.Name))
+	containers, err := GetContainersByFilter(client, labels.SERVICE.Eq(s.name), labels.PROJECT.Eq(s.context.Project.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +82,7 @@ func (s *Service) collectContainers() ([]*Container, error) {
 	result := []*Container{}
 
 	for _, container := range containers {
-		containerNumber, err := strconv.Atoi(container.Labels[NUMBER.Str()])
+		containerNumber, err := strconv.Atoi(container.Labels[labels.NUMBER.Str()])
 		if err != nil {
 			return nil, err
 		}
@@ -346,17 +347,6 @@ func (s *Service) Stop(timeout int) error {
 	})
 }
 
-// Down implements Service.Down. It stops any containers related to the service and removes them.
-func (s *Service) Down(options options.Down) error {
-	return s.eachContainer(func(c *Container) error {
-		// FIXME(vdemeester) bring this backup (project.Down should call Stop and Delete)
-		if err := c.Stop(10); err != nil {
-			return err
-		}
-		return c.Delete(options.RemoveVolume)
-	})
-}
-
 // Restart implements Service.Restart. It restarts any containers related to the service.
 func (s *Service) Restart(timeout int) error {
 	return s.eachContainer(func(c *Container) error {
@@ -448,6 +438,23 @@ func (s *Service) Unpause() error {
 	return s.eachContainer(func(c *Container) error {
 		return c.Unpause()
 	})
+}
+
+// RemoveImage implements Service.RemoveImage. It removes images used for the service
+// depending on the specified type.
+func (s *Service) RemoveImage(imageType options.ImageType) error {
+	switch imageType {
+	case "local":
+		if s.Config().Image != "" {
+			return nil
+		}
+		return removeImage(s.context.ClientFactory.Create(s), s.imageName())
+	case "all":
+		return removeImage(s.context.ClientFactory.Create(s), s.imageName())
+	default:
+		// Don't do a thing, should be validated up-front
+		return nil
+	}
 }
 
 // Containers implements Service.Containers. It returns the list of containers

@@ -16,6 +16,7 @@ import (
 	"github.com/docker/engine-api/types"
 	"github.com/docker/libcompose/docker"
 	lclient "github.com/docker/libcompose/docker/client"
+	"github.com/docker/libcompose/labels"
 
 	. "gopkg.in/check.v1"
 )
@@ -168,7 +169,7 @@ func (s *CliSuite) GetContainerByName(c *C, name string) *types.ContainerJSON {
 
 func (s *CliSuite) GetContainersByProject(c *C, project string) []types.Container {
 	client := GetClient(c)
-	containers, err := docker.GetContainersByFilter(client, docker.PROJECT.Eq(project))
+	containers, err := docker.GetContainersByFilter(client, labels.PROJECT.Eq(project))
 
 	c.Assert(err, IsNil)
 

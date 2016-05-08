@@ -86,7 +86,9 @@ func ProjectStop(p project.APIProject, c *cli.Context) error {
 // ProjectDown brings all services down (stops and clean containers).
 func ProjectDown(p project.APIProject, c *cli.Context) error {
 	options := options.Down{
-		RemoveVolume: c.Bool("v"),
+		RemoveVolume:  c.Bool("volumes"),
+		RemoveImages:  options.ImageType(c.String("rmi")),
+		RemoveOrphans: c.Bool("remove-orphans"),
 	}
 	err := p.Down(options, c.Args()...)
 	if err != nil {

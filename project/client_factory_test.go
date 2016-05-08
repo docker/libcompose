@@ -1,11 +1,10 @@
-package client
+package project
 
 import (
-	// "fmt"
-	// "os"
+	"os"
 	"testing"
-	// "github.com/docker/docker/cliconfig"
-	// "github.com/docker/go-connections/tlsconfig"
+
+	"github.com/docker/libcompose/docker/client"
 )
 
 func TestFactoryWithEnv(t *testing.T) {
@@ -34,7 +33,7 @@ func TestFactoryWithEnv(t *testing.T) {
 	}
 	for _, c := range cases {
 		recoverEnvs := setupEnvs(t, c.envs)
-		factory, err := NewDefaultFactory(Options{})
+		factory, err := NewDefaultClientFactory(client.Options{})
 		if c.expectedError != "" {
 			if err == nil || err.Error() != c.expectedError {
 				t.Errorf("expected an error %s, got %s, for %v", c.expectedError, err.Error(), c)
@@ -55,24 +54,24 @@ func TestFactoryWithEnv(t *testing.T) {
 
 func TestFactoryWithOptions(t *testing.T) {
 	cases := []struct {
-		options         Options
+		options         client.Options
 		expectedError   string
 		expectedVersion string
 	}{
 		{
-			options: Options{
+			options: client.Options{
 				Host: "host",
 			},
 			expectedError: "unable to parse docker host `host`",
 		},
 		{
-			options: Options{
+			options: client.Options{
 				Host: "invalid://host",
 			},
 			expectedVersion: "v1.20",
 		},
 		{
-			options: Options{
+			options: client.Options{
 				Host:       "tcp://host",
 				APIVersion: "v1.22",
 			},
@@ -80,7 +79,7 @@ func TestFactoryWithOptions(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		apiclient, err := Create(c.options)
+		factory, err := NewDefaultClientFactory(c.options)
 		if c.expectedError != "" {
 			if err == nil || err.Error() != c.expectedError {
 				t.Errorf("expected an error %s, got %s, for %v", c.expectedError, err.Error(), c)
@@ -89,9 +88,30 @@ func TestFactoryWithOptions(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
+			apiclient := factory.Create(nil)
 			version := apiclient.ClientVersion()
 			if version != c.expectedVersion {
 				t.Errorf("expected %s, got %s, for %v", c.expectedVersion, version, c)
+			}
+		}
+	}
+}
+
+func setupEnvs(t *testing.T, envs map[string]string) func(*testing.T) {
+	oldEnvs := map[string]string{}
+	for key, value := range envs {
+		oldEnv := os.Getenv(key)
+		oldEnvs[key] = oldEnv
+		err := os.Setenv(key, value)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+	return func(t *testing.T) {
+		for key, value := range oldEnvs {
+			err := os.Setenv(key, value)
+			if err != nil {
+				t.Error(err)
 			}
 		}
 	}

@@ -5,6 +5,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/docker"
 	"github.com/docker/libcompose/docker/client"
+	"github.com/docker/libcompose/project"
 )
 
 // DockerClientFlags defines the flags that are specific to the docker client,
@@ -50,7 +51,7 @@ func Populate(context *docker.Context, c *cli.Context) {
 	opts.TLSOptions.CertFile = c.GlobalString("tlscert")
 	opts.TLSOptions.KeyFile = c.GlobalString("tlskey")
 
-	clientFactory, err := client.NewDefaultFactory(opts)
+	clientFactory, err := project.NewDefaultClientFactory(opts)
 	if err != nil {
 		logrus.Fatalf("Failed to construct Docker client: %v", err)
 	}

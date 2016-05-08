@@ -16,7 +16,6 @@ type Service interface {
 	Up(options options.Up) error
 	Start() error
 	Stop(timeout int) error
-	Down(options options.Down) error
 	Delete(options options.Delete) error
 	Restart(timeout int) error
 	Log(follow bool) error
@@ -29,6 +28,8 @@ type Service interface {
 	Pause() error
 	Unpause() error
 	Run(commandParts []string) (int, error)
+
+	RemoveImage(imageType options.ImageType) error
 }
 
 // ServiceState holds the state of a service.

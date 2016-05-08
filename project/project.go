@@ -5,8 +5,13 @@ import (
 	"fmt"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	log "github.com/Sirupsen/logrus"
+	"github.com/docker/engine-api/types"
+	"github.com/docker/engine-api/types/filters"
 	"github.com/docker/libcompose/config"
+	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project/events"
 	"github.com/docker/libcompose/project/options"
@@ -22,18 +27,21 @@ type Project struct {
 	Configs        *config.Configs
 	Files          []string
 	ReloadCallback func() error
-	context        *Context
-	reload         []string
-	upCount        int
-	listeners      []chan<- events.Event
-	hasListeners   bool
+
+	context       *Context
+	clientFactory ClientFactory
+	reload        []string
+	upCount       int
+	listeners     []chan<- events.Event
+	hasListeners  bool
 }
 
 // NewProject creates a new project with the specified context.
-func NewProject(context *Context) *Project {
+func NewProject(clientFactory ClientFactory, context *Context) *Project {
 	p := &Project{
-		context: context,
-		Configs: config.NewConfigs(),
+		context:       context,
+		Configs:       config.NewConfigs(),
+		clientFactory: clientFactory,
 	}
 
 	if context.LoggerFactory == nil {
@@ -190,12 +198,61 @@ func (p *Project) Stop(timeout int, services ...string) error {
 }
 
 // Down stops the specified services and clean related containers (like docker stop + docker rm).
-func (p *Project) Down(options options.Down, services ...string) error {
-	return p.perform(events.ProjectDownStart, events.ProjectDownDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(nil, events.ServiceDownStart, events.ServiceDown, func(service Service) error {
-			return service.Down(options)
+func (p *Project) Down(opts options.Down, services ...string) error {
+	if !opts.RemoveImages.Valid() {
+		return fmt.Errorf("--rmi flag must be local, all or empty")
+	}
+	if err := p.Stop(10, services...); err != nil {
+		return err
+	}
+	if opts.RemoveOrphans {
+		if err := p.removeOrphanContainers(); err != nil {
+			return err
+		}
+	}
+	if err := p.Delete(options.Delete{
+		RemoveVolume: opts.RemoveVolume,
+	}, services...); err != nil {
+		return err
+	}
+
+	return p.forEach([]string{}, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(wrappers, events.NoEvent, events.NoEvent, func(service Service) error {
+			return service.RemoveImage(opts.RemoveImages)
 		})
-	}), nil)
+	}), func(service Service) error {
+		return service.Create(options.Create{})
+	})
+}
+
+func (p *Project) removeOrphanContainers() error {
+	client := p.clientFactory.Create(nil)
+	filter := filters.NewArgs()
+	filter.Add("label", labels.PROJECT.EqString(p.Name))
+	containers, err := client.ContainerList(context.Background(), types.ContainerListOptions{
+		Filter: filter,
+	})
+	if err != nil {
+		return err
+	}
+	currentServices := map[string]struct{}{}
+	for _, serviceName := range p.Configs.Keys() {
+		currentServices[serviceName] = struct{}{}
+	}
+	for _, container := range containers {
+		serviceLabel := container.Labels[labels.SERVICE.Str()]
+		if _, ok := currentServices[serviceLabel]; !ok {
+			if err := client.ContainerKill(context.Background(), container.ID, "SIGKILL"); err != nil {
+				return err
+			}
+			if err := client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
+				Force: true,
+			}); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // Restart restarts the specified services (like docker restart).
