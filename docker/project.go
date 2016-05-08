@@ -1,8 +1,11 @@
 package docker
 
 import (
-	"github.com/Sirupsen/logrus"
+	"os"
+	"path/filepath"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/docker/client"
 	"github.com/docker/libcompose/lookup"
 	"github.com/docker/libcompose/project"
@@ -18,7 +21,18 @@ func NewProject(context *Context) (project.APIProject, error) {
 	}
 
 	if context.EnvironmentLookup == nil {
-		context.EnvironmentLookup = &lookup.OsEnvLookup{}
+		cwd, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
+		context.EnvironmentLookup = &lookup.ComposableEnvLookup{
+			Lookups: []config.EnvironmentLookup{
+				&lookup.EnvfileLookup{
+					Path: filepath.Join(cwd, ".env"),
+				},
+				&lookup.OsEnvLookup{},
+			},
+		}
 	}
 
 	if context.AuthLookup == nil {

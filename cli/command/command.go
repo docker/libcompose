@@ -328,8 +328,9 @@ func CommonFlags() []cli.Flag {
 			EnvVar: "COMPOSE_FILE",
 		},
 		cli.StringFlag{
-			Name:  "project-name,p",
-			Usage: "Specify an alternate project name (default: directory name)",
+			Name:   "project-name,p",
+			Usage:  "Specify an alternate project name (default: directory name)",
+			EnvVar: "COMPOSE_PROJECT_NAME",
 		},
 	}
 }
