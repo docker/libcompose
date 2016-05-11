@@ -71,7 +71,7 @@ func (d *defaultListener) start() {
 		if event.ServiceName == "" {
 			logf("Project [%s]: %s %s", d.project.Name, event.EventType, buffer.Bytes())
 		} else {
-			logf("[%d/%d] [%s]: %s %s", d.upCount, d.project.Configs.Len(), event.ServiceName, event.EventType, buffer.Bytes())
+			logf("[%d/%d] [%s]: %s %s", d.upCount, d.project.ServiceConfigs.Len(), event.ServiceName, event.EventType, buffer.Bytes())
 		}
 	}
 }

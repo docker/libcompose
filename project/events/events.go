@@ -61,6 +61,9 @@ const (
 	ServiceRunStart     = EventType(iota)
 	ServiceRun          = EventType(iota)
 
+	VolumeAdd  = EventType(iota)
+	NetworkAdd = EventType(iota)
+
 	ProjectDownStart     = EventType(iota)
 	ProjectDownDone      = EventType(iota)
 	ProjectCreateStart   = EventType(iota)

@@ -24,7 +24,9 @@ type serviceAction func(service Service) error
 // Project holds libcompose project information.
 type Project struct {
 	Name           string
-	Configs        *config.Configs
+	ServiceConfigs *config.ServiceConfigs
+	VolumeConfigs  map[string]*config.VolumeConfig
+	NetworkConfigs map[string]*config.NetworkConfig
 	Files          []string
 	ReloadCallback func() error
 
@@ -39,9 +41,11 @@ type Project struct {
 // NewProject creates a new project with the specified context.
 func NewProject(clientFactory ClientFactory, context *Context) *Project {
 	p := &Project{
-		context:       context,
-		Configs:       config.NewConfigs(),
-		clientFactory: clientFactory,
+		context:        context,
+		clientFactory:  clientFactory,
+		ServiceConfigs: config.NewServiceConfigs(),
+		VolumeConfigs:  make(map[string]*config.VolumeConfig),
+		NetworkConfigs: make(map[string]*config.NetworkConfig),
 	}
 
 	if context.LoggerFactory == nil {
@@ -89,7 +93,7 @@ func (p *Project) Parse() error {
 // CreateService creates a service with the specified name based. If there
 // is no config in the project for this service, it will return an error.
 func (p *Project) CreateService(name string) (Service, error) {
-	existing, ok := p.Configs.Get(name)
+	existing, ok := p.ServiceConfigs.Get(name)
 	if !ok {
 		return nil, fmt.Errorf("Failed to find service: %s", name)
 	}
@@ -124,9 +128,23 @@ func (p *Project) CreateService(name string) (Service, error) {
 func (p *Project) AddConfig(name string, config *config.ServiceConfig) error {
 	p.Notify(events.ServiceAdd, name, nil)
 
-	p.Configs.Add(name, config)
+	p.ServiceConfigs.Add(name, config)
 	p.reload = append(p.reload, name)
 
+	return nil
+}
+
+// AddVolumeConfig adds the specified volume config for the specified name.
+func (p *Project) AddVolumeConfig(name string, config *config.VolumeConfig) error {
+	p.Notify(events.VolumeAdd, name, nil)
+	p.VolumeConfigs[name] = config
+	return nil
+}
+
+// AddNetworkConfig adds the specified network config for the specified name.
+func (p *Project) AddNetworkConfig(name string, config *config.NetworkConfig) error {
+	p.Notify(events.NetworkAdd, name, nil)
+	p.NetworkConfigs[name] = config
 	return nil
 }
 
@@ -138,15 +156,28 @@ func (p *Project) Load(bytes []byte) error {
 }
 
 func (p *Project) load(file string, bytes []byte) error {
-	configs := make(map[string]*config.ServiceConfig)
-	configs, err := config.MergeServices(p.Configs, p.context.EnvironmentLookup, p.context.ResourceLookup, file, bytes)
+	serviceConfigs, volumeConfigs, networkConfigs, err := config.Merge(p.ServiceConfigs, p.context.EnvironmentLookup, p.context.ResourceLookup, file, bytes)
 	if err != nil {
 		log.Errorf("Could not parse config for project %s : %v", p.Name, err)
 		return err
 	}
 
-	for name, config := range configs {
+	for name, config := range serviceConfigs {
 		err := p.AddConfig(name, config)
+		if err != nil {
+			return err
+		}
+	}
+
+	for name, config := range volumeConfigs {
+		err := p.AddVolumeConfig(name, config)
+		if err != nil {
+			return err
+		}
+	}
+
+	for name, config := range networkConfigs {
+		err := p.AddNetworkConfig(name, config)
 		if err != nil {
 			return err
 		}
@@ -236,7 +267,7 @@ func (p *Project) removeOrphanContainers() error {
 		return err
 	}
 	currentServices := map[string]struct{}{}
-	for _, serviceName := range p.Configs.Keys() {
+	for _, serviceName := range p.ServiceConfigs.Keys() {
 		currentServices[serviceName] = struct{}{}
 	}
 	for _, container := range containers {
@@ -286,7 +317,7 @@ func (p *Project) Port(index int, protocol, serviceName, privatePort string) (st
 // Ps list containers for the specified services.
 func (p *Project) Ps(onlyID bool, services ...string) (InfoSet, error) {
 	allInfo := InfoSet{}
-	for _, name := range p.Configs.Keys() {
+	for _, name := range p.ServiceConfigs.Keys() {
 		service, err := p.CreateService(name)
 		if err != nil {
 			return nil, err
@@ -313,7 +344,7 @@ func (p *Project) Start(services ...string) error {
 
 // Run executes a one off command (like `docker run image command`).
 func (p *Project) Run(serviceName string, commandParts []string) (int, error) {
-	if !p.Configs.Has(serviceName) {
+	if !p.ServiceConfigs.Has(serviceName) {
 		return 1, fmt.Errorf("%s is not defined in the template", serviceName)
 	}
 
@@ -360,7 +391,7 @@ func (p *Project) Scale(timeout int, servicesScale map[string]int) error {
 	services := make(map[string]Service)
 
 	for name := range servicesScale {
-		if !p.Configs.Has(name) {
+		if !p.ServiceConfigs.Has(name) {
 			return fmt.Errorf("%s is not defined in the template", name)
 		}
 
@@ -553,7 +584,7 @@ func (p *Project) traverse(start bool, selected map[string]bool, wrappers map[st
 	wrapperList := []string{}
 
 	if start {
-		for _, name := range p.Configs.Keys() {
+		for _, name := range p.ServiceConfigs.Keys() {
 			wrapperList = append(wrapperList, name)
 		}
 	} else {

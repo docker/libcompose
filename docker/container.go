@@ -513,7 +513,7 @@ func (c *Container) populateAdditionalHostConfig(hostConfig *container.HostConfi
 	links := map[string]string{}
 
 	for _, link := range c.service.DependentServices() {
-		if !c.service.context.Project.Configs.Has(link.Target) {
+		if !c.service.context.Project.ServiceConfigs.Has(link.Target) {
 			continue
 		}
 
@@ -577,7 +577,7 @@ func (c *Container) addIpc(config *container.HostConfig, service project.Service
 
 func (c *Container) addNetNs(config *container.HostConfig, service project.Service, containers []project.Container) (*container.HostConfig, error) {
 	if len(containers) == 0 {
-		return nil, fmt.Errorf("Failed to find container for networks ns %v", c.service.Config().Net)
+		return nil, fmt.Errorf("Failed to find container for networks ns %v", c.service.Config().NetworkMode)
 	}
 
 	id, err := containers[0].ID()

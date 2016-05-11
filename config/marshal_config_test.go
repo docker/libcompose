@@ -16,11 +16,11 @@ func newTestConfig() TestConfig {
 	return TestConfig{
 		SystemContainers: map[string]*ServiceConfig{
 			"udev": {
-				Image:      "udev",
-				Restart:    "always",
-				Net:        "host",
-				Privileged: true,
-				DNS:        []string{"8.8.8.8", "8.8.4.4"},
+				Image:       "udev",
+				Restart:     "always",
+				NetworkMode: "host",
+				Privileged:  true,
+				DNS:         []string{"8.8.8.8", "8.8.4.4"},
 				Environment: yamlTypes.MaporEqualSlice([]string{
 					"DAEMON=true",
 				}),
@@ -38,10 +38,10 @@ func newTestConfig() TestConfig {
 				},
 			},
 			"system-volumes": {
-				Image:      "state",
-				Net:        "none",
-				ReadOnly:   true,
-				Privileged: true,
+				Image:       "state",
+				NetworkMode: "none",
+				ReadOnly:    true,
+				Privileged:  true,
 				Labels: yamlTypes.SliceorMap{
 					"io.rancher.os.createonly": "true",
 					"io.rancher.os.scope":      "system",
@@ -55,7 +55,9 @@ func newTestConfig() TestConfig {
 					"/var/run:/var/run",
 					"/var/log:/var/log",
 				},
-				LogDriver: "json-file",
+				Logging: Log{
+					Driver: "json-file",
+				},
 			},
 		},
 	}

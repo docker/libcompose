@@ -62,8 +62,8 @@ func TestTwoCall(t *testing.T) {
 	p := NewProject(nil, &Context{
 		ServiceFactory: factory,
 	})
-	p.Configs = config.NewConfigs()
-	p.Configs.Add("foo", &config.ServiceConfig{})
+	p.ServiceConfigs = config.NewServiceConfigs()
+	p.ServiceConfigs.Add("foo", &config.ServiceConfig{})
 
 	if err := p.Create(options.Create{}, "foo"); err != nil {
 		t.Fatal(err)
@@ -90,7 +90,7 @@ func TestParseWithBadContent(t *testing.T) {
 		t.Fatal("Should have failed parse")
 	}
 
-	if !strings.HasPrefix(err.Error(), "Unknown resolution for 'garbage'") {
+	if !strings.HasPrefix(err.Error(), "Invalid timestamp: 'garbage'") {
 		t.Fatalf("Should have failed parse: %#v", err)
 	}
 }
@@ -124,8 +124,8 @@ func TestEnvironmentResolve(t *testing.T) {
 		ServiceFactory:    factory,
 		EnvironmentLookup: &TestEnvironmentLookup{},
 	})
-	p.Configs = config.NewConfigs()
-	p.Configs.Add("foo", &config.ServiceConfig{
+	p.ServiceConfigs = config.NewServiceConfigs()
+	p.ServiceConfigs.Add("foo", &config.ServiceConfig{
 		Environment: yaml.MaporEqualSlice([]string{
 			"A",
 			"A=",
@@ -172,7 +172,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	multipleConfig, _ := p.Configs.Get("multiple")
+	multipleConfig, _ := p.ServiceConfigs.Get("multiple")
 	assert.Equal(t, "busybox", multipleConfig.Image)
 	assert.Equal(t, "multi", multipleConfig.ContainerName)
 	assert.Equal(t, []string{"8000", "9000"}, multipleConfig.Ports)
@@ -185,7 +185,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	multipleConfig, _ = p.Configs.Get("multiple")
+	multipleConfig, _ = p.ServiceConfigs.Get("multiple")
 	assert.Equal(t, "tianon/true", multipleConfig.Image)
 	assert.Equal(t, "multi", multipleConfig.ContainerName)
 	assert.Equal(t, []string{"9000", "8000"}, multipleConfig.Ports)
@@ -198,7 +198,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	multipleConfig, _ = p.Configs.Get("multiple")
+	multipleConfig, _ = p.ServiceConfigs.Get("multiple")
 	assert.Equal(t, "busybox", multipleConfig.Image)
 	assert.Equal(t, "multi", multipleConfig.ContainerName)
 	assert.Equal(t, []string{"8000", "9000", "10000"}, multipleConfig.Ports)
