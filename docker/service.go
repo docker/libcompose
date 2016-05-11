@@ -114,7 +114,7 @@ func (s *Service) ensureImageExists(noBuild bool) (string, error) {
 		return "", err
 	}
 
-	if s.Config().Build != "" {
+	if s.Config().Build.Context != "" {
 		if noBuild {
 			return "", fmt.Errorf("Service %q needs to be built, but no-build was specified", s.name)
 		}
@@ -149,13 +149,13 @@ func (s *Service) Build(buildOptions options.Build) error {
 }
 
 func (s *Service) build(buildOptions options.Build) error {
-	if s.Config().Build == "" {
+	if s.Config().Build.Context == "" {
 		return fmt.Errorf("Specified service does not have a build section")
 	}
 	builder := &builder.DaemonBuilder{
 		Client:           s.context.ClientFactory.Create(s),
-		ContextDirectory: s.Config().Build,
-		Dockerfile:       s.Config().Dockerfile,
+		ContextDirectory: s.Config().Build.Context,
+		Dockerfile:       s.Config().Build.Dockerfile,
 		AuthConfigs:      s.context.AuthLookup.All(),
 		NoCache:          buildOptions.NoCache,
 		ForceRemove:      buildOptions.ForceRemove,

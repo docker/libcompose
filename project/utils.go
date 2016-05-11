@@ -23,7 +23,7 @@ func DefaultDependentServices(p *Project, s Service) []ServiceRelationship {
 		result = append(result, NewServiceRelationship(volumesFrom, RelTypeVolumesFrom))
 	}
 
-	result = appendNs(p, result, s.Config().Net, RelTypeNetNamespace)
+	result = appendNs(p, result, s.Config().NetworkMode, RelTypeNetNamespace)
 	result = appendNs(p, result, s.Config().Ipc, RelTypeIpcNamespace)
 
 	return result
@@ -61,7 +61,7 @@ func GetContainerFromIpcLikeConfig(p *Project, conf string) string {
 		return ""
 	}
 
-	if p.Configs.Has(name) {
+	if p.ServiceConfigs.Has(name) {
 		return name
 	}
 	return ""
