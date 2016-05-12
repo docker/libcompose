@@ -55,10 +55,14 @@ func ConvertToAPI(s *Service) (*ConfigWrapper, error) {
 	return &result, nil
 }
 
+func isNamedVolume(volume string) bool {
+	return !strings.HasPrefix(volume, ".") && !strings.HasPrefix(volume, "/") && !strings.HasPrefix(volume, "~")
+}
+
 func volumes(c *config.ServiceConfig, ctx project.Context) map[string]struct{} {
 	volumes := make(map[string]struct{}, len(c.Volumes))
 	for k, v := range c.Volumes {
-		if len(ctx.ComposeFiles) > 0 {
+		if len(ctx.ComposeFiles) > 0 && !isNamedVolume(v) {
 			v = ctx.ResourceLookup.ResolvePath(v, ctx.ComposeFiles[0])
 		}
 
