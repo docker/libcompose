@@ -428,7 +428,7 @@ func (p *Project) Pull(services ...string) error {
 func (p *Project) listStoppedContainers(services ...string) ([]string, error) {
 	stoppedContainers := []string{}
 	err := p.forEach(services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(nil, events.ServiceDeleteStart, events.ServiceDelete, func(service Service) error {
+		wrapper.Do(nil, events.NoEvent, events.NoEvent, func(service Service) error {
 			containers, innerErr := service.Containers()
 			if innerErr != nil {
 				return innerErr
@@ -464,6 +464,7 @@ func (p *Project) Delete(options options.Delete, services ...string) error {
 		return err
 	}
 	if len(stoppedContainers) == 0 {
+		p.Notify(events.ProjectDeleteDone, "", nil)
 		fmt.Println("No stopped containers")
 		return nil
 	}
