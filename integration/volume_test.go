@@ -56,4 +56,22 @@ func (s *CliSuite) TestRelativeVolume(c *C) {
 	c.Assert(cn, NotNil)
 	c.Assert(len(cn.Mounts), DeepEquals, 1)
 	c.Assert(cn.Mounts[0].Source, DeepEquals, absPath)
+	c.Assert(cn.Mounts[0].Destination, DeepEquals, "/path")
+}
+
+func (s *CliSuite) TestNamedVolume(c *C) {
+	p := s.ProjectFromText(c, "up", `
+	server:
+	  image: busybox
+	  volumes:
+	    - vol:/path
+	`)
+
+	serverName := fmt.Sprintf("%s_%s_1", p, "server")
+	cn := s.GetContainerByName(c, serverName)
+
+	c.Assert(cn, NotNil)
+	c.Assert(len(cn.Mounts), DeepEquals, 1)
+	c.Assert(cn.Mounts[0].Name, DeepEquals, "vol")
+	c.Assert(cn.Mounts[0].Destination, DeepEquals, "/path")
 }
