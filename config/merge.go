@@ -46,7 +46,7 @@ func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		serviceConfigs, err = ConvertV1toV2(serviceConfigsV1, environmentLookup, resourceLookup)
+		serviceConfigs, err = ConvertServices(serviceConfigsV1)
 		if err != nil {
 			return nil, nil, nil, err
 		}
