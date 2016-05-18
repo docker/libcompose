@@ -221,3 +221,11 @@ type RawService map[string]interface{}
 
 // RawServiceMap is a collection of RawServices
 type RawServiceMap map[string]RawService
+
+// ParseOptions are a set of options to customize the parsing process
+type ParseOptions struct {
+	Interpolate bool
+	Validate    bool
+	Preprocess  func(RawServiceMap) (RawServiceMap, error)
+	Postprocess func(map[string]*ServiceConfig) (map[string]*ServiceConfig, error)
+}

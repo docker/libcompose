@@ -15,7 +15,7 @@ import (
 const ComposeVersion = "1.5.0"
 
 // NewProject creates a Project with the specified context.
-func NewProject(context *Context) (project.APIProject, error) {
+func NewProject(context *Context, parseOptions *config.ParseOptions) (project.APIProject, error) {
 	if context.ResourceLookup == nil {
 		context.ResourceLookup = &lookup.FileConfigLookup{}
 	}
@@ -54,7 +54,7 @@ func NewProject(context *Context) (project.APIProject, error) {
 	}
 
 	// FIXME(vdemeester) Remove the context duplication ?
-	p := project.NewProject(context.ClientFactory, &context.Context)
+	p := project.NewProject(context.ClientFactory, &context.Context, parseOptions)
 
 	err := p.Parse()
 	if err != nil {
