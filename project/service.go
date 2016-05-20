@@ -68,6 +68,9 @@ const RelTypeIpcNamespace = ServiceRelationshipType("ipc")
 // RelTypeVolumesFrom means the services share some volumes.
 const RelTypeVolumesFrom = ServiceRelationshipType("volumesFrom")
 
+// RelTypeDependsOn means the dependency was explicitly set using 'depends_on'.
+const RelTypeDependsOn = ServiceRelationshipType("dependsOn")
+
 // ServiceRelationship holds the relationship information between two services.
 type ServiceRelationship struct {
 	Target, Alias string
