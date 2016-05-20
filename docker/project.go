@@ -15,7 +15,7 @@ import (
 const ComposeVersion = "1.5.0"
 
 // NewProject creates a Project with the specified context.
-func NewProject(context *Context) (project.APIProject, error) {
+func NewProject(context *Context) (*project.Project, error) {
 	if context.ResourceLookup == nil {
 		context.ResourceLookup = &lookup.FileConfigLookup{}
 	}
