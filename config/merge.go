@@ -15,10 +15,18 @@ var (
 		"links",
 		"volumes_from",
 	}
+	defaultParseOptions = ParseOptions{
+		Interpolate: true,
+		Validate:    true,
+	}
 )
 
 // Merge merges a compose file into an existing set of service configs
-func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup, resourceLookup ResourceLookup, file string, bytes []byte) (map[string]*ServiceConfig, map[string]*VolumeConfig, map[string]*NetworkConfig, error) {
+func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup, resourceLookup ResourceLookup, file string, bytes []byte, options *ParseOptions) (map[string]*ServiceConfig, map[string]*VolumeConfig, map[string]*NetworkConfig, error) {
+	if options == nil {
+		options = &defaultParseOptions
+	}
+
 	var config Config
 	if err := yaml.Unmarshal(bytes, &config); err != nil {
 		return nil, nil, nil, err
@@ -29,20 +37,20 @@ func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup
 	var networkConfigs map[string]*NetworkConfig
 	if config.Version == "2" {
 		var err error
-		serviceConfigs, err = MergeServicesV2(existingServices, environmentLookup, resourceLookup, file, bytes)
+		serviceConfigs, err = MergeServicesV2(existingServices, environmentLookup, resourceLookup, file, bytes, options)
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		volumeConfigs, err = ParseVolumes(environmentLookup, resourceLookup, file, bytes)
+		volumeConfigs, err = ParseVolumes(bytes)
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		networkConfigs, err = ParseNetworks(environmentLookup, resourceLookup, file, bytes)
+		networkConfigs, err = ParseNetworks(bytes)
 		if err != nil {
 			return nil, nil, nil, err
 		}
 	} else {
-		serviceConfigsV1, err := MergeServicesV1(existingServices, environmentLookup, resourceLookup, file, bytes)
+		serviceConfigsV1, err := MergeServicesV1(existingServices, environmentLookup, resourceLookup, file, bytes, options)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -53,6 +61,14 @@ func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup
 	}
 
 	adjustValues(serviceConfigs)
+
+	if options.Postprocess != nil {
+		var err error
+		serviceConfigs, err = options.Postprocess(serviceConfigs)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+	}
 
 	return serviceConfigs, volumeConfigs, networkConfigs, nil
 }

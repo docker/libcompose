@@ -27,7 +27,7 @@ service:
 			ComposeBytes: [][]byte{[]byte(service)},
 			ProjectName:  "test-volume-without-compose-file",
 		},
-	})
+	}, nil)
 
 	c.Assert(err, IsNil)
 
