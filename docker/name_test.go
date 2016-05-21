@@ -56,7 +56,7 @@ func (client *NamerClient) ContainerList(ctx context.Context, options types.Cont
 
 func TestDefaultNamerClientError(t *testing.T) {
 	client := test.NewNopClient()
-	_, err := NewNamer(client, "project", "service", false)
+	_, err := NewNamer(context.Background(), client, "project", "service", false)
 	if err == nil || err.Error() != "Engine no longer exists" {
 		t.Fatalf("expected an error 'Engine no longer exists', got %s", err)
 	}
@@ -72,7 +72,7 @@ func TestDefaultNamerLabelNotANumber(t *testing.T) {
 			},
 		},
 	}
-	_, err := NewNamer(client, "project", "service", false)
+	_, err := NewNamer(context.Background(), client, "project", "service", false)
 	if err == nil {
 		t.Fatal("expected an error, got nothing")
 	}
@@ -159,7 +159,7 @@ func TestDefaultNamer(t *testing.T) {
 			expectedLabelFilters: c.expectedLabels,
 			containers:           c.containers,
 		}
-		namer, err := NewNamer(client, c.projectName, c.serviceName, c.oneOff)
+		namer, err := NewNamer(context.Background(), client, c.projectName, c.serviceName, c.oneOff)
 		if err != nil {
 			t.Error(err)
 		}

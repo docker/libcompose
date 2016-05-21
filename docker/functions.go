@@ -10,7 +10,7 @@ import (
 
 // GetContainersByFilter looks up the hosts containers with the specified filters and
 // returns a list of container matching it, or an error.
-func GetContainersByFilter(clientInstance client.APIClient, containerFilters ...map[string][]string) ([]types.Container, error) {
+func GetContainersByFilter(ctx context.Context, clientInstance client.APIClient, containerFilters ...map[string][]string) ([]types.Container, error) {
 	filterArgs := filters.NewArgs()
 
 	// FIXME(vdemeester) I don't like 3 for loops >_<
@@ -22,7 +22,7 @@ func GetContainersByFilter(clientInstance client.APIClient, containerFilters ...
 		}
 	}
 
-	return clientInstance.ContainerList(context.Background(), types.ContainerListOptions{
+	return clientInstance.ContainerList(ctx, types.ContainerListOptions{
 		All:    true,
 		Filter: filterArgs,
 	})
@@ -30,8 +30,8 @@ func GetContainersByFilter(clientInstance client.APIClient, containerFilters ...
 
 // GetContainer looks up the hosts containers with the specified ID
 // or name and returns it, or an error.
-func GetContainer(clientInstance client.APIClient, id string) (*types.ContainerJSON, error) {
-	container, err := clientInstance.ContainerInspect(context.Background(), id)
+func GetContainer(ctx context.Context, clientInstance client.APIClient, id string) (*types.ContainerJSON, error) {
+	container, err := clientInstance.ContainerInspect(ctx, id)
 	if err != nil {
 		if client.IsErrContainerNotFound(err) {
 			return nil, nil

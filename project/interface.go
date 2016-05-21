@@ -1,6 +1,8 @@
 package project
 
 import (
+	"golang.org/x/net/context"
+
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/project/events"
 	"github.com/docker/libcompose/project/options"
@@ -11,24 +13,24 @@ type APIProject interface {
 	events.Notifier
 	events.Emitter
 
-	Build(options options.Build, sevice ...string) error
-	Create(options options.Create, services ...string) error
-	Delete(options options.Delete, services ...string) error
-	Down(options options.Down, services ...string) error
-	Kill(signal string, services ...string) error
-	Log(follow bool, services ...string) error
-	Pause(services ...string) error
-	Ps(onlyID bool, services ...string) (InfoSet, error)
+	Build(ctx context.Context, options options.Build, sevice ...string) error
+	Create(ctx context.Context, options options.Create, services ...string) error
+	Delete(ctx context.Context, options options.Delete, services ...string) error
+	Down(ctx context.Context, options options.Down, services ...string) error
+	Kill(ctx context.Context, signal string, services ...string) error
+	Log(ctx context.Context, follow bool, services ...string) error
+	Pause(ctx context.Context, services ...string) error
+	Ps(ctx context.Context, onlyID bool, services ...string) (InfoSet, error)
 	// FIXME(vdemeester) we could use nat.Port instead ?
-	Port(index int, protocol, serviceName, privatePort string) (string, error)
-	Pull(services ...string) error
-	Restart(timeout int, services ...string) error
-	Run(serviceName string, commandParts []string) (int, error)
-	Scale(timeout int, servicesScale map[string]int) error
-	Start(services ...string) error
-	Stop(timeout int, services ...string) error
-	Unpause(services ...string) error
-	Up(options options.Up, services ...string) error
+	Port(ctx context.Context, index int, protocol, serviceName, privatePort string) (string, error)
+	Pull(ctx context.Context, services ...string) error
+	Restart(ctx context.Context, timeout int, services ...string) error
+	Run(ctx context.Context, serviceName string, commandParts []string) (int, error)
+	Scale(ctx context.Context, timeout int, servicesScale map[string]int) error
+	Start(ctx context.Context, services ...string) error
+	Stop(ctx context.Context, timeout int, services ...string) error
+	Unpause(ctx context.Context, services ...string) error
+	Up(ctx context.Context, options options.Up, services ...string) error
 
 	Parse() error
 	CreateService(name string) (Service, error)

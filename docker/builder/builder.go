@@ -45,12 +45,12 @@ type DaemonBuilder struct {
 
 // Build implements Builder. It consumes the docker build API endpoint and sends
 // a tar of the specified service build context.
-func (d *DaemonBuilder) Build(imageName string) error {
-	ctx, err := createTar(d.ContextDirectory, d.Dockerfile)
+func (d *DaemonBuilder) Build(ctx context.Context, imageName string) error {
+	buildCtx, err := createTar(d.ContextDirectory, d.Dockerfile)
 	if err != nil {
 		return err
 	}
-	defer ctx.Close()
+	defer buildCtx.Close()
 
 	var progBuff io.Writer = os.Stdout
 	var buildBuff io.Writer = os.Stdout
@@ -58,13 +58,13 @@ func (d *DaemonBuilder) Build(imageName string) error {
 	// Setup an upload progress bar
 	progressOutput := streamformatter.NewStreamFormatter().NewProgressOutput(progBuff, true)
 
-	var body io.Reader = progress.NewProgressReader(ctx, progressOutput, 0, "", "Sending build context to Docker daemon")
+	var body io.Reader = progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
 
 	logrus.Infof("Building %s...", imageName)
 
 	outFd, isTerminalOut := term.GetFdInfo(os.Stdout)
 
-	response, err := d.Client.ImageBuild(context.Background(), body, types.ImageBuildOptions{
+	response, err := d.Client.ImageBuild(ctx, body, types.ImageBuildOptions{
 		Tags:        []string{imageName},
 		NoCache:     d.NoCache,
 		Remove:      true,

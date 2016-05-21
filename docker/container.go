@@ -65,18 +65,18 @@ func NewOneOffContainer(client client.APIClient, name string, containerNumber in
 	return c
 }
 
-func (c *Container) findExisting() (*types.ContainerJSON, error) {
-	return GetContainer(c.client, c.name)
+func (c *Container) findExisting(ctx context.Context) (*types.ContainerJSON, error) {
+	return GetContainer(ctx, c.client, c.name)
 }
 
 // Info returns info about the container, like name, command, state or ports.
-func (c *Container) Info(qFlag bool) (project.Info, error) {
-	container, err := c.findExisting()
+func (c *Container) Info(ctx context.Context, qFlag bool) (project.Info, error) {
+	container, err := c.findExisting(ctx)
 	if err != nil || container == nil {
 		return nil, err
 	}
 
-	infos, err := GetContainersByFilter(c.client, map[string][]string{
+	infos, err := GetContainersByFilter(ctx, c.client, map[string][]string{
 		"name": {container.Name},
 	})
 	if err != nil || len(infos) == 0 {
@@ -127,8 +127,8 @@ func name(names []string) string {
 
 // Recreate will not refresh the container by means of relaxation and enjoyment,
 // just delete it and create a new one with the current configuration
-func (c *Container) Recreate(imageName string) (*types.ContainerJSON, error) {
-	container, err := c.findExisting()
+func (c *Container) Recreate(ctx context.Context, imageName string) (*types.ContainerJSON, error) {
+	container, err := c.findExisting(ctx)
 	if err != nil || container == nil {
 		return nil, err
 	}
@@ -141,18 +141,18 @@ func (c *Container) Recreate(imageName string) (*types.ContainerJSON, error) {
 	name := container.Name[1:]
 	newName := fmt.Sprintf("%s_%s", name, container.ID[:12])
 	logrus.Debugf("Renaming %s => %s", name, newName)
-	if err := c.client.ContainerRename(context.Background(), container.ID, newName); err != nil {
+	if err := c.client.ContainerRename(ctx, container.ID, newName); err != nil {
 		logrus.Errorf("Failed to rename old container %s", c.name)
 		return nil, err
 	}
 
-	newContainer, err := c.createContainer(imageName, container.ID, nil)
+	newContainer, err := c.createContainer(ctx, imageName, container.ID, nil)
 	if err != nil {
 		return nil, err
 	}
 	logrus.Debugf("Created replacement container %s", newContainer.ID)
 
-	if err := c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
+	if err := c.client.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{
 		Force:         true,
 		RemoveVolumes: false,
 	}); err != nil {
@@ -167,21 +167,21 @@ func (c *Container) Recreate(imageName string) (*types.ContainerJSON, error) {
 // Create creates the container based on the specified image name and send an event
 // to notify the container has been created. If the container already exists, does
 // nothing.
-func (c *Container) Create(imageName string) (*types.ContainerJSON, error) {
-	return c.CreateWithOverride(imageName, nil)
+func (c *Container) Create(ctx context.Context, imageName string) (*types.ContainerJSON, error) {
+	return c.CreateWithOverride(ctx, imageName, nil)
 }
 
 // CreateWithOverride create container and override parts of the config to
 // allow special situations to override the config generated from the compose
 // file
-func (c *Container) CreateWithOverride(imageName string, configOverride *config.ServiceConfig) (*types.ContainerJSON, error) {
-	container, err := c.findExisting()
+func (c *Container) CreateWithOverride(ctx context.Context, imageName string, configOverride *config.ServiceConfig) (*types.ContainerJSON, error) {
+	container, err := c.findExisting(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	if container == nil {
-		container, err = c.createContainer(imageName, "", configOverride)
+		container, err = c.createContainer(ctx, imageName, "", configOverride)
 		if err != nil {
 			return nil, err
 		}
@@ -194,54 +194,54 @@ func (c *Container) CreateWithOverride(imageName string, configOverride *config.
 }
 
 // Stop stops the container.
-func (c *Container) Stop(timeout int) error {
-	return c.withContainer(func(container *types.ContainerJSON) error {
-		return c.client.ContainerStop(context.Background(), container.ID, timeout)
+func (c *Container) Stop(ctx context.Context, timeout int) error {
+	return c.withContainer(ctx, func(container *types.ContainerJSON) error {
+		return c.client.ContainerStop(ctx, container.ID, timeout)
 	})
 }
 
 // Pause pauses the container. If the containers are already paused, don't fail.
-func (c *Container) Pause() error {
-	return c.withContainer(func(container *types.ContainerJSON) error {
+func (c *Container) Pause(ctx context.Context) error {
+	return c.withContainer(ctx, func(container *types.ContainerJSON) error {
 		if !container.State.Paused {
-			return c.client.ContainerPause(context.Background(), container.ID)
+			return c.client.ContainerPause(ctx, container.ID)
 		}
 		return nil
 	})
 }
 
 // Unpause unpauses the container. If the containers are not paused, don't fail.
-func (c *Container) Unpause() error {
-	return c.withContainer(func(container *types.ContainerJSON) error {
+func (c *Container) Unpause(ctx context.Context) error {
+	return c.withContainer(ctx, func(container *types.ContainerJSON) error {
 		if container.State.Paused {
-			return c.client.ContainerUnpause(context.Background(), container.ID)
+			return c.client.ContainerUnpause(ctx, container.ID)
 		}
 		return nil
 	})
 }
 
 // Kill kill the container.
-func (c *Container) Kill(signal string) error {
-	return c.withContainer(func(container *types.ContainerJSON) error {
-		return c.client.ContainerKill(context.Background(), container.ID, signal)
+func (c *Container) Kill(ctx context.Context, signal string) error {
+	return c.withContainer(ctx, func(container *types.ContainerJSON) error {
+		return c.client.ContainerKill(ctx, container.ID, signal)
 	})
 }
 
 // Delete removes the container if existing. If the container is running, it tries
 // to stop it first.
-func (c *Container) Delete(removeVolume bool) error {
-	container, err := c.findExisting()
+func (c *Container) Delete(ctx context.Context, removeVolume bool) error {
+	container, err := c.findExisting(ctx)
 	if err != nil || container == nil {
 		return err
 	}
 
-	info, err := c.client.ContainerInspect(context.Background(), container.ID)
+	info, err := c.client.ContainerInspect(ctx, container.ID)
 	if err != nil {
 		return err
 	}
 
 	if !info.State.Running {
-		return c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
+		return c.client.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{
 			Force:         true,
 			RemoveVolumes: removeVolume,
 		})
@@ -251,13 +251,13 @@ func (c *Container) Delete(removeVolume bool) error {
 }
 
 // IsRunning returns the running state of the container.
-func (c *Container) IsRunning() (bool, error) {
-	container, err := c.findExisting()
+func (c *Container) IsRunning(ctx context.Context) (bool, error) {
+	container, err := c.findExisting(ctx)
 	if err != nil || container == nil {
 		return false, err
 	}
 
-	info, err := c.client.ContainerInspect(context.Background(), container.ID)
+	info, err := c.client.ContainerInspect(ctx, container.ID)
 	if err != nil {
 		return false, err
 	}
@@ -268,14 +268,14 @@ func (c *Container) IsRunning() (bool, error) {
 // Run creates, start and attach to the container based on the image name,
 // the specified configuration.
 // It will always create a new container.
-func (c *Container) Run(imageName string, configOverride *config.ServiceConfig) (int, error) {
+func (c *Container) Run(ctx context.Context, imageName string, configOverride *config.ServiceConfig) (int, error) {
 	var (
 		errCh       chan error
 		out, stderr io.Writer
 		in          io.ReadCloser
 	)
 
-	container, err := c.createContainer(imageName, "", configOverride)
+	container, err := c.createContainer(ctx, imageName, "", configOverride)
 	if err != nil {
 		return -1, err
 	}
@@ -297,7 +297,7 @@ func (c *Container) Run(imageName string, configOverride *config.ServiceConfig) 
 		Stderr: configOverride.Tty,
 	}
 
-	resp, err := c.client.ContainerAttach(context.Background(), container.ID, options)
+	resp, err := c.client.ContainerAttach(ctx, container.ID, options)
 	if err != nil {
 		return -1, err
 	}
@@ -315,7 +315,7 @@ func (c *Container) Run(imageName string, configOverride *config.ServiceConfig) 
 		return holdHijackedConnection(configOverride.Tty, in, out, stderr, resp)
 	})
 
-	if err := c.client.ContainerStart(context.Background(), container.ID); err != nil {
+	if err := c.client.ContainerStart(ctx, container.ID); err != nil {
 		return -1, err
 	}
 
@@ -324,7 +324,7 @@ func (c *Container) Run(imageName string, configOverride *config.ServiceConfig) 
 		return -1, err
 	}
 
-	exitedContainer, err := c.client.ContainerInspect(context.Background(), container.ID)
+	exitedContainer, err := c.client.ContainerInspect(ctx, container.ID)
 	if err != nil {
 		return -1, err
 	}
@@ -382,10 +382,10 @@ func holdHijackedConnection(tty bool, inputStream io.ReadCloser, outputStream, e
 // Up creates and start the container based on the image name and send an event
 // to notify the container has been created. If the container exists but is stopped
 // it tries to start it.
-func (c *Container) Up(imageName string) error {
+func (c *Container) Up(ctx context.Context, imageName string) error {
 	var err error
 
-	container, err := c.Create(imageName)
+	container, err := c.Create(ctx, imageName)
 	if err != nil {
 		return err
 	}
@@ -412,8 +412,8 @@ func (c *Container) Start(container *types.ContainerJSON) error {
 
 // OutOfSync checks if the container is out of sync with the service definition.
 // It looks if the the service hash container label is the same as the computed one.
-func (c *Container) OutOfSync(imageName string) (bool, error) {
-	container, err := c.findExisting()
+func (c *Container) OutOfSync(ctx context.Context, imageName string) (bool, error) {
+	container, err := c.findExisting(ctx)
 	if err != nil || container == nil {
 		return false, err
 	}
@@ -428,7 +428,7 @@ func (c *Container) OutOfSync(imageName string) (bool, error) {
 		return true, nil
 	}
 
-	image, _, err := c.client.ImageInspectWithRaw(context.Background(), container.Config.Image, false)
+	image, _, err := c.client.ImageInspectWithRaw(ctx, container.Config.Image, false)
 	if err != nil {
 		if client.IsErrImageNotFound(err) {
 			logrus.Debugf("Image %s do not exist, do not know if it's out of sync", container.Config.Image)
@@ -455,7 +455,7 @@ func volumeBinds(volumes map[string]struct{}, container *types.ContainerJSON) []
 	return result
 }
 
-func (c *Container) createContainer(imageName, oldContainer string, configOverride *config.ServiceConfig) (*types.ContainerJSON, error) {
+func (c *Container) createContainer(ctx context.Context, imageName, oldContainer string, configOverride *config.ServiceConfig) (*types.ContainerJSON, error) {
 	serviceConfig := c.service.serviceConfig
 	if configOverride != nil {
 		serviceConfig.Command = configOverride.Command
@@ -491,7 +491,7 @@ func (c *Container) createContainer(imageName, oldContainer string, configOverri
 	}
 
 	if oldContainer != "" {
-		info, err := c.client.ContainerInspect(context.Background(), oldContainer)
+		info, err := c.client.ContainerInspect(ctx, oldContainer)
 		if err != nil {
 			return nil, err
 		}
@@ -500,13 +500,13 @@ func (c *Container) createContainer(imageName, oldContainer string, configOverri
 
 	logrus.Debugf("Creating container %s %#v", c.name, configWrapper)
 
-	container, err := c.client.ContainerCreate(context.Background(), configWrapper.Config, configWrapper.HostConfig, configWrapper.NetworkingConfig, c.name)
+	container, err := c.client.ContainerCreate(ctx, configWrapper.Config, configWrapper.HostConfig, configWrapper.NetworkingConfig, c.name)
 	if err != nil {
 		logrus.Debugf("Failed to create container %s: %v", c.name, err)
 		return nil, err
 	}
 
-	return GetContainer(c.client, container.ID)
+	return GetContainer(ctx, c.client, container.ID)
 }
 
 func (c *Container) populateAdditionalHostConfig(hostConfig *container.HostConfig) error {
@@ -522,7 +522,8 @@ func (c *Container) populateAdditionalHostConfig(hostConfig *container.HostConfi
 			return err
 		}
 
-		containers, err := service.Containers()
+		// FIXME(vdemeester) container should not know service
+		containers, err := service.Containers(context.Background())
 		if err != nil {
 			return err
 		}
@@ -591,7 +592,8 @@ func (c *Container) addNetNs(config *container.HostConfig, service project.Servi
 
 // ID returns the container Id.
 func (c *Container) ID() (string, error) {
-	container, err := c.findExisting()
+	// FIXME(vdemeester) container should not ask for his ID..
+	container, err := c.findExisting(context.Background())
 	if container == nil {
 		return "", err
 	}
@@ -604,23 +606,23 @@ func (c *Container) Name() string {
 }
 
 // Restart restarts the container if existing, does nothing otherwise.
-func (c *Container) Restart(timeout int) error {
-	container, err := c.findExisting()
+func (c *Container) Restart(ctx context.Context, timeout int) error {
+	container, err := c.findExisting(ctx)
 	if err != nil || container == nil {
 		return err
 	}
 
-	return c.client.ContainerRestart(context.Background(), container.ID, timeout)
+	return c.client.ContainerRestart(ctx, container.ID, timeout)
 }
 
 // Log forwards container logs to the project configured logger.
-func (c *Container) Log(follow bool) error {
-	container, err := c.findExisting()
+func (c *Container) Log(ctx context.Context, follow bool) error {
+	container, err := c.findExisting(ctx)
 	if container == nil || err != nil {
 		return err
 	}
 
-	info, err := c.client.ContainerInspect(context.Background(), container.ID)
+	info, err := c.client.ContainerInspect(ctx, container.ID)
 	if err != nil {
 		return err
 	}
@@ -635,7 +637,7 @@ func (c *Container) Log(follow bool) error {
 		Follow:     follow,
 		Tail:       "all",
 	}
-	responseBody, err := c.client.ContainerLogs(context.Background(), c.name, options)
+	responseBody, err := c.client.ContainerLogs(ctx, c.name, options)
 	if err != nil {
 		return err
 	}
@@ -651,8 +653,8 @@ func (c *Container) Log(follow bool) error {
 	return err
 }
 
-func (c *Container) withContainer(action func(*types.ContainerJSON) error) error {
-	container, err := c.findExisting()
+func (c *Container) withContainer(ctx context.Context, action func(*types.ContainerJSON) error) error {
+	container, err := c.findExisting(ctx)
 	if err != nil {
 		return err
 	}
@@ -665,8 +667,8 @@ func (c *Container) withContainer(action func(*types.ContainerJSON) error) error
 }
 
 // Port returns the host port the specified port is mapped on.
-func (c *Container) Port(port string) (string, error) {
-	container, err := c.findExisting()
+func (c *Container) Port(ctx context.Context, port string) (string, error) {
+	container, err := c.findExisting(ctx)
 	if err != nil {
 		return "", err
 	}

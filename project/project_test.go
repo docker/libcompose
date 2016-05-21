@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/project/options"
 	"github.com/docker/libcompose/yaml"
@@ -32,11 +34,11 @@ func (t *TestService) Name() string {
 	return t.name
 }
 
-func (t *TestService) Run(commandParts []string) (int, error) {
+func (t *TestService) Run(ctx context.Context, commandParts []string) (int, error) {
 	return 0, nil
 }
 
-func (t *TestService) Create(options options.Create) error {
+func (t *TestService) Create(ctx context.Context, options options.Create) error {
 	key := t.name + ".create"
 	t.factory.Counts[key] = t.factory.Counts[key] + 1
 	return nil
@@ -65,11 +67,11 @@ func TestTwoCall(t *testing.T) {
 	p.ServiceConfigs = config.NewServiceConfigs()
 	p.ServiceConfigs.Add("foo", &config.ServiceConfig{})
 
-	if err := p.Create(options.Create{}, "foo"); err != nil {
+	if err := p.Create(context.Background(), options.Create{}, "foo"); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := p.Create(options.Create{}, "foo"); err != nil {
+	if err := p.Create(context.Background(), options.Create{}, "foo"); err != nil {
 		t.Fatal(err)
 	}
 
