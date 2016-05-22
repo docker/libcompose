@@ -99,14 +99,14 @@ func contains(list []string, item string) bool {
 }
 
 func TestMaporsliceYaml(t *testing.T) {
-	str := `{foo: {bar: baz, far: faz}}`
+	str := `{foo: {bar: baz, far: 1}}`
 
 	s := StructMaporslice{}
 	yaml.Unmarshal([]byte(str), &s)
 
 	assert.Equal(t, 2, len(s.Foo))
 	assert.True(t, contains(s.Foo, "bar=baz"))
-	assert.True(t, contains(s.Foo, "far=faz"))
+	assert.True(t, contains(s.Foo, "far=1"))
 
 	d, err := yaml.Marshal(&s)
 	assert.Nil(t, err)
@@ -116,7 +116,7 @@ func TestMaporsliceYaml(t *testing.T) {
 
 	assert.Equal(t, 2, len(s2.Foo))
 	assert.True(t, contains(s2.Foo, "bar=baz"))
-	assert.True(t, contains(s2.Foo, "far=faz"))
+	assert.True(t, contains(s2.Foo, "far=1"))
 }
 
 var sampleStructCommand = `command: bash`

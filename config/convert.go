@@ -2,29 +2,29 @@ package config
 
 import "github.com/docker/libcompose/utils"
 
-// ConvertV1toV2 converts a v1 service config to a v2 service config
-func ConvertV1toV2(v1Services map[string]*ServiceConfigV1, environmentLookup EnvironmentLookup, resourceLookup ResourceLookup) (map[string]*ServiceConfig, error) {
+// ConvertServices converts a set of v1 service configs to v2 service configs
+func ConvertServices(v1Services map[string]*ServiceConfigV1) (map[string]*ServiceConfig, error) {
 	v2Services := make(map[string]*ServiceConfig)
-
-	builds := make(map[string]Build)
-	logs := make(map[string]Log)
+	replacementFields := make(map[string]*ServiceConfig)
 
 	for name, service := range v1Services {
-		builds[name] = Build{
-			Context:    service.Build,
-			Dockerfile: service.Dockerfile,
+		replacementFields[name] = &ServiceConfig{
+			Build: Build{
+				Context:    service.Build,
+				Dockerfile: service.Dockerfile,
+			},
+			Logging: Log{
+				Driver:  service.LogDriver,
+				Options: service.LogOpt,
+			},
+			NetworkMode: service.Net,
 		}
 
 		v1Services[name].Build = ""
 		v1Services[name].Dockerfile = ""
-
-		logs[name] = Log{
-			Driver:  service.LogDriver,
-			Options: service.LogOpt,
-		}
-
 		v1Services[name].LogDriver = ""
 		v1Services[name].LogOpt = nil
+		v1Services[name].Net = ""
 	}
 
 	if err := utils.Convert(v1Services, &v2Services); err != nil {
@@ -32,7 +32,9 @@ func ConvertV1toV2(v1Services map[string]*ServiceConfigV1, environmentLookup Env
 	}
 
 	for name := range v2Services {
-		v2Services[name].Build = builds[name]
+		v2Services[name].Build = replacementFields[name].Build
+		v2Services[name].Logging = replacementFields[name].Logging
+		v2Services[name].NetworkMode = replacementFields[name].NetworkMode
 	}
 
 	return v2Services, nil

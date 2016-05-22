@@ -10,7 +10,7 @@ import (
 )
 
 // MergeServicesV2 merges a v2 compose file into an existing set of service configs
-func MergeServicesV2(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup, resourceLookup ResourceLookup, file string, bytes []byte) (map[string]*ServiceConfig, error) {
+func MergeServicesV2(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup, resourceLookup ResourceLookup, file string, bytes []byte, options *ParseOptions) (map[string]*ServiceConfig, error) {
 	var config Config
 	if err := yaml.Unmarshal(bytes, &config); err != nil {
 		return nil, err
@@ -18,12 +18,22 @@ func MergeServicesV2(existingServices *ServiceConfigs, environmentLookup Environ
 
 	datas := config.Services
 
-	if err := Interpolate(environmentLookup, &datas); err != nil {
-		return nil, err
+	if options.Interpolate {
+		if err := Interpolate(environmentLookup, &datas); err != nil {
+			return nil, err
+		}
+	}
+
+	if options.Preprocess != nil {
+		var err error
+		datas, err = options.Preprocess(datas)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for name, data := range datas {
-		data, err := parseV2(resourceLookup, environmentLookup, file, data, datas)
+		data, err := parseV2(resourceLookup, environmentLookup, file, data, datas, options)
 		if err != nil {
 			logrus.Errorf("Failed to parse service %s: %v", name, err)
 			return nil, err
@@ -50,7 +60,7 @@ func MergeServicesV2(existingServices *ServiceConfigs, environmentLookup Environ
 }
 
 // ParseVolumes parses volumes in a compose file
-func ParseVolumes(environmentLookup EnvironmentLookup, resourceLookup ResourceLookup, file string, bytes []byte) (map[string]*VolumeConfig, error) {
+func ParseVolumes(bytes []byte) (map[string]*VolumeConfig, error) {
 	volumeConfigs := make(map[string]*VolumeConfig)
 
 	var config Config
@@ -66,7 +76,7 @@ func ParseVolumes(environmentLookup EnvironmentLookup, resourceLookup ResourceLo
 }
 
 // ParseNetworks parses networks in a compose file
-func ParseNetworks(environmentLookup EnvironmentLookup, resourceLookup ResourceLookup, file string, bytes []byte) (map[string]*NetworkConfig, error) {
+func ParseNetworks(bytes []byte) (map[string]*NetworkConfig, error) {
 	networkConfigs := make(map[string]*NetworkConfig)
 
 	var config Config
@@ -81,7 +91,7 @@ func ParseNetworks(environmentLookup EnvironmentLookup, resourceLookup ResourceL
 	return networkConfigs, nil
 }
 
-func parseV2(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup, inFile string, serviceData RawService, datas RawServiceMap) (RawService, error) {
+func parseV2(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup, inFile string, serviceData RawService, datas RawServiceMap, options *ParseOptions) (RawService, error) {
 	serviceData, err := readEnvFile(resourceLookup, inFile, serviceData)
 	if err != nil {
 		return nil, err
@@ -114,7 +124,7 @@ func parseV2(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup,
 
 	if file == "" {
 		if serviceData, ok := datas[service]; ok {
-			baseService, err = parseV2(resourceLookup, environmentLookup, inFile, serviceData, datas)
+			baseService, err = parseV2(resourceLookup, environmentLookup, inFile, serviceData, datas, options)
 		} else {
 			return nil, fmt.Errorf("Failed to find service %s to extend", service)
 		}
@@ -132,9 +142,11 @@ func parseV2(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup,
 
 		baseRawServices := config.Services
 
-		err = Interpolate(environmentLookup, &baseRawServices)
-		if err != nil {
-			return nil, err
+		if options.Interpolate {
+			err = Interpolate(environmentLookup, &baseRawServices)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		baseService, ok = baseRawServices[service]
@@ -142,7 +154,7 @@ func parseV2(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup,
 			return nil, fmt.Errorf("Failed to find service %s in file %s", service, file)
 		}
 
-		baseService, err = parseV2(resourceLookup, environmentLookup, resolved, baseService, baseRawServices)
+		baseService, err = parseV2(resourceLookup, environmentLookup, resolved, baseService, baseRawServices, options)
 	}
 
 	if err != nil {

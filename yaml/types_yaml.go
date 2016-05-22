@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/docker/engine-api/types/strslice"
@@ -259,6 +260,8 @@ func toSepMapParts(value map[interface{}]interface{}, sep string) ([]string, err
 		if sk, ok := k.(string); ok {
 			if sv, ok := v.(string); ok {
 				parts = append(parts, sk+sep+sv)
+			} else if sv, ok := v.(int64); ok {
+				parts = append(parts, sk+sep+strconv.FormatInt(sv, 10))
 			} else {
 				return nil, fmt.Errorf("Cannot unmarshal '%v' of type %T into a string value", v, v)
 			}

@@ -30,5 +30,5 @@ func (p *ProjectFactory) Create(c *cli.Context) (project.APIProject, error) {
 
 	context.ProjectName = c.GlobalString("project-name")
 
-	return docker.NewProject(context)
+	return docker.NewProject(context, nil)
 }

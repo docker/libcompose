@@ -29,6 +29,7 @@ type Project struct {
 	NetworkConfigs map[string]*config.NetworkConfig
 	Files          []string
 	ReloadCallback func() error
+	ParseOptions   *config.ParseOptions
 
 	context       *Context
 	clientFactory ClientFactory
@@ -39,10 +40,11 @@ type Project struct {
 }
 
 // NewProject creates a new project with the specified context.
-func NewProject(clientFactory ClientFactory, context *Context) *Project {
+func NewProject(clientFactory ClientFactory, context *Context, parseOptions *config.ParseOptions) *Project {
 	p := &Project{
 		context:        context,
 		clientFactory:  clientFactory,
+		ParseOptions:   parseOptions,
 		ServiceConfigs: config.NewServiceConfigs(),
 		VolumeConfigs:  make(map[string]*config.VolumeConfig),
 		NetworkConfigs: make(map[string]*config.NetworkConfig),
@@ -156,7 +158,7 @@ func (p *Project) Load(bytes []byte) error {
 }
 
 func (p *Project) load(file string, bytes []byte) error {
-	serviceConfigs, volumeConfigs, networkConfigs, err := config.Merge(p.ServiceConfigs, p.context.EnvironmentLookup, p.context.ResourceLookup, file, bytes)
+	serviceConfigs, volumeConfigs, networkConfigs, err := config.Merge(p.ServiceConfigs, p.context.EnvironmentLookup, p.context.ResourceLookup, file, bytes, p.ParseOptions)
 	if err != nil {
 		log.Errorf("Could not parse config for project %s : %v", p.Name, err)
 		return err

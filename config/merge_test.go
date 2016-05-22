@@ -20,7 +20,7 @@ parent:
 child:
   extends:
     service: parent
-`))
+`), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +33,7 @@ services:
   child:
     extends:
       service: parent
-`))
+`), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ parent:
 child:
   extends:
     service: parent
-`))
+`), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ services:
   child:
     extends:
       service: parent
-`))
+`), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +108,7 @@ child:
   build: .
   extends:
     service: parent
-`))
+`), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +123,7 @@ services:
       context: .
     extends:
       service: parent
-`))
+`), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +154,7 @@ child:
   image: foo
   extends:
     service: parent
-`))
+`), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +169,7 @@ services:
     image: foo
     extends:
       service: parent
-`))
+`), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -201,7 +201,7 @@ func TestRestartNo(t *testing.T) {
 test:
   restart: "no"
   image: foo
-`))
+`), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +212,7 @@ services:
   test:
     restart: "no"
     image: foo
-`))
+`), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -231,7 +231,7 @@ func TestRestartAlways(t *testing.T) {
 test:
   restart: always
   image: foo
-`))
+`), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,7 +242,7 @@ services:
   test:
     restart: always
     image: foo
-`))
+`), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -285,6 +285,69 @@ func TestIsValidRemote(t *testing.T) {
 	for _, url := range invalidGitUrls {
 		if !IsValidRemote(url) {
 			t.Fatalf("%q should have been a valid remote", url)
+		}
+	}
+}
+
+func preprocess(services RawServiceMap) (RawServiceMap, error) {
+	for name := range services {
+		services[name]["image"] = "foo2"
+	}
+	return services, nil
+}
+
+func postprocess(services map[string]*ServiceConfig) (map[string]*ServiceConfig, error) {
+	for name := range services {
+		services[name].ContainerName = "cname"
+	}
+	return services, nil
+}
+
+func TestParseOptions(t *testing.T) {
+	parseOptions := ParseOptions{
+		Interpolate: false,
+		Validate:    false,
+		Preprocess:  preprocess,
+		Postprocess: postprocess,
+	}
+
+	configV1, _, _, err := Merge(NewServiceConfigs(), nil, &NullLookup{}, "", []byte(`
+test:
+  image: foo
+  labels:
+    x: $X
+test2:
+  invalid_key: true
+`), &parseOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	configV2, _, _, err := Merge(NewServiceConfigs(), nil, &NullLookup{}, "", []byte(`
+version: '2'
+services:
+  test:
+    image: foo
+    labels:
+      x: $X
+  test2:
+    invalid_key: true
+`), &parseOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, config := range []map[string]*ServiceConfig{configV1, configV2} {
+		test := config["test"]
+
+		if test.Image != "foo2" {
+			t.Fatal("Preprocess failed to change image", test.Image)
+		}
+		if test.ContainerName != "cname" {
+			t.Fatal("Postprocess failed to change container name", test.ContainerName)
+		}
+		if test.Labels["x"] != "$X" {
+			t.Fatal("Failed to disable interpolation")
 		}
 	}
 }

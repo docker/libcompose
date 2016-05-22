@@ -61,7 +61,7 @@ func TestTwoCall(t *testing.T) {
 
 	p := NewProject(nil, &Context{
 		ServiceFactory: factory,
-	})
+	}, nil)
 	p.ServiceConfigs = config.NewServiceConfigs()
 	p.ServiceConfigs.Add("foo", &config.ServiceConfig{})
 
@@ -83,7 +83,7 @@ func TestParseWithBadContent(t *testing.T) {
 		ComposeBytes: [][]byte{
 			[]byte("garbage"),
 		},
-	})
+	}, nil)
 
 	err := p.Parse()
 	if err == nil {
@@ -100,7 +100,7 @@ func TestParseWithGoodContent(t *testing.T) {
 		ComposeBytes: [][]byte{
 			[]byte("not-garbage:\n  image: foo"),
 		},
-	})
+	}, nil)
 
 	err := p.Parse()
 	if err != nil {
@@ -123,7 +123,7 @@ func TestEnvironmentResolve(t *testing.T) {
 	p := NewProject(nil, &Context{
 		ServiceFactory:    factory,
 		EnvironmentLookup: &TestEnvironmentLookup{},
-	})
+	}, nil)
 	p.ServiceConfigs = config.NewServiceConfigs()
 	p.ServiceConfigs.Add("foo", &config.ServiceConfig{
 		Environment: yaml.MaporEqualSlice([]string{
@@ -166,7 +166,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 
 	p := NewProject(nil, &Context{
 		ComposeBytes: [][]byte{configOne, configTwo},
-	})
+	}, nil)
 
 	err := p.Parse()
 
@@ -179,7 +179,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 
 	p = NewProject(nil, &Context{
 		ComposeBytes: [][]byte{configTwo, configOne},
-	})
+	}, nil)
 
 	err = p.Parse()
 
@@ -192,7 +192,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 
 	p = NewProject(nil, &Context{
 		ComposeBytes: [][]byte{configOne, configTwo, configThree},
-	})
+	}, nil)
 
 	err = p.Parse()
 
