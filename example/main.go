@@ -13,8 +13,8 @@ func main() {
 		Context: project.Context{
 			ComposeFiles: []string{"docker-compose.yml"},
 			ProjectName:  "yeah-compose",
-		},
-	})
+		}
+	}, nil)
 
 	if err != nil {
 		log.Fatal(err)

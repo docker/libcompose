@@ -15,6 +15,7 @@ import (
 
 	"github.com/docker/libcompose/docker"
 	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/project/options"
 )
 
 func main() {
@@ -23,13 +24,17 @@ func main() {
 			ComposeFiles: []string{"docker-compose.yml"},
 			ProjectName:  "my-compose",
 		},
-	})
+	}, nil)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	project.Up()
+	err = project.Up(options.Up{})
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 ```
 
