@@ -1,6 +1,7 @@
 package project
 
 import (
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/project/events"
 	"github.com/docker/libcompose/project/options"
 )
@@ -30,4 +31,7 @@ type APIProject interface {
 	Up(options options.Up, services ...string) error
 
 	Parse() error
+	CreateService(name string) (Service, error)
+	AddConfig(name string, config *config.ServiceConfig) error
+	Load(bytes []byte) error
 }
