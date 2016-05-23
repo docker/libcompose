@@ -201,41 +201,41 @@ func (p *Project) loadWrappers(wrappers map[string]*serviceWrapper, servicesToCo
 }
 
 // Build builds the specified services (like docker build).
-func (p *Project) Build(buildOptions options.Build, services ...string) error {
+func (p *Project) Build(ctx context.Context, buildOptions options.Build, services ...string) error {
 	return p.perform(events.ProjectBuildStart, events.ProjectBuildDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, events.ServiceBuildStart, events.ServiceBuild, func(service Service) error {
-			return service.Build(buildOptions)
+			return service.Build(ctx, buildOptions)
 		})
 	}), nil)
 }
 
 // Create creates the specified services (like docker create).
-func (p *Project) Create(options options.Create, services ...string) error {
+func (p *Project) Create(ctx context.Context, options options.Create, services ...string) error {
 	if options.NoRecreate && options.ForceRecreate {
 		return fmt.Errorf("no-recreate and force-recreate cannot be combined")
 	}
 	return p.perform(events.ProjectCreateStart, events.ProjectCreateDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, events.ServiceCreateStart, events.ServiceCreate, func(service Service) error {
-			return service.Create(options)
+			return service.Create(ctx, options)
 		})
 	}), nil)
 }
 
 // Stop stops the specified services (like docker stop).
-func (p *Project) Stop(timeout int, services ...string) error {
+func (p *Project) Stop(ctx context.Context, timeout int, services ...string) error {
 	return p.perform(events.ProjectStopStart, events.ProjectStopDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, events.ServiceStopStart, events.ServiceStop, func(service Service) error {
-			return service.Stop(timeout)
+			return service.Stop(ctx, timeout)
 		})
 	}), nil)
 }
 
 // Down stops the specified services and clean related containers (like docker stop + docker rm).
-func (p *Project) Down(opts options.Down, services ...string) error {
+func (p *Project) Down(ctx context.Context, opts options.Down, services ...string) error {
 	if !opts.RemoveImages.Valid() {
 		return fmt.Errorf("--rmi flag must be local, all or empty")
 	}
-	if err := p.Stop(10, services...); err != nil {
+	if err := p.Stop(ctx, 10, services...); err != nil {
 		return err
 	}
 	if opts.RemoveOrphans {
@@ -243,7 +243,7 @@ func (p *Project) Down(opts options.Down, services ...string) error {
 			return err
 		}
 	}
-	if err := p.Delete(options.Delete{
+	if err := p.Delete(ctx, options.Delete{
 		RemoveVolume: opts.RemoveVolume,
 	}, services...); err != nil {
 		return err
@@ -251,10 +251,10 @@ func (p *Project) Down(opts options.Down, services ...string) error {
 
 	return p.forEach([]string{}, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, events.NoEvent, events.NoEvent, func(service Service) error {
-			return service.RemoveImage(opts.RemoveImages)
+			return service.RemoveImage(ctx, opts.RemoveImages)
 		})
 	}), func(service Service) error {
-		return service.Create(options.Create{})
+		return service.Create(ctx, options.Create{})
 	})
 }
 
@@ -289,22 +289,22 @@ func (p *Project) removeOrphanContainers() error {
 }
 
 // Restart restarts the specified services (like docker restart).
-func (p *Project) Restart(timeout int, services ...string) error {
+func (p *Project) Restart(ctx context.Context, timeout int, services ...string) error {
 	return p.perform(events.ProjectRestartStart, events.ProjectRestartDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, events.ServiceRestartStart, events.ServiceRestart, func(service Service) error {
-			return service.Restart(timeout)
+			return service.Restart(ctx, timeout)
 		})
 	}), nil)
 }
 
 // Port returns the public port for a port binding of the specified service.
-func (p *Project) Port(index int, protocol, serviceName, privatePort string) (string, error) {
+func (p *Project) Port(ctx context.Context, index int, protocol, serviceName, privatePort string) (string, error) {
 	service, err := p.CreateService(serviceName)
 	if err != nil {
 		return "", err
 	}
 
-	containers, err := service.Containers()
+	containers, err := service.Containers(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -313,11 +313,11 @@ func (p *Project) Port(index int, protocol, serviceName, privatePort string) (st
 		return "", fmt.Errorf("Invalid index %d", index)
 	}
 
-	return containers[index-1].Port(fmt.Sprintf("%s/%s", privatePort, protocol))
+	return containers[index-1].Port(ctx, fmt.Sprintf("%s/%s", privatePort, protocol))
 }
 
 // Ps list containers for the specified services.
-func (p *Project) Ps(onlyID bool, services ...string) (InfoSet, error) {
+func (p *Project) Ps(ctx context.Context, onlyID bool, services ...string) (InfoSet, error) {
 	allInfo := InfoSet{}
 	for _, name := range p.ServiceConfigs.Keys() {
 		service, err := p.CreateService(name)
@@ -325,7 +325,7 @@ func (p *Project) Ps(onlyID bool, services ...string) (InfoSet, error) {
 			return nil, err
 		}
 
-		info, err := service.Info(onlyID)
+		info, err := service.Info(ctx, onlyID)
 		if err != nil {
 			return nil, err
 		}
@@ -336,16 +336,16 @@ func (p *Project) Ps(onlyID bool, services ...string) (InfoSet, error) {
 }
 
 // Start starts the specified services (like docker start).
-func (p *Project) Start(services ...string) error {
+func (p *Project) Start(ctx context.Context, services ...string) error {
 	return p.perform(events.ProjectStartStart, events.ProjectStartDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, events.ServiceStartStart, events.ServiceStart, func(service Service) error {
-			return service.Start()
+			return service.Start(ctx)
 		})
 	}), nil)
 }
 
 // Run executes a one off command (like `docker run image command`).
-func (p *Project) Run(serviceName string, commandParts []string) (int, error) {
+func (p *Project) Run(ctx context.Context, serviceName string, commandParts []string) (int, error) {
 	if !p.ServiceConfigs.Has(serviceName) {
 		return 1, fmt.Errorf("%s is not defined in the template", serviceName)
 	}
@@ -354,40 +354,40 @@ func (p *Project) Run(serviceName string, commandParts []string) (int, error) {
 	err := p.forEach([]string{}, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, events.ServiceRunStart, events.ServiceRun, func(service Service) error {
 			if service.Name() == serviceName {
-				code, err := service.Run(commandParts)
+				code, err := service.Run(ctx, commandParts)
 				exitCode = code
 				return err
 			}
 			return nil
 		})
 	}), func(service Service) error {
-		return service.Create(options.Create{})
+		return service.Create(ctx, options.Create{})
 	})
 	return exitCode, err
 }
 
 // Up creates and starts the specified services (kinda like docker run).
-func (p *Project) Up(options options.Up, services ...string) error {
+func (p *Project) Up(ctx context.Context, options options.Up, services ...string) error {
 	return p.perform(events.ProjectUpStart, events.ProjectUpDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, events.ServiceUpStart, events.ServiceUp, func(service Service) error {
-			return service.Up(options)
+			return service.Up(ctx, options)
 		})
 	}), func(service Service) error {
-		return service.Create(options.Create)
+		return service.Create(ctx, options.Create)
 	})
 }
 
 // Log aggregates and prints out the logs for the specified services.
-func (p *Project) Log(follow bool, services ...string) error {
+func (p *Project) Log(ctx context.Context, follow bool, services ...string) error {
 	return p.forEach(services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, events.NoEvent, events.NoEvent, func(service Service) error {
-			return service.Log(follow)
+			return service.Log(ctx, follow)
 		})
 	}), nil)
 }
 
 // Scale scales the specified services.
-func (p *Project) Scale(timeout int, servicesScale map[string]int) error {
+func (p *Project) Scale(ctx context.Context, timeout int, servicesScale map[string]int) error {
 	// This code is a bit verbose but I wanted to parse everything up front
 	order := make([]string, 0, 0)
 	services := make(map[string]Service)
@@ -409,7 +409,7 @@ func (p *Project) Scale(timeout int, servicesScale map[string]int) error {
 	for _, name := range order {
 		scale := servicesScale[name]
 		log.Infof("Setting scale %s=%d...", name, scale)
-		err := services[name].Scale(scale, timeout)
+		err := services[name].Scale(ctx, scale, timeout)
 		if err != nil {
 			return fmt.Errorf("Failed to set the scale %s=%d: %v", name, scale, err)
 		}
@@ -418,26 +418,26 @@ func (p *Project) Scale(timeout int, servicesScale map[string]int) error {
 }
 
 // Pull pulls the specified services (like docker pull).
-func (p *Project) Pull(services ...string) error {
+func (p *Project) Pull(ctx context.Context, services ...string) error {
 	return p.forEach(services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, events.ServicePullStart, events.ServicePull, func(service Service) error {
-			return service.Pull()
+			return service.Pull(ctx)
 		})
 	}), nil)
 }
 
 // listStoppedContainers lists the stopped containers for the specified services.
-func (p *Project) listStoppedContainers(services ...string) ([]string, error) {
+func (p *Project) listStoppedContainers(ctx context.Context, services ...string) ([]string, error) {
 	stoppedContainers := []string{}
 	err := p.forEach(services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, events.NoEvent, events.NoEvent, func(service Service) error {
-			containers, innerErr := service.Containers()
+			containers, innerErr := service.Containers(ctx)
 			if innerErr != nil {
 				return innerErr
 			}
 
 			for _, container := range containers {
-				running, innerErr := container.IsRunning()
+				running, innerErr := container.IsRunning(ctx)
 				if innerErr != nil {
 					log.Error(innerErr)
 				}
@@ -460,8 +460,8 @@ func (p *Project) listStoppedContainers(services ...string) ([]string, error) {
 }
 
 // Delete removes the specified services (like docker rm).
-func (p *Project) Delete(options options.Delete, services ...string) error {
-	stoppedContainers, err := p.listStoppedContainers(services...)
+func (p *Project) Delete(ctx context.Context, options options.Delete, services ...string) error {
+	stoppedContainers, err := p.listStoppedContainers(ctx, services...)
 	if err != nil {
 		return err
 	}
@@ -475,34 +475,34 @@ func (p *Project) Delete(options options.Delete, services ...string) error {
 	}
 	return p.perform(events.ProjectDeleteStart, events.ProjectDeleteDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, events.ServiceDeleteStart, events.ServiceDelete, func(service Service) error {
-			return service.Delete(options)
+			return service.Delete(ctx, options)
 		})
 	}), nil)
 }
 
 // Kill kills the specified services (like docker kill).
-func (p *Project) Kill(signal string, services ...string) error {
+func (p *Project) Kill(ctx context.Context, signal string, services ...string) error {
 	return p.perform(events.ProjectKillStart, events.ProjectKillDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, events.ServiceKillStart, events.ServiceKill, func(service Service) error {
-			return service.Kill(signal)
+			return service.Kill(ctx, signal)
 		})
 	}), nil)
 }
 
 // Pause pauses the specified services containers (like docker pause).
-func (p *Project) Pause(services ...string) error {
+func (p *Project) Pause(ctx context.Context, services ...string) error {
 	return p.perform(events.ProjectPauseStart, events.ProjectPauseDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, events.ServicePauseStart, events.ServicePause, func(service Service) error {
-			return service.Pause()
+			return service.Pause(ctx)
 		})
 	}), nil)
 }
 
 // Unpause pauses the specified services containers (like docker pause).
-func (p *Project) Unpause(services ...string) error {
+func (p *Project) Unpause(ctx context.Context, services ...string) error {
 	return p.perform(events.ProjectUnpauseStart, events.ProjectUnpauseDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, events.ServiceUnpauseStart, events.ServiceUnpause, func(service Service) error {
-			return service.Unpause()
+			return service.Unpause(ctx)
 		})
 	}), nil)
 }

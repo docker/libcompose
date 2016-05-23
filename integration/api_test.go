@@ -3,6 +3,8 @@ package integration
 import (
 	. "gopkg.in/check.v1"
 
+	"golang.org/x/net/context"
+
 	"github.com/docker/libcompose/docker"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/options"
@@ -31,6 +33,6 @@ service:
 
 	c.Assert(err, IsNil)
 
-	err = project.Up(options.Up{})
+	err = project.Up(context.Background(), options.Up{})
 	c.Assert(err, IsNil)
 }

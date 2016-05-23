@@ -99,7 +99,7 @@ func TestBuildInvalidContextDirectoryOrDockerfile(t *testing.T) {
 			ContextDirectory: c.contextDirectory,
 			Dockerfile:       c.dockerfile,
 		}
-		err := builder.Build("image")
+		err := builder.Build(context.Background(), "image")
 		if err == nil || err.Error() != c.expected {
 			t.Fatalf("expected an error %q, got %s", c.expected, err)
 		}
@@ -124,7 +124,7 @@ func TestBuildWithClientBuildError(t *testing.T) {
 		Client:           client,
 	}
 
-	err = builder.Build(imageName)
+	err = builder.Build(context.Background(), imageName)
 	if err == nil || err.Error() != "Engine no longer exists" {
 		t.Fatalf("expected an 'Engine no longer exists', got %s", err)
 	}
@@ -153,7 +153,7 @@ func TestBuildWithDefaultDockerfile(t *testing.T) {
 		Client:           client,
 	}
 
-	err = builder.Build(imageName)
+	err = builder.Build(context.Background(), imageName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +182,7 @@ func TestBuildWithDefaultLowercaseDockerfile(t *testing.T) {
 		Client:           client,
 	}
 
-	err = builder.Build(imageName)
+	err = builder.Build(context.Background(), imageName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +212,7 @@ func TestBuildWithSpecificDockerfile(t *testing.T) {
 		Client:           client,
 	}
 
-	err = builder.Build(imageName)
+	err = builder.Build(context.Background(), imageName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -245,7 +245,7 @@ func TestBuildWithDockerignoreNothing(t *testing.T) {
 		Client:           client,
 	}
 
-	err = builder.Build(imageName)
+	err = builder.Build(context.Background(), imageName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,7 +278,7 @@ func TestBuildWithDockerignoreDockerfileAndItself(t *testing.T) {
 		Client:           client,
 	}
 
-	err = builder.Build(imageName)
+	err = builder.Build(context.Background(), imageName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,7 +312,7 @@ func TestBuildWithDockerignoreAfile(t *testing.T) {
 		Client:           client,
 	}
 
-	err = builder.Build(imageName)
+	err = builder.Build(context.Background(), imageName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -347,7 +347,7 @@ func TestBuildWithErrorJSONMessage(t *testing.T) {
 		Client:           client,
 	}
 
-	err = builder.Build(imageName)
+	err = builder.Build(context.Background(), imageName)
 	expectedError := "Status: error, Code: 1"
 	if err == nil || err.Error() != expectedError {
 		t.Fatalf("expected an error about %q, got %s", expectedError, err)

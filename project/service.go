@@ -3,33 +3,35 @@ package project
 import (
 	"errors"
 
+	"golang.org/x/net/context"
+
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/project/options"
 )
 
 // Service defines what a libcompose service provides.
 type Service interface {
-	Info(qFlag bool) (InfoSet, error)
-	Name() string
-	Build(buildOptions options.Build) error
-	Create(options options.Create) error
-	Up(options options.Up) error
-	Start() error
-	Stop(timeout int) error
-	Delete(options options.Delete) error
-	Restart(timeout int) error
-	Log(follow bool) error
-	Pull() error
-	Kill(signal string) error
-	Config() *config.ServiceConfig
-	DependentServices() []ServiceRelationship
-	Containers() ([]Container, error)
-	Scale(count int, timeout int) error
-	Pause() error
-	Unpause() error
-	Run(commandParts []string) (int, error)
+	Build(ctx context.Context, buildOptions options.Build) error
+	Create(ctx context.Context, options options.Create) error
+	Delete(ctx context.Context, options options.Delete) error
+	Info(ctx context.Context, qFlag bool) (InfoSet, error)
+	Log(ctx context.Context, follow bool) error
+	Kill(ctx context.Context, signal string) error
+	Pause(ctx context.Context) error
+	Pull(ctx context.Context) error
+	Restart(ctx context.Context, timeout int) error
+	Run(ctx context.Context, commandParts []string) (int, error)
+	Scale(ctx context.Context, count int, timeout int) error
+	Start(ctx context.Context) error
+	Stop(ctx context.Context, timeout int) error
+	Unpause(ctx context.Context) error
+	Up(ctx context.Context, options options.Up) error
 
-	RemoveImage(imageType options.ImageType) error
+	RemoveImage(ctx context.Context, imageType options.ImageType) error
+	Containers(ctx context.Context) ([]Container, error)
+	DependentServices() []ServiceRelationship
+	Config() *config.ServiceConfig
+	Name() string
 }
 
 // ServiceState holds the state of a service.

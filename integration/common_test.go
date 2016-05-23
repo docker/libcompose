@@ -160,7 +160,7 @@ func GetClient(c *C) client.APIClient {
 
 func (s *CliSuite) GetContainerByName(c *C, name string) *types.ContainerJSON {
 	client := GetClient(c)
-	container, err := docker.GetContainer(client, name)
+	container, err := docker.GetContainer(context.Background(), client, name)
 
 	c.Assert(err, IsNil)
 
@@ -169,7 +169,7 @@ func (s *CliSuite) GetContainerByName(c *C, name string) *types.ContainerJSON {
 
 func (s *CliSuite) GetContainersByProject(c *C, project string) []types.Container {
 	client := GetClient(c)
-	containers, err := docker.GetContainersByFilter(client, labels.PROJECT.Eq(project))
+	containers, err := docker.GetContainersByFilter(context.Background(), client, labels.PROJECT.Eq(project))
 
 	c.Assert(err, IsNil)
 

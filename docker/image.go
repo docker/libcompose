@@ -18,12 +18,12 @@ import (
 	"github.com/docker/engine-api/types"
 )
 
-func removeImage(client client.APIClient, image string) error {
-	_, err := client.ImageRemove(context.Background(), image, types.ImageRemoveOptions{})
+func removeImage(ctx context.Context, client client.APIClient, image string) error {
+	_, err := client.ImageRemove(ctx, image, types.ImageRemoveOptions{})
 	return err
 }
 
-func pullImage(client client.APIClient, service *Service, image string) error {
+func pullImage(ctx context.Context, client client.APIClient, service *Service, image string) error {
 	fmt.Fprintf(os.Stderr, "Pulling %s (%s)...\n", service.name, image)
 	distributionRef, err := reference.ParseNamed(image)
 	if err != nil {
@@ -45,7 +45,7 @@ func pullImage(client client.APIClient, service *Service, image string) error {
 	options := types.ImagePullOptions{
 		RegistryAuth: encodedAuth,
 	}
-	responseBody, err := client.ImagePull(context.Background(), distributionRef.String(), options)
+	responseBody, err := client.ImagePull(ctx, distributionRef.String(), options)
 	if err != nil {
 		logrus.Errorf("Failed to pull image %s: %v", image, err)
 		return err

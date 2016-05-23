@@ -8,6 +8,8 @@ import (
 	"strings"
 	"syscall"
 
+	"golang.org/x/net/context"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/project"
@@ -47,7 +49,7 @@ func WithProject(factory ProjectFactory, action ProjectAction) func(context *cli
 // ProjectPs lists the containers.
 func ProjectPs(p project.APIProject, c *cli.Context) error {
 	qFlag := c.Bool("q")
-	allInfo, err := p.Ps(qFlag, c.Args()...)
+	allInfo, err := p.Ps(context.Background(), qFlag, c.Args()...)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -66,7 +68,7 @@ func ProjectPort(p project.APIProject, c *cli.Context) error {
 	serviceName := c.Args()[0]
 	privatePort := c.Args()[1]
 
-	port, err := p.Port(index, protocol, serviceName, privatePort)
+	port, err := p.Port(context.Background(), index, protocol, serviceName, privatePort)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -76,7 +78,7 @@ func ProjectPort(p project.APIProject, c *cli.Context) error {
 
 // ProjectStop stops all services.
 func ProjectStop(p project.APIProject, c *cli.Context) error {
-	err := p.Stop(c.Int("timeout"), c.Args()...)
+	err := p.Stop(context.Background(), c.Int("timeout"), c.Args()...)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -90,7 +92,7 @@ func ProjectDown(p project.APIProject, c *cli.Context) error {
 		RemoveImages:  options.ImageType(c.String("rmi")),
 		RemoveOrphans: c.Bool("remove-orphans"),
 	}
-	err := p.Down(options, c.Args()...)
+	err := p.Down(context.Background(), options, c.Args()...)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -104,7 +106,7 @@ func ProjectBuild(p project.APIProject, c *cli.Context) error {
 		ForceRemove: c.Bool("force-rm"),
 		Pull:        c.Bool("pull"),
 	}
-	err := p.Build(config, c.Args()...)
+	err := p.Build(context.Background(), config, c.Args()...)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -118,7 +120,7 @@ func ProjectCreate(p project.APIProject, c *cli.Context) error {
 		ForceRecreate: c.Bool("force-recreate"),
 		NoBuild:       c.Bool("no-build"),
 	}
-	err := p.Create(options, c.Args()...)
+	err := p.Create(context.Background(), options, c.Args()...)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -134,7 +136,8 @@ func ProjectUp(p project.APIProject, c *cli.Context) error {
 			NoBuild:       c.Bool("no-build"),
 		},
 	}
-	err := p.Up(options, c.Args()...)
+	ctx, cancelFun := context.WithCancel(context.Background())
+	err := p.Up(ctx, options, c.Args()...)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -144,12 +147,13 @@ func ProjectUp(p project.APIProject, c *cli.Context) error {
 		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 		errChan := make(chan error)
 		go func() {
-			errChan <- p.Log(true, c.Args()...)
+			errChan <- p.Log(ctx, true, c.Args()...)
 		}()
 		go func() {
 			select {
 			case <-signalChan:
 				fmt.Printf("\nGracefully stopping...\n")
+				cancelFun()
 				ProjectStop(p, c)
 				cleanupDone <- true
 			case err := <-errChan:
@@ -174,7 +178,7 @@ func ProjectRun(p project.APIProject, c *cli.Context) error {
 	serviceName := c.Args()[0]
 	commandParts := c.Args()[1:]
 
-	exitCode, err := p.Run(serviceName, commandParts)
+	exitCode, err := p.Run(context.Background(), serviceName, commandParts)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -183,7 +187,7 @@ func ProjectRun(p project.APIProject, c *cli.Context) error {
 
 // ProjectStart starts services.
 func ProjectStart(p project.APIProject, c *cli.Context) error {
-	err := p.Start(c.Args()...)
+	err := p.Start(context.Background(), c.Args()...)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -192,7 +196,7 @@ func ProjectStart(p project.APIProject, c *cli.Context) error {
 
 // ProjectRestart restarts services.
 func ProjectRestart(p project.APIProject, c *cli.Context) error {
-	err := p.Restart(c.Int("timeout"), c.Args()...)
+	err := p.Restart(context.Background(), c.Int("timeout"), c.Args()...)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -201,7 +205,7 @@ func ProjectRestart(p project.APIProject, c *cli.Context) error {
 
 // ProjectLog gets services logs.
 func ProjectLog(p project.APIProject, c *cli.Context) error {
-	err := p.Log(c.Bool("follow"), c.Args()...)
+	err := p.Log(context.Background(), c.Bool("follow"), c.Args()...)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -210,7 +214,7 @@ func ProjectLog(p project.APIProject, c *cli.Context) error {
 
 // ProjectPull pulls images for services.
 func ProjectPull(p project.APIProject, c *cli.Context) error {
-	err := p.Pull(c.Args()...)
+	err := p.Pull(context.Background(), c.Args()...)
 	if err != nil && !c.Bool("ignore-pull-failures") {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -237,7 +241,7 @@ func ProjectDelete(p project.APIProject, c *cli.Context) error {
 			return true
 		}
 	}
-	err := p.Delete(options, c.Args()...)
+	err := p.Delete(context.Background(), options, c.Args()...)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -246,7 +250,7 @@ func ProjectDelete(p project.APIProject, c *cli.Context) error {
 
 // ProjectKill forces stop service containers.
 func ProjectKill(p project.APIProject, c *cli.Context) error {
-	err := p.Kill(c.String("signal"), c.Args()...)
+	err := p.Kill(context.Background(), c.String("signal"), c.Args()...)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -255,7 +259,7 @@ func ProjectKill(p project.APIProject, c *cli.Context) error {
 
 // ProjectPause pauses service containers.
 func ProjectPause(p project.APIProject, c *cli.Context) error {
-	err := p.Pause(c.Args()...)
+	err := p.Pause(context.Background(), c.Args()...)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -264,7 +268,7 @@ func ProjectPause(p project.APIProject, c *cli.Context) error {
 
 // ProjectUnpause unpauses service containers.
 func ProjectUnpause(p project.APIProject, c *cli.Context) error {
-	err := p.Unpause(c.Args()...)
+	err := p.Unpause(context.Background(), c.Args()...)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
@@ -290,7 +294,7 @@ func ProjectScale(p project.APIProject, c *cli.Context) error {
 		servicesScale[name] = count
 	}
 
-	err := p.Scale(c.Int("timeout"), servicesScale)
+	err := p.Scale(context.Background(), c.Int("timeout"), servicesScale)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
