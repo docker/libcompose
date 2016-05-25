@@ -11,6 +11,7 @@ fi
 # intentionally open a couple bogus file descriptors to help test that they get scrubbed in containers
 exec 41>&1 42>&2
 
+export DOCKER_GRAPH=${DOCKER_GRAPH:-/var/lib/docker/${DOCKER_DAEMON_VERSION}}
 export DOCKER_GRAPHDRIVER=${DOCKER_GRAPHDRIVER:-vfs}
 export DOCKER_USERLANDPROXY=${DOCKER_USERLANDPROXY:-true}
 
@@ -32,6 +33,7 @@ if [ -z "$DOCKER_TEST_HOST" ]; then
                   --storage-driver "$DOCKER_GRAPHDRIVER" \
                   --pidfile "$DEST/docker.pid" \
                   --userland-proxy="$DOCKER_USERLANDPROXY" \
+                  --graph="$DOCKER_GRAPH" \
                   $storage_params \
       &> "$DEST/docker.log"
     ) &

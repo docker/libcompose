@@ -11,7 +11,7 @@ wrappedNode(label: 'linux && x86_64') {
     makeTask(image, "validate")
 
     stage "test"
-    makeTask(image, "test", ["TESTVERBOSE=1", "DAEMON_VERSION=all"])
+    makeTask(image, "test", ["DAEMON_VERSION=all"])
 
     stage "build"
     makeTask(image, "cross-binary")
