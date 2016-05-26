@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
-	. "gopkg.in/check.v1"
+	check "gopkg.in/check.v1"
 
 	eventtypes "github.com/docker/engine-api/types/events"
 	"github.com/docker/libcompose/docker"
@@ -12,7 +12,8 @@ import (
 	"github.com/docker/libcompose/project/options"
 )
 
-func (s *APISuite) TestEvents(c *C) {
+func (s *APISuite) TestEvents(c *check.C) {
+	testRequires(c, not(DaemonVersionIs("1.9")))
 	composeFile := `
 simple:
   image: busybox:latest
@@ -27,15 +28,15 @@ another:
 			ProjectName:  "test-api-events",
 		},
 	}, nil)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	ctx, cancelFun := context.WithCancel(context.Background())
 
 	messages, err := project.Events(ctx)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	go func() {
-		c.Assert(project.Up(ctx, options.Up{}), IsNil)
+		c.Assert(project.Up(ctx, options.Up{}), check.IsNil)
 		// Close after everything is done
 		time.Sleep(250 * time.Millisecond)
 		cancelFun()
@@ -48,5 +49,5 @@ another:
 	}
 
 	// Should be 4 events (2 create, 2 start)
-	c.Assert(len(events), Equals, 4, Commentf("%v", events))
+	c.Assert(len(events), check.Equals, 4, check.Commentf("%v", events))
 }
