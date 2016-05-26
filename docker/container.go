@@ -49,8 +49,8 @@ func NewContainer(client client.APIClient, name string, containerNumber int, ser
 
 		// TODO(vdemeester) Move these to arguments
 		serviceName:   service.name,
-		projectName:   service.context.Project.Name,
-		eventNotifier: service.context.Project,
+		projectName:   service.project.Name,
+		eventNotifier: service.project,
 		loggerFactory: service.context.LoggerFactory,
 
 		// TODO(vdemeester) Remove this dependency
@@ -513,11 +513,11 @@ func (c *Container) populateAdditionalHostConfig(hostConfig *container.HostConfi
 	links := map[string]string{}
 
 	for _, link := range c.service.DependentServices() {
-		if !c.service.context.Project.ServiceConfigs.Has(link.Target) {
+		if !c.service.project.ServiceConfigs.Has(link.Target) {
 			continue
 		}
 
-		service, err := c.service.context.Project.CreateService(link.Target)
+		service, err := c.service.project.CreateService(link.Target)
 		if err != nil {
 			return err
 		}

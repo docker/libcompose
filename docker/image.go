@@ -35,7 +35,7 @@ func pullImage(ctx context.Context, client client.APIClient, service *Service, i
 		return err
 	}
 
-	authConfig := service.context.AuthLookup.Lookup(repoInfo)
+	authConfig := service.authLookup.Lookup(repoInfo)
 
 	encodedAuth, err := encodeAuthToBase64(authConfig)
 	if err != nil {

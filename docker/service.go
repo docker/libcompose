@@ -9,6 +9,9 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
+	"github.com/docker/engine-api/types"
+	eventtypes "github.com/docker/engine-api/types/events"
+	"github.com/docker/engine-api/types/filters"
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/docker/builder"
@@ -16,20 +19,29 @@ import (
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/options"
 	"github.com/docker/libcompose/utils"
+	dockerevents "github.com/vdemeester/docker-events"
 )
 
 // Service is a project.Service implementations.
 type Service struct {
 	name          string
+	project       *project.Project
 	serviceConfig *config.ServiceConfig
-	context       *Context
+	clientFactory project.ClientFactory
+	authLookup    AuthLookup
+
+	// FIXME(vdemeester) remove this at some point
+	context *Context
 }
 
 // NewService creates a service
 func NewService(name string, serviceConfig *config.ServiceConfig, context *Context) *Service {
 	return &Service{
 		name:          name,
+		project:       context.Project,
 		serviceConfig: serviceConfig,
+		clientFactory: context.ClientFactory,
+		authLookup:    context.AuthLookup,
 		context:       context,
 	}
 }
@@ -46,7 +58,7 @@ func (s *Service) Config() *config.ServiceConfig {
 
 // DependentServices returns the dependent services (as an array of ServiceRelationship) of the service.
 func (s *Service) DependentServices() []project.ServiceRelationship {
-	return project.DefaultDependentServices(s.context.Project, s)
+	return project.DefaultDependentServices(s.project, s)
 }
 
 // Create implements Service.Create. It ensures the image exists or build it
@@ -73,8 +85,8 @@ func (s *Service) Create(ctx context.Context, options options.Create) error {
 }
 
 func (s *Service) collectContainers(ctx context.Context) ([]*Container, error) {
-	client := s.context.ClientFactory.Create(s)
-	containers, err := GetContainersByFilter(ctx, client, labels.SERVICE.Eq(s.name), labels.PROJECT.Eq(s.context.Project.Name))
+	client := s.clientFactory.Create(s)
+	containers, err := GetContainersByFilter(ctx, client, labels.SERVICE.Eq(s.name), labels.PROJECT.Eq(s.project.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +137,7 @@ func (s *Service) ensureImageExists(ctx context.Context, noBuild bool) (string, 
 }
 
 func (s *Service) imageExists() error {
-	client := s.context.ClientFactory.Create(s)
+	client := s.clientFactory.Create(s)
 
 	_, _, err := client.ImageInspectWithRaw(context.Background(), s.imageName(), false)
 	return err
@@ -135,7 +147,7 @@ func (s *Service) imageName() string {
 	if s.Config().Image != "" {
 		return s.Config().Image
 	}
-	return fmt.Sprintf("%s_%s", s.context.ProjectName, s.Name())
+	return fmt.Sprintf("%s_%s", s.project.Name, s.Name())
 }
 
 // Build implements Service.Build. If an imageName is specified or if the context has
@@ -153,11 +165,11 @@ func (s *Service) build(ctx context.Context, buildOptions options.Build) error {
 		return fmt.Errorf("Specified service does not have a build section")
 	}
 	builder := &builder.DaemonBuilder{
-		Client:           s.context.ClientFactory.Create(s),
+		Client:           s.clientFactory.Create(s),
 		ContextDirectory: s.Config().Build.Context,
 		Dockerfile:       s.Config().Build.Dockerfile,
 		BuildArgs:        s.Config().Build.Args.ToMap(),
-		AuthConfigs:      s.context.AuthLookup.All(),
+		AuthConfigs:      s.authLookup.All(),
 		NoCache:          buildOptions.NoCache,
 		ForceRemove:      buildOptions.ForceRemove,
 		Pull:             buildOptions.Pull,
@@ -171,7 +183,7 @@ func (s *Service) constructContainers(ctx context.Context, imageName string, cou
 		return nil, err
 	}
 
-	client := s.context.ClientFactory.Create(s)
+	client := s.clientFactory.Create(s)
 
 	var namer Namer
 
@@ -181,7 +193,7 @@ func (s *Service) constructContainers(ctx context.Context, imageName string, cou
 		}
 		namer = NewSingleNamer(s.serviceConfig.ContainerName)
 	} else {
-		namer, err = NewNamer(ctx, client, s.context.Project.Name, s.name, false)
+		namer, err = NewNamer(ctx, client, s.project.Name, s.name, false)
 		if err != nil {
 			return nil, err
 		}
@@ -231,9 +243,9 @@ func (s *Service) Run(ctx context.Context, commandParts []string) (int, error) {
 		return -1, err
 	}
 
-	client := s.context.ClientFactory.Create(s)
+	client := s.clientFactory.Create(s)
 
-	namer, err := NewNamer(ctx, client, s.context.Project.Name, s.name, true)
+	namer, err := NewNamer(ctx, client, s.project.Name, s.name, true)
 	if err != nil {
 		return -1, err
 	}
@@ -422,7 +434,7 @@ func (s *Service) Pull(ctx context.Context) error {
 		return nil
 	}
 
-	return pullImage(ctx, s.context.ClientFactory.Create(s), s, s.Config().Image)
+	return pullImage(ctx, s.clientFactory.Create(s), s, s.Config().Image)
 }
 
 // Pause implements Service.Pause. It puts into pause the container(s) related
@@ -449,13 +461,27 @@ func (s *Service) RemoveImage(ctx context.Context, imageType options.ImageType) 
 		if s.Config().Image != "" {
 			return nil
 		}
-		return removeImage(ctx, s.context.ClientFactory.Create(s), s.imageName())
+		return removeImage(ctx, s.clientFactory.Create(s), s.imageName())
 	case "all":
-		return removeImage(ctx, s.context.ClientFactory.Create(s), s.imageName())
+		return removeImage(ctx, s.clientFactory.Create(s), s.imageName())
 	default:
 		// Don't do a thing, should be validated up-front
 		return nil
 	}
+}
+
+// Events implements Service.Events. It listen to all real-time events happening
+// for the service, and put them into the specified chan.
+func (s *Service) Events(ctx context.Context, events chan eventtypes.Message) error {
+	filter := filters.NewArgs()
+	filter.Add("label", fmt.Sprintf("%s=%s", labels.PROJECT, s.project.Name))
+	filter.Add("label", fmt.Sprintf("%s=%s", labels.SERVICE, s.name))
+	client := s.clientFactory.Create(s)
+	return <-dockerevents.Monitor(ctx, client, types.EventsOptions{
+		Filters: filter,
+	}, func(m eventtypes.Message) {
+		events <- m
+	})
 }
 
 // Containers implements Service.Containers. It returns the list of containers

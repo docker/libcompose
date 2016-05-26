@@ -3,6 +3,7 @@ package project
 import (
 	"golang.org/x/net/context"
 
+	eventtypes "github.com/docker/engine-api/types/events"
 	"github.com/docker/libcompose/project/options"
 )
 
@@ -92,5 +93,10 @@ func (e *EmptyService) Run(ctx context.Context, commandParts []string) (int, err
 
 // RemoveImage implements Service.RemoveImage but does nothing.
 func (e *EmptyService) RemoveImage(ctx context.Context, imageType options.ImageType) error {
+	return nil
+}
+
+// Events implements Service.Events but does nothing.
+func (e *EmptyService) Events(ctx context.Context, events chan eventtypes.Message) error {
 	return nil
 }
