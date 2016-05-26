@@ -156,6 +156,7 @@ func (s *Service) build(ctx context.Context, buildOptions options.Build) error {
 		Client:           s.context.ClientFactory.Create(s),
 		ContextDirectory: s.Config().Build.Context,
 		Dockerfile:       s.Config().Build.Dockerfile,
+		BuildArgs:        s.Config().Build.Args.ToMap(),
 		AuthConfigs:      s.context.AuthLookup.All(),
 		NoCache:          buildOptions.NoCache,
 		ForceRemove:      buildOptions.ForceRemove,
