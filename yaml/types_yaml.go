@@ -212,6 +212,11 @@ func (s *MaporEqualSlice) UnmarshalYAML(tag string, value interface{}) error {
 	return nil
 }
 
+// ToMap returns the list of string as a map splitting using = the key=value
+func (s *MaporEqualSlice) ToMap() map[string]string {
+	return toMap(*s, "=")
+}
+
 // MaporColonSlice represents a slice of strings that gets unmarshal from a
 // YAML map into 'key:value' string.
 type MaporColonSlice []string
@@ -226,6 +231,11 @@ func (s *MaporColonSlice) UnmarshalYAML(tag string, value interface{}) error {
 	return nil
 }
 
+// ToMap returns the list of string as a map splitting using = the key=value
+func (s *MaporColonSlice) ToMap() map[string]string {
+	return toMap(*s, ":")
+}
+
 // MaporSpaceSlice represents a slice of strings that gets unmarshal from a
 // YAML map into 'key value' string.
 type MaporSpaceSlice []string
@@ -238,6 +248,11 @@ func (s *MaporSpaceSlice) UnmarshalYAML(tag string, value interface{}) error {
 	}
 	*s = parts
 	return nil
+}
+
+// ToMap returns the list of string as a map splitting using = the key=value
+func (s *MaporSpaceSlice) ToMap() map[string]string {
+	return toMap(*s, " ")
 }
 
 func unmarshalToStringOrSepMapParts(value interface{}, key string) ([]string, error) {
@@ -285,4 +300,13 @@ func toStrings(s []interface{}) ([]string, error) {
 		}
 	}
 	return r, nil
+}
+
+func toMap(s []string, sep string) map[string]string {
+	m := map[string]string{}
+	for _, v := range s {
+		values := strings.Split(v, sep)
+		m[values[0]] = values[1]
+	}
+	return m
 }

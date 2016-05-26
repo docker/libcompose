@@ -81,3 +81,14 @@ func (s *CliSuite) TestBuildWithNoCache3(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert([]string(two.Config.Cmd), DeepEquals, []string{"echo", "two"})
 }
+
+func (s *CliSuite) TestBuildWithArgs(c *C) {
+	p := s.RandomProject()
+	cmd := exec.Command(s.command, "-f", "./assets/v2-build-args/docker-compose.yml", "-p", p, "build")
+
+	output, err := cmd.Output()
+	c.Assert(err, IsNil)
+
+	c.Assert(strings.Contains(string(output), "buildno is 1"), Equals, true, Commentf("Expected 'buildno is 1' in output, got \n%s", string(output)))
+	c.Assert(strings.Contains(string(output), "buildno is 0"), Equals, false, Commentf("Expected to not find 'buildno is 0' in output, got \n%s", string(output)))
+}

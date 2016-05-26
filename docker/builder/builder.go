@@ -41,6 +41,7 @@ type DaemonBuilder struct {
 	NoCache          bool
 	ForceRemove      bool
 	Pull             bool
+	BuildArgs        map[string]string
 }
 
 // Build implements Builder. It consumes the docker build API endpoint and sends
@@ -72,6 +73,7 @@ func (d *DaemonBuilder) Build(ctx context.Context, imageName string) error {
 		PullParent:  d.Pull,
 		Dockerfile:  d.Dockerfile,
 		AuthConfigs: d.AuthConfigs,
+		BuildArgs:   d.BuildArgs,
 	})
 	if err != nil {
 		return err
