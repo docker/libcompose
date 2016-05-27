@@ -300,6 +300,21 @@ func UnpauseCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// EventsCommand defines the libcompose events subcommand
+func EventsCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "events",
+		Usage:  "Receive real time events from containers.",
+		Action: app.WithProject(factory, app.ProjectEvents),
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "json",
+				Usage: "Output events as a stream of json objects",
+			},
+		},
+	}
+}
+
 // VersionCommand defines the libcompose version subcommand.
 func VersionCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{

@@ -5,6 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	eventtypes "github.com/docker/engine-api/types/events"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/project/options"
 )
@@ -14,6 +15,7 @@ type Service interface {
 	Build(ctx context.Context, buildOptions options.Build) error
 	Create(ctx context.Context, options options.Create) error
 	Delete(ctx context.Context, options options.Delete) error
+	Events(ctx context.Context, messages chan eventtypes.Message) error
 	Info(ctx context.Context, qFlag bool) (InfoSet, error)
 	Log(ctx context.Context, follow bool) error
 	Kill(ctx context.Context, signal string) error

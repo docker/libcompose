@@ -1,17 +1,21 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
+	eventtypes "github.com/docker/engine-api/types/events"
+	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/options"
 )
@@ -273,6 +277,72 @@ func ProjectUnpause(p project.APIProject, c *cli.Context) error {
 		return cli.NewExitError(err.Error(), 1)
 	}
 	return nil
+}
+
+// ProjectEvents listen for real-time events of containers.
+func ProjectEvents(p project.APIProject, c *cli.Context) error {
+	events, err := p.Events(context.Background(), c.Args()...)
+	if err != nil {
+		return err
+	}
+	var printfn func(eventtypes.Message)
+
+	if c.Bool("json") {
+		printfn = printJSON
+	} else {
+		printfn = printStd
+	}
+	for event := range events {
+		printfn(event)
+	}
+	return nil
+}
+
+var eventAttributes = []string{"image", "name"}
+
+func printStd(event eventtypes.Message) {
+	output := os.Stdout
+	fmt.Fprintf(output, "%s ", time.Unix(event.Time, 0).Format("2006-01-02 15:04:05.999999999"))
+	fmt.Fprintf(output, "%s %s %s", event.Type, event.Action, event.Actor.ID)
+	attrs := []string{}
+	for _, attr := range eventAttributes {
+		v := event.Actor.Attributes[attr]
+		attrs = append(attrs, fmt.Sprintf("%s=%s", attr, v))
+	}
+	fmt.Fprintf(output, " (%s)", strings.Join(attrs, ", "))
+	fmt.Fprint(output, "\n")
+}
+
+// JSONEvent holds in attributes to print as JSON in the event command.
+type JSONEvent struct {
+	Service    string            `json:"service"`
+	Event      string            `json:"event"`
+	ID         string            `json:"id"`
+	Time       time.Time         `json:"time"`
+	Attributes map[string]string `json:"attributes"`
+	Type       string            `json:"type"`
+}
+
+func printJSON(event eventtypes.Message) {
+	service := event.Actor.Attributes[labels.SERVICE.Str()]
+	attributes := map[string]string{}
+	for _, attr := range eventAttributes {
+		attributes[attr] = event.Actor.Attributes[attr]
+	}
+	jsonEvent := JSONEvent{
+		Service:    service,
+		Event:      event.Action,
+		Type:       event.Type,
+		ID:         event.Actor.ID,
+		Time:       time.Unix(event.Time, 0),
+		Attributes: attributes,
+	}
+	json, err := json.Marshal(jsonEvent)
+	if err != nil {
+		logrus.Warn(err)
+	}
+	output := os.Stdout
+	fmt.Fprintf(output, "%s", json)
 }
 
 // ProjectScale scales services.

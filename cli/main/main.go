@@ -24,6 +24,7 @@ func main() {
 	app.Commands = []cli.Command{
 		command.BuildCommand(factory),
 		command.CreateCommand(factory),
+		command.EventsCommand(factory),
 		command.DownCommand(factory),
 		command.KillCommand(factory),
 		command.LogsCommand(factory),
