@@ -8,6 +8,10 @@ import (
 	"github.com/docker/libcompose/project/options"
 )
 
+// this ensures EmptyService implements Service
+// useful since it's easy to forget adding new functions to EmptyService
+var _ Service = &EmptyService{}
+
 // EmptyService is a struct that implements Service but does nothing.
 type EmptyService struct {
 }
