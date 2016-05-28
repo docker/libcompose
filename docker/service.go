@@ -99,8 +99,9 @@ func (s *Service) collectContainers(ctx context.Context) ([]*Container, error) {
 			return nil, err
 		}
 		// Compose add "/" before name, so Name[1] will store actaul name.
+		// Swarm add "nodename" before container name , so the last part will store actaul name
 		name := strings.SplitAfter(container.Names[0], "/")
-		result = append(result, NewContainer(client, name[1], containerNumber, s))
+		result = append(result, NewContainer(client, name[len(name)-1], containerNumber, s))
 	}
 
 	return result, nil
