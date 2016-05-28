@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/docker/libcompose/docker/builder"
 	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/project/events"
 	"github.com/docker/libcompose/project/options"
 	"github.com/docker/libcompose/utils"
 	dockerevents "github.com/vdemeester/docker-events"
@@ -470,9 +472,11 @@ func (s *Service) RemoveImage(ctx context.Context, imageType options.ImageType) 
 	}
 }
 
+var eventAttributes = []string{"image", "name"}
+
 // Events implements Service.Events. It listen to all real-time events happening
 // for the service, and put them into the specified chan.
-func (s *Service) Events(ctx context.Context, events chan eventtypes.Message) error {
+func (s *Service) Events(ctx context.Context, evts chan events.ContainerEvent) error {
 	filter := filters.NewArgs()
 	filter.Add("label", fmt.Sprintf("%s=%s", labels.PROJECT, s.project.Name))
 	filter.Add("label", fmt.Sprintf("%s=%s", labels.SERVICE, s.name))
@@ -480,7 +484,20 @@ func (s *Service) Events(ctx context.Context, events chan eventtypes.Message) er
 	return <-dockerevents.Monitor(ctx, client, types.EventsOptions{
 		Filters: filter,
 	}, func(m eventtypes.Message) {
-		events <- m
+		service := m.Actor.Attributes[labels.SERVICE.Str()]
+		attributes := map[string]string{}
+		for _, attr := range eventAttributes {
+			attributes[attr] = m.Actor.Attributes[attr]
+		}
+		e := events.ContainerEvent{
+			Service:    service,
+			Event:      m.Action,
+			Type:       m.Type,
+			ID:         m.Actor.ID,
+			Time:       time.Unix(m.Time, 0),
+			Attributes: attributes,
+		}
+		evts <- e
 	})
 }
 

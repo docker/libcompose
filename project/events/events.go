@@ -3,6 +3,7 @@ package events
 
 import (
 	"fmt"
+	"time"
 )
 
 // Notifier defines the methods an event notifier should have.
@@ -20,6 +21,16 @@ type Event struct {
 	EventType   EventType
 	ServiceName string
 	Data        map[string]string
+}
+
+// ContainerEvent holds attributes of container events.
+type ContainerEvent struct {
+	Service    string            `json:"service"`
+	Event      string            `json:"event"`
+	ID         string            `json:"id"`
+	Time       time.Time         `json:"time"`
+	Attributes map[string]string `json:"attributes"`
+	Type       string            `json:"type"`
 }
 
 // EventType defines a type of libcompose event.
