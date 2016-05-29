@@ -75,7 +75,7 @@ func (s *Service) Create(ctx context.Context, options options.Create) error {
 	}
 
 	if len(containers) != 0 {
-		return s.eachContainer(ctx, func(c *Container) error {
+		return s.eachContainer(ctx, containers, func(c *Container) error {
 			return s.recreateIfNeeded(ctx, imageName, c, options.NoRecreate, options.ForceRecreate)
 		})
 	}
@@ -298,7 +298,7 @@ func (s *Service) up(ctx context.Context, imageName string, create bool, options
 		containers = []*Container{c}
 	}
 
-	return s.eachContainer(ctx, func(c *Container) error {
+	return s.eachContainer(ctx, containers, func(c *Container) error {
 		if create {
 			if err := s.recreateIfNeeded(ctx, imageName, c, options.NoRecreate, options.ForceRecreate); err != nil {
 				return err
@@ -333,11 +333,15 @@ func (s *Service) recreateIfNeeded(ctx context.Context, imageName string, c *Con
 	return nil
 }
 
-func (s *Service) eachContainer(ctx context.Context, action func(*Container) error) error {
+func (s *Service) collectContainersAndDo(ctx context.Context, action func(*Container) error) error {
 	containers, err := s.collectContainers(ctx)
 	if err != nil {
 		return err
 	}
+	return s.eachContainer(ctx, containers, action)
+}
+
+func (s *Service) eachContainer(ctx context.Context, containers []*Container, action func(*Container) error) error {
 
 	tasks := utils.InParallel{}
 	for _, container := range containers {
@@ -355,35 +359,35 @@ func (s *Service) eachContainer(ctx context.Context, action func(*Container) err
 
 // Stop implements Service.Stop. It stops any containers related to the service.
 func (s *Service) Stop(ctx context.Context, timeout int) error {
-	return s.eachContainer(ctx, func(c *Container) error {
+	return s.collectContainersAndDo(ctx, func(c *Container) error {
 		return c.Stop(ctx, timeout)
 	})
 }
 
 // Restart implements Service.Restart. It restarts any containers related to the service.
 func (s *Service) Restart(ctx context.Context, timeout int) error {
-	return s.eachContainer(ctx, func(c *Container) error {
+	return s.collectContainersAndDo(ctx, func(c *Container) error {
 		return c.Restart(ctx, timeout)
 	})
 }
 
 // Kill implements Service.Kill. It kills any containers related to the service.
 func (s *Service) Kill(ctx context.Context, signal string) error {
-	return s.eachContainer(ctx, func(c *Container) error {
+	return s.collectContainersAndDo(ctx, func(c *Container) error {
 		return c.Kill(ctx, signal)
 	})
 }
 
 // Delete implements Service.Delete. It removes any containers related to the service.
 func (s *Service) Delete(ctx context.Context, options options.Delete) error {
-	return s.eachContainer(ctx, func(c *Container) error {
+	return s.collectContainersAndDo(ctx, func(c *Container) error {
 		return c.Delete(ctx, options.RemoveVolume)
 	})
 }
 
 // Log implements Service.Log. It returns the docker logs for each container related to the service.
 func (s *Service) Log(ctx context.Context, follow bool) error {
-	return s.eachContainer(ctx, func(c *Container) error {
+	return s.collectContainersAndDo(ctx, func(c *Container) error {
 		return c.Log(ctx, follow)
 	})
 }
@@ -396,7 +400,7 @@ func (s *Service) Scale(ctx context.Context, scale int, timeout int) error {
 	}
 
 	foundCount := 0
-	err := s.eachContainer(ctx, func(c *Container) error {
+	err := s.collectContainersAndDo(ctx, func(c *Container) error {
 		foundCount++
 		if foundCount > scale {
 			err := c.Stop(ctx, timeout)
@@ -440,7 +444,7 @@ func (s *Service) Pull(ctx context.Context) error {
 // Pause implements Service.Pause. It puts into pause the container(s) related
 // to the service.
 func (s *Service) Pause(ctx context.Context) error {
-	return s.eachContainer(ctx, func(c *Container) error {
+	return s.collectContainersAndDo(ctx, func(c *Container) error {
 		return c.Pause(ctx)
 	})
 }
@@ -448,7 +452,7 @@ func (s *Service) Pause(ctx context.Context) error {
 // Unpause implements Service.Pause. It brings back from pause the container(s)
 // related to the service.
 func (s *Service) Unpause(ctx context.Context) error {
-	return s.eachContainer(ctx, func(c *Container) error {
+	return s.collectContainersAndDo(ctx, func(c *Container) error {
 		return c.Unpause(ctx)
 	})
 }
