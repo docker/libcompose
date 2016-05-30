@@ -542,8 +542,8 @@ func (p *Project) startService(wrappers map[string]*serviceWrapper, history []st
 	for _, dep := range wrapper.service.DependentServices() {
 		target := wrappers[dep.Target]
 		if target == nil {
-			log.Errorf("Failed to find %s", dep.Target)
-			continue
+			log.Debugf("Failed to find %s", dep.Target)
+			return fmt.Errorf("Service '%s' has a link to service '%s' which is undefined", wrapper.name, dep.Target)
 		}
 
 		if utils.Contains(history, dep.Target) {
