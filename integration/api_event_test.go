@@ -6,9 +6,9 @@ import (
 	"golang.org/x/net/context"
 	check "gopkg.in/check.v1"
 
-	eventtypes "github.com/docker/engine-api/types/events"
 	"github.com/docker/libcompose/docker"
 	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/project/events"
 	"github.com/docker/libcompose/project/options"
 )
 
@@ -32,7 +32,7 @@ another:
 
 	ctx, cancelFun := context.WithCancel(context.Background())
 
-	messages, err := project.Events(ctx)
+	evts, err := project.Events(ctx)
 	c.Assert(err, check.IsNil)
 
 	go func() {
@@ -40,14 +40,14 @@ another:
 		// Close after everything is done
 		time.Sleep(250 * time.Millisecond)
 		cancelFun()
-		close(messages)
+		close(evts)
 	}()
 
-	events := []eventtypes.Message{}
-	for message := range messages {
-		events = append(events, message)
+	actual := []events.ContainerEvent{}
+	for event := range evts {
+		actual = append(actual, event)
 	}
 
 	// Should be 4 events (2 create, 2 start)
-	c.Assert(len(events), check.Equals, 4, check.Commentf("%v", events))
+	c.Assert(len(actual), check.Equals, 4, check.Commentf("%v", actual))
 }

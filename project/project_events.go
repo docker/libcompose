@@ -3,12 +3,12 @@ package project
 import (
 	"golang.org/x/net/context"
 
-	eventtypes "github.com/docker/engine-api/types/events"
+	"github.com/docker/libcompose/project/events"
 )
 
 // Events listen for real time events from containers (of the project).
-func (p *Project) Events(ctx context.Context, services ...string) (chan eventtypes.Message, error) {
-	events := make(chan eventtypes.Message)
+func (p *Project) Events(ctx context.Context, services ...string) (chan events.ContainerEvent, error) {
+	events := make(chan events.ContainerEvent)
 	if len(services) == 0 {
 		services = p.ServiceConfigs.Keys()
 	}

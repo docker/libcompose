@@ -3,7 +3,6 @@ package project
 import (
 	"golang.org/x/net/context"
 
-	eventtypes "github.com/docker/engine-api/types/events"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/project/events"
 	"github.com/docker/libcompose/project/options"
@@ -18,7 +17,7 @@ type APIProject interface {
 	Create(ctx context.Context, options options.Create, services ...string) error
 	Delete(ctx context.Context, options options.Delete, services ...string) error
 	Down(ctx context.Context, options options.Down, services ...string) error
-	Events(ctx context.Context, services ...string) (chan eventtypes.Message, error)
+	Events(ctx context.Context, services ...string) (chan events.ContainerEvent, error)
 	Kill(ctx context.Context, signal string, services ...string) error
 	Log(ctx context.Context, follow bool, services ...string) error
 	Pause(ctx context.Context, services ...string) error
