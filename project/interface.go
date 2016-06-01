@@ -8,7 +8,7 @@ import (
 	"github.com/docker/libcompose/project/options"
 )
 
-// APIProject is an interface defining the methods a libcompose project should implement.
+// APIProject defines the methods a libcompose project should implement.
 type APIProject interface {
 	events.Notifier
 	events.Emitter
@@ -37,4 +37,9 @@ type APIProject interface {
 	CreateService(name string) (Service, error)
 	AddConfig(name string, config *config.ServiceConfig) error
 	Load(bytes []byte) error
+}
+
+// RuntimeProject defines runtime-specific methods for a libcompose implementation.
+type RuntimeProject interface {
+	RemoveOrphans(ctx context.Context, projectName string, serviceConfigs *config.ServiceConfigs) error
 }

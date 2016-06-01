@@ -16,6 +16,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/docker/builder"
+	composeclient "github.com/docker/libcompose/docker/client"
 	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/events"
@@ -29,7 +30,7 @@ type Service struct {
 	name          string
 	project       *project.Project
 	serviceConfig *config.ServiceConfig
-	clientFactory project.ClientFactory
+	clientFactory composeclient.Factory
 	authLookup    AuthLookup
 
 	// FIXME(vdemeester) remove this at some point
@@ -60,7 +61,7 @@ func (s *Service) Config() *config.ServiceConfig {
 
 // DependentServices returns the dependent services (as an array of ServiceRelationship) of the service.
 func (s *Service) DependentServices() []project.ServiceRelationship {
-	return project.DefaultDependentServices(s.project, s)
+	return DefaultDependentServices(s.project, s)
 }
 
 // Create implements Service.Create. It ensures the image exists or build it
