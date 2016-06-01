@@ -8,10 +8,7 @@ import (
 	"golang.org/x/net/context"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/docker/engine-api/types"
-	"github.com/docker/engine-api/types/filters"
 	"github.com/docker/libcompose/config"
-	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project/events"
 	"github.com/docker/libcompose/project/options"
@@ -31,19 +28,19 @@ type Project struct {
 	ReloadCallback func() error
 	ParseOptions   *config.ParseOptions
 
-	context       *Context
-	clientFactory ClientFactory
-	reload        []string
-	upCount       int
-	listeners     []chan<- events.Event
-	hasListeners  bool
+	runtime      RuntimeProject
+	context      *Context
+	reload       []string
+	upCount      int
+	listeners    []chan<- events.Event
+	hasListeners bool
 }
 
 // NewProject creates a new project with the specified context.
-func NewProject(clientFactory ClientFactory, context *Context, parseOptions *config.ParseOptions) *Project {
+func NewProject(context *Context, runtime RuntimeProject, parseOptions *config.ParseOptions) *Project {
 	p := &Project{
 		context:        context,
-		clientFactory:  clientFactory,
+		runtime:        runtime,
 		ParseOptions:   parseOptions,
 		ServiceConfigs: config.NewServiceConfigs(),
 		VolumeConfigs:  make(map[string]*config.VolumeConfig),
@@ -239,7 +236,7 @@ func (p *Project) Down(ctx context.Context, opts options.Down, services ...strin
 		return err
 	}
 	if opts.RemoveOrphans {
-		if err := p.removeOrphanContainers(); err != nil {
+		if err := p.runtime.RemoveOrphans(ctx, p.Name, p.ServiceConfigs); err != nil {
 			return err
 		}
 	}
@@ -258,33 +255,9 @@ func (p *Project) Down(ctx context.Context, opts options.Down, services ...strin
 	})
 }
 
-func (p *Project) removeOrphanContainers() error {
-	client := p.clientFactory.Create(nil)
-	filter := filters.NewArgs()
-	filter.Add("label", labels.PROJECT.EqString(p.Name))
-	containers, err := client.ContainerList(context.Background(), types.ContainerListOptions{
-		Filter: filter,
-	})
-	if err != nil {
-		return err
-	}
-	currentServices := map[string]struct{}{}
-	for _, serviceName := range p.ServiceConfigs.Keys() {
-		currentServices[serviceName] = struct{}{}
-	}
-	for _, container := range containers {
-		serviceLabel := container.Labels[labels.SERVICE.Str()]
-		if _, ok := currentServices[serviceLabel]; !ok {
-			if err := client.ContainerKill(context.Background(), container.ID, "SIGKILL"); err != nil {
-				return err
-			}
-			if err := client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
-				Force: true,
-			}); err != nil {
-				return err
-			}
-		}
-	}
+// RemoveOrphans implements project.RuntimeProject.RemoveOrphans.
+// It does nothing by default as it is supposed to be overriden by specific implementation.
+func (p *Project) RemoveOrphans(ctx context.Context) error {
 	return nil
 }
 

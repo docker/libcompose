@@ -61,9 +61,9 @@ func TestTwoCall(t *testing.T) {
 		Counts: map[string]int{},
 	}
 
-	p := NewProject(nil, &Context{
+	p := NewProject(&Context{
 		ServiceFactory: factory,
-	}, nil)
+	}, nil, nil)
 	p.ServiceConfigs = config.NewServiceConfigs()
 	p.ServiceConfigs.Add("foo", &config.ServiceConfig{})
 
@@ -81,11 +81,11 @@ func TestTwoCall(t *testing.T) {
 }
 
 func TestParseWithBadContent(t *testing.T) {
-	p := NewProject(nil, &Context{
+	p := NewProject(&Context{
 		ComposeBytes: [][]byte{
 			[]byte("garbage"),
 		},
-	}, nil)
+	}, nil, nil)
 
 	err := p.Parse()
 	if err == nil {
@@ -98,11 +98,11 @@ func TestParseWithBadContent(t *testing.T) {
 }
 
 func TestParseWithGoodContent(t *testing.T) {
-	p := NewProject(nil, &Context{
+	p := NewProject(&Context{
 		ComposeBytes: [][]byte{
 			[]byte("not-garbage:\n  image: foo"),
 		},
-	}, nil)
+	}, nil, nil)
 
 	err := p.Parse()
 	if err != nil {
@@ -122,10 +122,10 @@ func TestEnvironmentResolve(t *testing.T) {
 		Counts: map[string]int{},
 	}
 
-	p := NewProject(nil, &Context{
+	p := NewProject(&Context{
 		ServiceFactory:    factory,
 		EnvironmentLookup: &TestEnvironmentLookup{},
-	}, nil)
+	}, nil, nil)
 	p.ServiceConfigs = config.NewServiceConfigs()
 	p.ServiceConfigs.Add("foo", &config.ServiceConfig{
 		Environment: yaml.MaporEqualSlice([]string{
@@ -166,9 +166,9 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
     ports:
       - 10000`)
 
-	p := NewProject(nil, &Context{
+	p := NewProject(&Context{
 		ComposeBytes: [][]byte{configOne, configTwo},
-	}, nil)
+	}, nil, nil)
 
 	err := p.Parse()
 
@@ -179,9 +179,9 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	assert.Equal(t, "multi", multipleConfig.ContainerName)
 	assert.Equal(t, []string{"8000", "9000"}, multipleConfig.Ports)
 
-	p = NewProject(nil, &Context{
+	p = NewProject(&Context{
 		ComposeBytes: [][]byte{configTwo, configOne},
-	}, nil)
+	}, nil, nil)
 
 	err = p.Parse()
 
@@ -192,9 +192,9 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	assert.Equal(t, "multi", multipleConfig.ContainerName)
 	assert.Equal(t, []string{"9000", "8000"}, multipleConfig.Ports)
 
-	p = NewProject(nil, &Context{
+	p = NewProject(&Context{
 		ComposeBytes: [][]byte{configOne, configTwo, configThree},
-	}, nil)
+	}, nil, nil)
 
 	err = p.Parse()
 
