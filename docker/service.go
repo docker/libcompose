@@ -119,14 +119,12 @@ func (s *Service) createOne(ctx context.Context, imageName string) (*Container, 
 }
 
 func (s *Service) ensureImageExists(ctx context.Context, noBuild bool) (string, error) {
-	err := s.imageExists()
-
-	if err == nil {
-		return s.imageName(), nil
-	}
-
-	if err != nil && !client.IsErrImageNotFound(err) {
+	exists, err := s.ImageExists(ctx)
+	if err != nil {
 		return "", err
+	}
+	if exists {
+		return s.imageName(), nil
 	}
 
 	if s.Config().Build.Context != "" {
@@ -139,11 +137,19 @@ func (s *Service) ensureImageExists(ctx context.Context, noBuild bool) (string, 
 	return s.imageName(), s.Pull(ctx)
 }
 
-func (s *Service) imageExists() error {
-	client := s.clientFactory.Create(s)
+// ImageExists returns whether or not the service image already exists
+func (s *Service) ImageExists(ctx context.Context) (bool, error) {
+	dockerClient := s.clientFactory.Create(s)
 
-	_, _, err := client.ImageInspectWithRaw(context.Background(), s.imageName(), false)
-	return err
+	_, _, err := dockerClient.ImageInspectWithRaw(ctx, s.imageName(), false)
+	if err == nil {
+		return true, nil
+	}
+	if err != nil && client.IsErrImageNotFound(err) {
+		return false, nil
+	}
+
+	return false, err
 }
 
 func (s *Service) imageName() string {
