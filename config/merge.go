@@ -22,14 +22,14 @@ var (
 )
 
 // Merge merges a compose file into an existing set of service configs
-func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup, resourceLookup ResourceLookup, file string, bytes []byte, options *ParseOptions) (map[string]*ServiceConfig, map[string]*VolumeConfig, map[string]*NetworkConfig, error) {
+func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup, resourceLookup ResourceLookup, file string, bytes []byte, options *ParseOptions) (string, map[string]*ServiceConfig, map[string]*VolumeConfig, map[string]*NetworkConfig, error) {
 	if options == nil {
 		options = &defaultParseOptions
 	}
 
 	var config Config
 	if err := yaml.Unmarshal(bytes, &config); err != nil {
-		return nil, nil, nil, err
+		return "", nil, nil, nil, err
 	}
 
 	var serviceConfigs map[string]*ServiceConfig
@@ -39,24 +39,24 @@ func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup
 		var err error
 		serviceConfigs, err = MergeServicesV2(existingServices, environmentLookup, resourceLookup, file, bytes, options)
 		if err != nil {
-			return nil, nil, nil, err
+			return "", nil, nil, nil, err
 		}
 		volumeConfigs, err = ParseVolumes(bytes)
 		if err != nil {
-			return nil, nil, nil, err
+			return "", nil, nil, nil, err
 		}
 		networkConfigs, err = ParseNetworks(bytes)
 		if err != nil {
-			return nil, nil, nil, err
+			return "", nil, nil, nil, err
 		}
 	} else {
 		serviceConfigsV1, err := MergeServicesV1(existingServices, environmentLookup, resourceLookup, file, bytes, options)
 		if err != nil {
-			return nil, nil, nil, err
+			return "", nil, nil, nil, err
 		}
 		serviceConfigs, err = ConvertServices(serviceConfigsV1)
 		if err != nil {
-			return nil, nil, nil, err
+			return "", nil, nil, nil, err
 		}
 	}
 
@@ -66,11 +66,11 @@ func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup
 		var err error
 		serviceConfigs, err = options.Postprocess(serviceConfigs)
 		if err != nil {
-			return nil, nil, nil, err
+			return "", nil, nil, nil, err
 		}
 	}
 
-	return serviceConfigs, volumeConfigs, networkConfigs, nil
+	return config.Version, serviceConfigs, volumeConfigs, networkConfigs, nil
 }
 
 func adjustValues(configs map[string]*ServiceConfig) {

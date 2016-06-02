@@ -28,12 +28,13 @@ type Project struct {
 	ReloadCallback func() error
 	ParseOptions   *config.ParseOptions
 
-	runtime      RuntimeProject
-	context      *Context
-	reload       []string
-	upCount      int
-	listeners    []chan<- events.Event
-	hasListeners bool
+	runtime       RuntimeProject
+	configVersion string
+	context       *Context
+	reload        []string
+	upCount       int
+	listeners     []chan<- events.Event
+	hasListeners  bool
 }
 
 // NewProject creates a new project with the specified context.
@@ -155,11 +156,13 @@ func (p *Project) Load(bytes []byte) error {
 }
 
 func (p *Project) load(file string, bytes []byte) error {
-	serviceConfigs, volumeConfigs, networkConfigs, err := config.Merge(p.ServiceConfigs, p.context.EnvironmentLookup, p.context.ResourceLookup, file, bytes, p.ParseOptions)
+	version, serviceConfigs, volumeConfigs, networkConfigs, err := config.Merge(p.ServiceConfigs, p.context.EnvironmentLookup, p.context.ResourceLookup, file, bytes, p.ParseOptions)
 	if err != nil {
 		log.Errorf("Could not parse config for project %s : %v", p.Name, err)
 		return err
 	}
+
+	p.configVersion = version
 
 	for name, config := range serviceConfigs {
 		err := p.AddConfig(name, config)
