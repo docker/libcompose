@@ -68,13 +68,6 @@ type ServiceConfigV1 struct {
 	Ulimits       yaml.Ulimits         `yaml:"ulimits,omitempty"`
 }
 
-// Build holds v2 build information
-type Build struct {
-	Context    string               `yaml:"context,omitempty"`
-	Dockerfile string               `yaml:"dockerfile,omitempty"`
-	Args       yaml.MaporEqualSlice `yaml:"args,omitempty"`
-}
-
 // Log holds v2 logging information
 type Log struct {
 	Driver  string            `yaml:"driver,omitempty"`
@@ -83,14 +76,14 @@ type Log struct {
 
 // ServiceConfig holds version 2 of libcompose service configuration
 type ServiceConfig struct {
-	Build         Build                `yaml:"build,omitempty"`
+	Build         yaml.Build           `yaml:"build,omitempty"`
 	CapAdd        []string             `yaml:"cap_add,omitempty"`
 	CapDrop       []string             `yaml:"cap_drop,omitempty"`
 	CPUSet        string               `yaml:"cpuset,omitempty"`
 	CPUShares     int64                `yaml:"cpu_shares,omitempty"`
 	CPUQuota      int64                `yaml:"cpu_quota,omitempty"`
 	Command       yaml.Command         `yaml:"command,flow,omitempty"`
-	CgroupParent  string               `yaml:"cgroup_parrent,omitempty"`
+	CgroupParent  string               `yaml:"cgroup_parent,omitempty"`
 	ContainerName string               `yaml:"container_name,omitempty"`
 	Devices       []string             `yaml:"devices,omitempty"`
 	DependsOn     []string             `yaml:"depends_on,omitempty"`
@@ -114,7 +107,7 @@ type ServiceConfig struct {
 	MemLimit      int64                `yaml:"mem_limit,omitempty"`
 	MemSwapLimit  int64                `yaml:"memswap_limit,omitempty"`
 	NetworkMode   string               `yaml:"network_mode,omitempty"`
-	Networks      []string             `yaml:"networks,omitempty"`
+	Networks      *yaml.Networks       `yaml:"networks,omitempty"`
 	Pid           string               `yaml:"pid,omitempty"`
 	Ports         []string             `yaml:"ports,omitempty"`
 	Privileged    bool                 `yaml:"privileged,omitempty"`
@@ -137,20 +130,28 @@ type ServiceConfig struct {
 type VolumeConfig struct {
 	Driver     string            `yaml:"driver,omitempty"`
 	DriverOpts map[string]string `yaml:"driver_opts,omitempty"`
-	External   bool              `yaml:"external,omitempty"`
+	External   yaml.External     `yaml:"external,omitempty"`
 }
 
 // Ipam holds v2 network IPAM information
 type Ipam struct {
-	Driver string   `yaml:"driver,omitempty"`
-	Config []string `yaml:"config,omitempty"`
+	Driver string       `yaml:"driver,omitempty"`
+	Config []IpamConfig `yaml:"config,omitempty"`
+}
+
+// IpamConfig holds v2 network IPAM configuration information
+type IpamConfig struct {
+	Subnet     string            `yaml:"subnet,omitempty"`
+	IPRange    string            `yaml:"ip_range,omitempty"`
+	Gateway    string            `yaml:"gateway,omitempty"`
+	AuxAddress map[string]string `yaml:"aux_addresses,omitempty"`
 }
 
 // NetworkConfig holds v2 network configuration
 type NetworkConfig struct {
 	Driver     string            `yaml:"driver,omitempty"`
 	DriverOpts map[string]string `yaml:"driver_opts,omitempty"`
-	External   bool              `yaml:"external,omitempty"`
+	External   yaml.External     `yaml:"external,omitempty"`
 	Ipam       Ipam              `yaml:"ipam,omitempty"`
 }
 
