@@ -2,7 +2,6 @@ package yaml
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	yaml "github.com/cloudfoundry-incubator/candiedyaml"
@@ -34,11 +33,6 @@ func TestStringorsliceYaml(t *testing.T) {
 type StructSliceorMap struct {
 	Foos SliceorMap `yaml:"foos,omitempty"`
 	Bars []string   `yaml:"bars"`
-}
-
-type StructCommand struct {
-	Entrypoint Command `yaml:"entrypoint,flow,omitempty"`
-	Command    Command `yaml:"command,flow,omitempty"`
 }
 
 func TestSliceOrMapYaml(t *testing.T) {
@@ -117,162 +111,4 @@ func TestMaporsliceYaml(t *testing.T) {
 	assert.Equal(t, 2, len(s2.Foo))
 	assert.True(t, contains(s2.Foo, "bar=baz"))
 	assert.True(t, contains(s2.Foo, "far=1"))
-}
-
-var sampleStructCommand = `command: bash`
-
-func TestUnmarshalCommand(t *testing.T) {
-	s := &StructCommand{}
-	err := yaml.Unmarshal([]byte(sampleStructCommand), s)
-
-	assert.Nil(t, err)
-	assert.Equal(t, Command{"bash"}, s.Command)
-	assert.Nil(t, s.Entrypoint)
-	bytes, err := yaml.Marshal(s)
-	assert.Nil(t, err)
-
-	s2 := &StructCommand{}
-	err = yaml.Unmarshal(bytes, s2)
-
-	assert.Nil(t, err)
-	assert.Equal(t, Command{"bash"}, s2.Command)
-	assert.Nil(t, s2.Entrypoint)
-}
-
-var sampleEmptyCommand = `{}`
-
-func TestUnmarshalEmptyCommand(t *testing.T) {
-	s := &StructCommand{}
-	err := yaml.Unmarshal([]byte(sampleEmptyCommand), s)
-
-	assert.Nil(t, err)
-	assert.Nil(t, s.Command)
-
-	bytes, err := yaml.Marshal(s)
-	assert.Nil(t, err)
-	assert.Equal(t, "{}", strings.TrimSpace(string(bytes)))
-
-	s2 := &StructCommand{}
-	err = yaml.Unmarshal(bytes, s2)
-
-	assert.Nil(t, err)
-	assert.Nil(t, s2.Command)
-}
-
-func TestMarshalUlimit(t *testing.T) {
-	ulimits := []struct {
-		ulimits  *Ulimits
-		expected string
-	}{
-		{
-			ulimits: &Ulimits{
-				Elements: []Ulimit{
-					{
-						ulimitValues: ulimitValues{
-							Soft: 65535,
-							Hard: 65535,
-						},
-						Name: "nproc",
-					},
-				},
-			},
-			expected: `nproc: 65535
-`,
-		},
-		{
-			ulimits: &Ulimits{
-				Elements: []Ulimit{
-					{
-						Name: "nofile",
-						ulimitValues: ulimitValues{
-							Soft: 20000,
-							Hard: 40000,
-						},
-					},
-				},
-			},
-			expected: `nofile:
-  soft: 20000
-  hard: 40000
-`,
-		},
-	}
-
-	for _, ulimit := range ulimits {
-
-		bytes, err := yaml.Marshal(ulimit.ulimits)
-
-		assert.Nil(t, err)
-		assert.Equal(t, ulimit.expected, string(bytes), "should be equal")
-	}
-}
-
-func TestUnmarshalUlimits(t *testing.T) {
-	ulimits := []struct {
-		yaml     string
-		expected *Ulimits
-	}{
-		{
-			yaml: "nproc: 65535",
-			expected: &Ulimits{
-				Elements: []Ulimit{
-					{
-						Name: "nproc",
-						ulimitValues: ulimitValues{
-							Soft: 65535,
-							Hard: 65535,
-						},
-					},
-				},
-			},
-		},
-		{
-			yaml: `nofile:
-  soft: 20000
-  hard: 40000`,
-			expected: &Ulimits{
-				Elements: []Ulimit{
-					{
-						Name: "nofile",
-						ulimitValues: ulimitValues{
-							Soft: 20000,
-							Hard: 40000,
-						},
-					},
-				},
-			},
-		},
-		{
-			yaml: `nproc: 65535
-nofile:
-  soft: 20000
-  hard: 40000`,
-			expected: &Ulimits{
-				Elements: []Ulimit{
-					{
-						Name: "nofile",
-						ulimitValues: ulimitValues{
-							Soft: 20000,
-							Hard: 40000,
-						},
-					},
-					{
-						Name: "nproc",
-						ulimitValues: ulimitValues{
-							Soft: 65535,
-							Hard: 65535,
-						},
-					},
-				},
-			},
-		},
-	}
-
-	for _, ulimit := range ulimits {
-		actual := &Ulimits{}
-		err := yaml.Unmarshal([]byte(ulimit.yaml), actual)
-
-		assert.Nil(t, err)
-		assert.Equal(t, ulimit.expected, actual, "should be equal")
-	}
 }

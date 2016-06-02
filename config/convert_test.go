@@ -3,6 +3,8 @@ package config
 import (
 	"reflect"
 	"testing"
+
+	"github.com/docker/libcompose/yaml"
 )
 
 func TestBuild(t *testing.T) {
@@ -18,7 +20,7 @@ func TestBuild(t *testing.T) {
 
 	v2Config := v2Services["test"]
 
-	expectedBuild := Build{
+	expectedBuild := yaml.Build{
 		Context:    ".",
 		Dockerfile: "Dockerfile",
 	}

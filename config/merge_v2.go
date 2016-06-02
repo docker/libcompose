@@ -186,7 +186,14 @@ func resolveContextV2(inFile string, serviceData RawService) RawService {
 	if _, ok := serviceData["build"]; !ok {
 		return serviceData
 	}
-	build := serviceData["build"].(map[interface{}]interface{})
+	var build map[interface{}]interface{}
+	if buildAsString, ok := serviceData["build"].(string); ok {
+		build = map[interface{}]interface{}{
+			"context": buildAsString,
+		}
+	} else {
+		build = serviceData["build"].(map[interface{}]interface{})
+	}
 	context := asString(build["context"])
 	if context == "" {
 		return serviceData
