@@ -152,6 +152,8 @@ func toSepMapParts(value map[interface{}]interface{}, sep string) ([]string, err
 				parts = append(parts, sk+sep+sv)
 			} else if sv, ok := v.(int64); ok {
 				parts = append(parts, sk+sep+strconv.FormatInt(sv, 10))
+			} else if v == nil {
+				parts = append(parts, sk)
 			} else {
 				return nil, fmt.Errorf("Cannot unmarshal '%v' of type %T into a string value", v, v)
 			}
