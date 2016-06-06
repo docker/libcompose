@@ -5,6 +5,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -38,6 +39,40 @@ type Container struct {
 
 	// FIXME(vdemeester) Remove this dependency
 	service *Service
+}
+
+// ExistingContainer creates a container struct from the specified client, container ID or name and Service.
+// FIXME(vdemeester) this is gonna be one of the main function to create a container (and the Container struct will change to use this)
+func ExistingContainer(ctx context.Context, client client.APIClient, container string, service *Service) (*Container, error) {
+	apicontainer, err := GetContainer(ctx, client, container)
+	if err != nil {
+		return nil, err
+	}
+	if apicontainer == nil {
+		return nil, fmt.Errorf("Could not find container %q", container)
+	}
+	strNumber, ok := apicontainer.Config.Labels[labels.NUMBER.Str()]
+	if !ok {
+		return nil, fmt.Errorf("specified container (%q) has not the right compose labels: %v", container, apicontainer.Config.Labels)
+	}
+	number, err := strconv.Atoi(strNumber)
+	if err != nil {
+		return nil, err
+	}
+	return &Container{
+		client:          client,
+		name:            apicontainer.Name,
+		containerNumber: number,
+
+		// TODO(vdemeester) Move these to arguments
+		serviceName:   service.name,
+		projectName:   service.project.Name,
+		eventNotifier: service.project,
+		loggerFactory: service.context.LoggerFactory,
+
+		// TODO(vdemeester) Remove this dependency
+		service: service,
+	}, nil
 }
 
 // NewContainer creates a container struct with the specified docker client, name and service.
@@ -622,11 +657,6 @@ func (c *Container) Log(ctx context.Context, follow bool) error {
 		return err
 	}
 
-	info, err := c.client.ContainerInspect(ctx, container.ID)
-	if err != nil {
-		return err
-	}
-
 	// FIXME(vdemeester) update container struct to do less API calls
 	name := fmt.Sprintf("%s_%d", c.service.name, c.containerNumber)
 	l := c.loggerFactory.Create(name)
@@ -643,13 +673,12 @@ func (c *Container) Log(ctx context.Context, follow bool) error {
 	}
 	defer responseBody.Close()
 
-	if info.Config.Tty {
+	if container.Config.Tty {
 		_, err = io.Copy(&logger.Wrapper{Logger: l}, responseBody)
 	} else {
 		_, err = stdcopy.StdCopy(&logger.Wrapper{Logger: l}, &logger.Wrapper{Logger: l, Err: true}, responseBody)
 	}
 	logrus.WithFields(logrus.Fields{"Logger": l, "err": err}).Debug("c.client.Logs() returned error")
-
 	return err
 }
 

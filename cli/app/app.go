@@ -135,6 +135,7 @@ func ProjectUp(p project.APIProject, c *cli.Context) error {
 			ForceRecreate: c.Bool("force-recreate"),
 			NoBuild:       c.Bool("no-build"),
 		},
+		Log: !c.Bool("d"),
 	}
 	ctx, cancelFun := context.WithCancel(context.Background())
 	err := p.Up(ctx, options, c.Args()...)
@@ -145,21 +146,12 @@ func ProjectUp(p project.APIProject, c *cli.Context) error {
 		signalChan := make(chan os.Signal, 1)
 		cleanupDone := make(chan bool)
 		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-		errChan := make(chan error)
-		go func() {
-			errChan <- p.Log(ctx, true, c.Args()...)
-		}()
 		go func() {
 			select {
 			case <-signalChan:
 				fmt.Printf("\nGracefully stopping...\n")
 				cancelFun()
 				ProjectStop(p, c)
-				cleanupDone <- true
-			case err := <-errChan:
-				if err != nil {
-					logrus.Fatal(err)
-				}
 				cleanupDone <- true
 			}
 		}()
