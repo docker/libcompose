@@ -28,6 +28,7 @@ import (
 
 // Container holds information about a docker container and the service it is tied on.
 type Container struct {
+	id              string
 	name            string
 	serviceName     string
 	projectName     string

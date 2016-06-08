@@ -278,28 +278,29 @@ func (s *Service) up(ctx context.Context, imageName string, create bool, options
 		containers = []*Container{c}
 	}
 
-	hasBeenCreate := false
-
 	createAction := func(c *Container) error {
-		if !hasBeenCreate {
-			hasBeenCreate = true
-			if create {
-				if err := s.recreateIfNeeded(ctx, imageName, c, options.NoRecreate, options.ForceRecreate); err != nil {
-					return err
-				}
-			}
-			if err := c.Up(ctx, imageName); err != nil {
+		logrus.Infof("up:create:%v", c)
+		if create {
+			if err := s.recreateIfNeeded(ctx, imageName, c, options.NoRecreate, options.ForceRecreate); err != nil {
 				return err
 			}
 		}
+		if err := c.Up(ctx, imageName); err != nil {
+			return err
+		}
+		return nil
+	}
+	logAction := func(c *Container) error {
+		logrus.Infof("up:log:%v", c)
 		if options.Log {
 			return c.Log(ctx, true)
 		}
 		return nil
 	}
 	actions := actionMap{
-		"create": createAction,
+		"start": logAction,
 		"die": func(c *Container) error {
+			logrus.Infof("up:die:%v", c)
 			// FIXME(vdemeester) add status code & co
 			logrus.Infof("Container %s exited.", c.Name())
 			return nil
@@ -381,14 +382,8 @@ func (s *Service) getFilters() filters.Args {
 
 type actionMap map[string]func(*Container) error
 
-func (s *Service) watchContainers(ctx context.Context, initialContainers []*Container, action func(*Container) error, actions actionMap) error {
-	ctx, cancelFun := context.WithCancel(ctx)
-
+func (s *Service) watchContainers(ctx context.Context, initialContainers []*Container, createAction func(*Container) error, actions actionMap) error {
 	tasks := utils.InParallel{}
-	for _, container := range initialContainers {
-		task := taskFunc(container, action)
-		tasks.Add(task)
-	}
 
 	filter := s.getFilters()
 	cli := s.clientFactory.Create(s)
@@ -396,6 +391,7 @@ func (s *Service) watchContainers(ctx context.Context, initialContainers []*Cont
 	handler := dockerevents.NewHandler(dockerevents.ByAction)
 	for key, action := range actions {
 		handler.Handle(key, func(m eventtypes.Message) {
+			logrus.Infof("watch:%s: %v", key, m)
 			container, _ := ExistingContainer(ctx, cli, m.ID, s)
 			if container != nil {
 				tasks.Add(taskFunc(container, action))
@@ -407,11 +403,12 @@ func (s *Service) watchContainers(ctx context.Context, initialContainers []*Cont
 		Filters: filter,
 	}, handler)
 
-	err := tasks.Wait()
-	// Get out of the events monitor :)
-	cancelFun()
+	for _, container := range initialContainers {
+		task := taskFunc(container, createAction)
+		tasks.Add(task)
+	}
 
-	return err
+	return tasks.Wait()
 }
 
 func taskFunc(container *Container, action func(*Container) error) func() error {
