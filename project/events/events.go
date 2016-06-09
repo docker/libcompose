@@ -157,6 +157,14 @@ func (e EventType) String() string {
 		m = "Executing"
 	case ServiceRun:
 		m = "Executed"
+	case ServicePauseStart:
+		m = "Pausing"
+	case ServicePause:
+		m = "Paused"
+	case ServiceUnpauseStart:
+		m = "Unpausing"
+	case ServiceUnpause:
+		m = "Unpaused"
 
 	case ProjectDownStart:
 		m = "Stopping project"
@@ -198,6 +206,14 @@ func (e EventType) String() string {
 		m = "Building project"
 	case ProjectBuildDone:
 		m = "Project built"
+	case ProjectPauseStart:
+		m = "Pausing project"
+	case ProjectPauseDone:
+		m = "Project paused"
+	case ProjectUnpauseStart:
+		m = "Unpausing project"
+	case ProjectUnpauseDone:
+		m = "Project unpaused"
 	}
 
 	if m == "" {
