@@ -3,9 +3,11 @@ package test
 import (
 	"errors"
 	"io"
+	"time"
 
 	"golang.org/x/net/context"
 
+	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/container"
 	"github.com/docker/engine-api/types/filters"
@@ -15,6 +17,9 @@ import (
 
 var (
 	errNoEngine = errors.New("Engine no longer exists")
+
+	// Make sure NopClient implements APIClient
+	_ client.APIClient = &NopClient{}
 )
 
 // NopClient is a nop API Client based on engine-api
@@ -29,6 +34,21 @@ func NewNopClient() *NopClient {
 // ClientVersion returns the version string associated with this instance of the Client
 func (client *NopClient) ClientVersion() string {
 	return ""
+}
+
+// CheckpointCreate creates a checkpoint from the given container with the given name
+func (client *NopClient) CheckpointCreate(ctx context.Context, container string, options types.CheckpointCreateOptions) error {
+	return errNoEngine
+}
+
+// CheckpointDelete deletes the checkpoint with the given name from the given container
+func (client *NopClient) CheckpointDelete(ctx context.Context, container string, checkpointID string) error {
+	return errNoEngine
+}
+
+// CheckpointList returns the volumes configured in the docker host.
+func (client *NopClient) CheckpointList(ctx context.Context, container string) ([]types.Checkpoint, error) {
+	return []types.Checkpoint{}, errNoEngine
 }
 
 // ContainerAttach attaches a connection to a container in the server
@@ -127,7 +147,7 @@ func (client *NopClient) ContainerResize(ctx context.Context, container string, 
 }
 
 // ContainerRestart stops and starts a container again
-func (client *NopClient) ContainerRestart(ctx context.Context, container string, timeout int) error {
+func (client *NopClient) ContainerRestart(ctx context.Context, container string, timeout time.Duration) error {
 	return errNoEngine
 }
 
@@ -142,12 +162,12 @@ func (client *NopClient) ContainerStats(ctx context.Context, container string, s
 }
 
 // ContainerStart sends a request to the docker daemon to start a container
-func (client *NopClient) ContainerStart(ctx context.Context, container string) error {
+func (client *NopClient) ContainerStart(ctx context.Context, container string, options types.ContainerStartOptions) error {
 	return errNoEngine
 }
 
 // ContainerStop stops a container without terminating the process
-func (client *NopClient) ContainerStop(ctx context.Context, container string, timeout int) error {
+func (client *NopClient) ContainerStop(ctx context.Context, container string, timeout time.Duration) error {
 	return errNoEngine
 }
 
@@ -247,7 +267,7 @@ func (client *NopClient) ImageSave(ctx context.Context, images []string) (io.Rea
 }
 
 // ImageTag tags an image in the docker host
-func (client *NopClient) ImageTag(ctx context.Context, image, ref string, options types.ImageTagOptions) error {
+func (client *NopClient) ImageTag(ctx context.Context, image, ref string) error {
 	return errNoEngine
 }
 
@@ -274,6 +294,11 @@ func (client *NopClient) NetworkDisconnect(ctx context.Context, networkID, conta
 // NetworkInspect returns the information for a specific network configured in the docker host
 func (client *NopClient) NetworkInspect(ctx context.Context, networkID string) (types.NetworkResource, error) {
 	return types.NetworkResource{}, errNoEngine
+}
+
+// NetworkInspectWithRaw returns the information for a specific network configured in the docker host and it's raw representation.
+func (client *NopClient) NetworkInspectWithRaw(ctx context.Context, networkID string) (types.NetworkResource, []byte, error) {
+	return types.NetworkResource{}, []byte{}, errNoEngine
 }
 
 // NetworkList returns the list of networks configured in the docker host
@@ -308,6 +333,11 @@ func (client *NopClient) VolumeCreate(ctx context.Context, options types.VolumeC
 // VolumeInspect returns the information about a specific volume in the docker host
 func (client *NopClient) VolumeInspect(ctx context.Context, volumeID string) (types.Volume, error) {
 	return types.Volume{}, errNoEngine
+}
+
+// VolumeInspectWithRaw returns the information about a specific volume in the docker host and it's raw representation
+func (client *NopClient) VolumeInspectWithRaw(ctx context.Context, volumeID string) (types.Volume, []byte, error) {
+	return types.Volume{}, []byte{}, errNoEngine
 }
 
 // VolumeList returns the volumes configured in the docker host
