@@ -161,11 +161,6 @@ func LogsCommand(factory app.ProjectFactory) cli.Command {
 		Usage:  "Get service logs",
 		Action: app.WithProject(factory, app.ProjectLog),
 		Flags: []cli.Flag{
-			cli.IntFlag{
-				Name:  "lines",
-				Usage: "number of lines to tail",
-				Value: 100,
-			},
 			cli.BoolFlag{
 				Name:  "follow",
 				Usage: "Follow log output.",
