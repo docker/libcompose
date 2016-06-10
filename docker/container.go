@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"strings"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -196,7 +197,7 @@ func (c *Container) CreateWithOverride(ctx context.Context, imageName string, co
 // Stop stops the container.
 func (c *Container) Stop(ctx context.Context, timeout int) error {
 	return c.withContainer(ctx, func(container *types.ContainerJSON) error {
-		return c.client.ContainerStop(ctx, container.ID, timeout)
+		return c.client.ContainerStop(ctx, container.ID, time.Duration(timeout)*time.Second)
 	})
 }
 
@@ -315,7 +316,7 @@ func (c *Container) Run(ctx context.Context, imageName string, configOverride *c
 		return holdHijackedConnection(configOverride.Tty, in, out, stderr, resp)
 	})
 
-	if err := c.client.ContainerStart(ctx, container.ID); err != nil {
+	if err := c.client.ContainerStart(ctx, container.ID, types.ContainerStartOptions{}); err != nil {
 		return -1, err
 	}
 
@@ -400,7 +401,7 @@ func (c *Container) Up(ctx context.Context, imageName string) error {
 // Start the specified container with the specified host config
 func (c *Container) Start(container *types.ContainerJSON) error {
 	logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Starting container")
-	if err := c.client.ContainerStart(context.Background(), container.ID); err != nil {
+	if err := c.client.ContainerStart(context.Background(), container.ID, types.ContainerStartOptions{}); err != nil {
 		logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
 		return err
 	}
@@ -612,7 +613,7 @@ func (c *Container) Restart(ctx context.Context, timeout int) error {
 		return err
 	}
 
-	return c.client.ContainerRestart(ctx, container.ID, timeout)
+	return c.client.ContainerRestart(ctx, container.ID, time.Duration(timeout)*time.Second)
 }
 
 // Log forwards container logs to the project configured logger.

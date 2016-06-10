@@ -191,9 +191,7 @@ func (s *CliSuite) TestUpAfterImageTagDeleted(c *C) {
 	  tty: true
 	`, image)
 
-	err := client.ImageTag(context.Background(), "busybox:latest", repo+":"+label, types.ImageTagOptions{
-		Force: true,
-	})
+	err := client.ImageTag(context.Background(), "busybox:latest", repo+":"+label)
 	c.Assert(err, IsNil)
 
 	p := s.ProjectFromText(c, "up", template)
@@ -223,8 +221,10 @@ func (s *CliSuite) TestRecreateImageChanging(c *C) {
 	  tty: true
 	`, image)
 
+	ctx := context.Background()
+
 	// Ignore error here
-	client.ImageRemove(context.Background(), image, types.ImageRemoveOptions{})
+	client.ImageRemove(ctx, image, types.ImageRemoveOptions{})
 
 	// Up, pull needed
 	p := s.ProjectFromText(c, "up", template)
@@ -242,9 +242,13 @@ func (s *CliSuite) TestRecreateImageChanging(c *C) {
 	c.Assert(firstContainer.ID, Equals, latestContainer.ID)
 
 	// Change what tag points to
-	err := client.ImageTag(context.Background(), "busybox:latest", repo+":"+label, types.ImageTagOptions{
-		Force: true,
-	})
+	// Note: depending on the daemon version it can fail with --force (which is no more possible to pass using engine-api)
+	//       thus, the next following lines are a hack…
+	err := client.ImageTag(ctx, image, image+"backup")
+	c.Assert(err, IsNil)
+	_, err = client.ImageRemove(ctx, image, types.ImageRemoveOptions{})
+	c.Assert(err, IsNil)
+	err = client.ImageTag(ctx, "busybox:latest", image)
 	c.Assert(err, IsNil)
 
 	// Up (with recreate - the default), pull is needed and new container is created
