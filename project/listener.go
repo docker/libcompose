@@ -29,27 +29,6 @@ var (
 		events.ServicePause:        true,
 		events.ServiceUnpauseStart: true,
 		events.ServiceUnpause:      true,
-
-		events.ProjectDeleteDone:   true,
-		events.ProjectDeleteStart:  true,
-		events.ProjectDownDone:     true,
-		events.ProjectDownStart:    true,
-		events.ProjectStopDone:     true,
-		events.ProjectStopStart:    true,
-		events.ProjectKillDone:     true,
-		events.ProjectKillStart:    true,
-		events.ProjectCreateDone:   true,
-		events.ProjectCreateStart:  true,
-		events.ProjectStartDone:    true,
-		events.ProjectStartStart:   true,
-		events.ProjectRestartDone:  true,
-		events.ProjectRestartStart: true,
-		events.ProjectUpDone:       true,
-		events.ProjectUpStart:      true,
-		events.ProjectPauseDone:    true,
-		events.ProjectPauseStart:   true,
-		events.ProjectUnpauseDone:  true,
-		events.ProjectUnpauseStart: true,
 	}
 )
 
