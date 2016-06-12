@@ -197,6 +197,7 @@ func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *
 		IpcMode:        container.IpcMode(c.Ipc),
 		PortBindings:   portBindings,
 		RestartPolicy:  *restartPolicy,
+		ShmSize:        c.ShmSize,
 		SecurityOpt:    utils.CopySlice(c.SecurityOpt),
 		VolumeDriver:   c.VolumeDriver,
 		Resources:      resources,
