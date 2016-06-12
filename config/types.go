@@ -53,6 +53,7 @@ type ServiceConfigV1 struct {
 	Privileged    bool                 `yaml:"privileged,omitempty"`
 	Restart       string               `yaml:"restart,omitempty"`
 	ReadOnly      bool                 `yaml:"read_only,omitempty"`
+	ShmSize       int64                `yaml:"shm_size,omitempty"`
 	StdinOpen     bool                 `yaml:"stdin_open,omitempty"`
 	SecurityOpt   []string             `yaml:"security_opt,omitempty"`
 	Tty           bool                 `yaml:"tty,omitempty"`
@@ -112,6 +113,7 @@ type ServiceConfig struct {
 	Ports         []string             `yaml:"ports,omitempty"`
 	Privileged    bool                 `yaml:"privileged,omitempty"`
 	SecurityOpt   []string             `yaml:"security_opt,omitempty"`
+	ShmSize       int64                `yaml:"shm_size,omitempty"`
 	StopSignal    string               `yaml:"stop_signal,omitempty"`
 	VolumeDriver  string               `yaml:"volume_driver,omitempty"`
 	Volumes       []string             `yaml:"volumes,omitempty"`
