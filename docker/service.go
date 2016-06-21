@@ -246,6 +246,7 @@ func (s *Service) Up(ctx context.Context, options options.Up) error {
 }
 
 // Run implements Service.Run. It runs a one of command within the service container.
+// It always create a new container.
 func (s *Service) Run(ctx context.Context, commandParts []string) (int, error) {
 	imageName, err := s.ensureImageExists(ctx, false)
 	if err != nil {
@@ -263,7 +264,11 @@ func (s *Service) Run(ctx context.Context, commandParts []string) (int, error) {
 
 	c := NewOneOffContainer(client, containerName, containerNumber, s)
 
-	return c.Run(ctx, imageName, &config.ServiceConfig{Command: commandParts, Tty: true, StdinOpen: true})
+	configOverride := &config.ServiceConfig{Command: commandParts, Tty: true, StdinOpen: true}
+
+	c.CreateWithOverride(ctx, imageName, configOverride)
+
+	return c.Run(ctx, configOverride)
 }
 
 // Info implements Service.Info. It returns an project.InfoSet with the containers

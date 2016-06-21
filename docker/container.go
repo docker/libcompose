@@ -269,15 +269,15 @@ func (c *Container) IsRunning(ctx context.Context) (bool, error) {
 // Run creates, start and attach to the container based on the image name,
 // the specified configuration.
 // It will always create a new container.
-func (c *Container) Run(ctx context.Context, imageName string, configOverride *config.ServiceConfig) (int, error) {
+func (c *Container) Run(ctx context.Context, configOverride *config.ServiceConfig) (int, error) {
 	var (
 		errCh       chan error
 		out, stderr io.Writer
 		in          io.ReadCloser
 	)
 
-	container, err := c.createContainer(ctx, imageName, "", configOverride)
-	if err != nil {
+	container, err := c.findExisting(ctx)
+	if err != nil || container == nil {
 		return -1, err
 	}
 
