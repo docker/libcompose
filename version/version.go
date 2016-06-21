@@ -9,4 +9,12 @@ var (
 
 	// BUILDTIME will be overwritten automatically by the build system
 	BUILDTIME = ""
+
+	// SHOWWARNING might be overwritten by the build system to not show the warning
+	SHOWWARNING = "true"
 )
+
+// ShowWarning returns wether the warning should be printed or not
+func ShowWarning() bool {
+	return SHOWWARNING != "false"
+}

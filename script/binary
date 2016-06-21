@@ -11,6 +11,6 @@ GITCOMMIT=$(git rev-parse --short HEAD)
 
 # Build binaries
 go build \
-   -ldflags="-w -X github.com/docker/libcompose/version.GITCOMMIT=${GITCOMMIT} -X github.com/docker/libcompose/version.BUILDTIME=${BUILDTIME}" \
+   -ldflags="-w -X github.com/docker/libcompose/version.GITCOMMIT=${GITCOMMIT} -X github.com/docker/libcompose/version.BUILDTIME=${BUILDTIME} -X github.com/docker/libcompose/version.SHOWWARNING=${SHOWWARNING}" \
    -o bundles/libcompose-cli \
    ./cli/main

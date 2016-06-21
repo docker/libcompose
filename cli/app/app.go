@@ -14,6 +14,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/options"
+	"github.com/docker/libcompose/version"
 )
 
 // ProjectAction is an adapter to allow the use of ordinary functions as libcompose actions.
@@ -31,7 +32,9 @@ func BeforeApp(c *cli.Context) error {
 	if c.GlobalBool("verbose") {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
-	logrus.Warning("Note: This is an experimental alternate implementation of the Compose CLI (https://github.com/docker/compose)")
+	if version.ShowWarning() {
+		logrus.Warning("Note: This is an experimental alternate implementation of the Compose CLI (https://github.com/docker/compose)")
+	}
 	return nil
 }
 
