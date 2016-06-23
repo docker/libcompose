@@ -159,13 +159,8 @@ func (s *Service) imageName() string {
 	return fmt.Sprintf("%s_%s", s.project.Name, s.Name())
 }
 
-// Build implements Service.Build. If an imageName is specified or if the context has
-// no build to work with it will do nothing. Otherwise it will try to build
-// the image and returns an error if any.
+// Build implements Service.Build. It will try to build the image and returns an error if any.
 func (s *Service) Build(ctx context.Context, buildOptions options.Build) error {
-	if s.Config().Image != "" {
-		return nil
-	}
 	return s.build(ctx, buildOptions)
 }
 
