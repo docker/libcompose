@@ -135,7 +135,12 @@ func RunCommand(factory app.ProjectFactory) cli.Command {
 		Name:   "run",
 		Usage:  "Run a one-off command",
 		Action: app.WithProject(factory, app.ProjectRun),
-		Flags:  []cli.Flag{},
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "d",
+				Usage: "Detached mode: Run container in the background, print new container name.",
+			},
+		},
 	}
 }
 

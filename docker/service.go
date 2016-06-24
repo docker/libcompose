@@ -247,7 +247,7 @@ func (s *Service) Up(ctx context.Context, options options.Up) error {
 
 // Run implements Service.Run. It runs a one of command within the service container.
 // It always create a new container.
-func (s *Service) Run(ctx context.Context, commandParts []string) (int, error) {
+func (s *Service) Run(ctx context.Context, commandParts []string, options options.Run) (int, error) {
 	imageName, err := s.ensureImageExists(ctx, false)
 	if err != nil {
 		return -1, err
@@ -268,6 +268,14 @@ func (s *Service) Run(ctx context.Context, commandParts []string) (int, error) {
 
 	c.CreateWithOverride(ctx, imageName, configOverride)
 
+	if err := s.connectContainerToNetworks(ctx, c); err != nil {
+		return -1, err
+	}
+
+	if options.Detached {
+		logrus.Infof("%s", c.Name())
+		return 0, c.Start(ctx)
+	}
 	return c.Run(ctx, configOverride)
 }
 
@@ -293,7 +301,12 @@ func (s *Service) Info(ctx context.Context, qFlag bool) (project.InfoSet, error)
 
 // Start implements Service.Start. It tries to start a container without creating it.
 func (s *Service) Start(ctx context.Context) error {
-	return s.up(ctx, "", false, options.Up{})
+	return s.collectContainersAndDo(ctx, func(c *Container) error {
+		if err := s.connectContainerToNetworks(ctx, c); err != nil {
+			return err
+		}
+		return c.Start(ctx)
+	})
 }
 
 func (s *Service) up(ctx context.Context, imageName string, create bool, options options.Up) error {
@@ -319,8 +332,44 @@ func (s *Service) up(ctx context.Context, imageName string, create bool, options
 			}
 		}
 
-		return c.Up(ctx, imageName)
+		if err := s.connectContainerToNetworks(ctx, c); err != nil {
+			return err
+		}
+		return c.Start(ctx)
 	})
+}
+
+func (s *Service) connectContainerToNetworks(ctx context.Context, c *Container) error {
+	connectedNetworks, err := c.Networks(ctx)
+	if err != nil {
+		return nil
+	}
+	if s.serviceConfig.Networks != nil {
+		for _, network := range s.serviceConfig.Networks.Networks {
+			existingNetwork, ok := connectedNetworks[network.Name]
+			if ok {
+				// FIXME(vdemeester) implement alias checking (to not disconnect/reconnect for nothing)
+				aliasPresent := false
+				for _, alias := range existingNetwork.Aliases {
+					// FIXME(vdemeester) use shortID instead of ID
+					ID, _ := c.ID()
+					if alias == ID {
+						aliasPresent = true
+					}
+				}
+				if aliasPresent {
+					continue
+				}
+				if err := c.NetworkDisconnect(ctx, network); err != nil {
+					return err
+				}
+			}
+			if err := c.NetworkConnect(ctx, network); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (s *Service) recreateIfNeeded(ctx context.Context, imageName string, c *Container, noRecreate, forceRecreate bool) error {

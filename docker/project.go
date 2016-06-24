@@ -11,6 +11,7 @@ import (
 	"github.com/docker/engine-api/types/filters"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/docker/client"
+	"github.com/docker/libcompose/docker/network"
 	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/lookup"
 	"github.com/docker/libcompose/project"
@@ -56,6 +57,13 @@ func NewProject(context *Context, parseOptions *config.ParseOptions) (project.AP
 			return nil, err
 		}
 		context.ClientFactory = factory
+	}
+
+	if context.NetworksFactory == nil {
+		networksFactory := &network.DockerFactory{
+			ClientFactory: context.ClientFactory,
+		}
+		context.NetworksFactory = networksFactory
 	}
 
 	// FIXME(vdemeester) Remove the context duplication ?

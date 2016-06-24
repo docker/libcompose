@@ -17,6 +17,7 @@ import (
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/container"
+	"github.com/docker/engine-api/types/network"
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/labels"
@@ -24,6 +25,7 @@ import (
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/events"
 	util "github.com/docker/libcompose/utils"
+	"github.com/docker/libcompose/yaml"
 )
 
 // Container holds information about a docker container and the service it is tied on.
@@ -380,26 +382,12 @@ func holdHijackedConnection(tty bool, inputStream io.ReadCloser, outputStream, e
 	return nil
 }
 
-// Up creates and start the container based on the image name and send an event
-// to notify the container has been created. If the container exists but is stopped
-// it tries to start it.
-func (c *Container) Up(ctx context.Context, imageName string) error {
-	var err error
-
-	container, err := c.Create(ctx, imageName)
-	if err != nil {
+// Start the specified container with the specified host config
+func (c *Container) Start(ctx context.Context) error {
+	container, err := c.findExisting(ctx)
+	if err != nil || container == nil {
 		return err
 	}
-
-	if !container.State.Running {
-		c.Start(container)
-	}
-
-	return nil
-}
-
-// Start the specified container with the specified host config
-func (c *Container) Start(container *types.ContainerJSON) error {
 	logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Starting container")
 	if err := c.client.ContainerStart(context.Background(), container.ID, types.ContainerStartOptions{}); err != nil {
 		logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
@@ -511,7 +499,10 @@ func (c *Container) createContainer(ctx context.Context, imageName, oldContainer
 }
 
 func (c *Container) populateAdditionalHostConfig(hostConfig *container.HostConfig) error {
-	links := map[string]string{}
+	links, err := c.getLinks()
+	if err != nil {
+		return err
+	}
 
 	for _, link := range c.service.DependentServices() {
 		if !c.service.project.ServiceConfigs.Has(link.Target) {
@@ -529,9 +520,7 @@ func (c *Container) populateAdditionalHostConfig(hostConfig *container.HostConfi
 			return err
 		}
 
-		if link.Type == project.RelTypeLink {
-			c.addLinks(links, service, link, containers)
-		} else if link.Type == project.RelTypeIpcNamespace {
+		if link.Type == project.RelTypeIpcNamespace {
 			hostConfig, err = c.addIpc(hostConfig, service, containers)
 		} else if link.Type == project.RelTypeNetNamespace {
 			hostConfig, err = c.addNetNs(hostConfig, service, containers)
@@ -551,6 +540,36 @@ func (c *Container) populateAdditionalHostConfig(hostConfig *container.HostConfi
 	}
 
 	return nil
+}
+
+// FIXME(vdemeester) this is temporary
+func (c *Container) getLinks() (map[string]string, error) {
+	links := map[string]string{}
+	for _, link := range c.service.DependentServices() {
+		if !c.service.project.ServiceConfigs.Has(link.Target) {
+			continue
+		}
+
+		service, err := c.service.project.CreateService(link.Target)
+		if err != nil {
+			return nil, err
+		}
+
+		// FIXME(vdemeester) container should not know service
+		containers, err := service.Containers(context.Background())
+		if err != nil {
+			return nil, err
+		}
+
+		if link.Type == project.RelTypeLink {
+			c.addLinks(links, service, link, containers)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+	return links, nil
 }
 
 func (c *Container) addLinks(links map[string]string, service project.Service, rel project.ServiceRelationship, containers []project.Container) {
@@ -683,4 +702,63 @@ func (c *Container) Port(ctx context.Context, port string) (string, error) {
 		return strings.Join(result, "\n"), nil
 	}
 	return "", nil
+}
+
+// Networks returns the containers network
+// FIXME(vdemeester) should not need ctx or calling the API, will take care of it
+// when refactoring Container.
+func (c *Container) Networks(ctx context.Context) (map[string]*network.EndpointSettings, error) {
+	container, err := c.findExisting(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if container == nil {
+		return map[string]*network.EndpointSettings{}, nil
+	}
+	return container.NetworkSettings.Networks, nil
+}
+
+// NetworkDisconnect disconnects the container from the specified network
+// FIXME(vdemeester) will be refactor with Container refactoring
+func (c *Container) NetworkDisconnect(ctx context.Context, net *yaml.Network) error {
+	container, err := c.findExisting(ctx)
+	if err != nil || container == nil {
+		return err
+	}
+	return c.client.NetworkDisconnect(ctx, net.RealName, container.ID, true)
+}
+
+// NetworkConnect connects the container to the specified network
+// FIXME(vdemeester) will be refactor with Container refactoring
+func (c *Container) NetworkConnect(ctx context.Context, net *yaml.Network) error {
+	container, err := c.findExisting(ctx)
+	if err != nil || container == nil {
+		return err
+	}
+	internalLinks, err := c.getLinks()
+	if err != nil {
+		return err
+	}
+	links := []string{}
+	// TODO(vdemeester) handle link to self (?)
+	for k, v := range internalLinks {
+		links = append(links, strings.Join([]string{v, k}, ":"))
+	}
+	for _, v := range c.service.Config().ExternalLinks {
+		links = append(links, v)
+	}
+	aliases := []string{}
+	if !c.oneOff {
+		aliases = []string{c.serviceName}
+	}
+	aliases = append(aliases, net.Aliases...)
+	return c.client.NetworkConnect(ctx, net.RealName, container.ID, &network.EndpointSettings{
+		Aliases:   aliases,
+		Links:     links,
+		IPAddress: net.IPv4Address,
+		IPAMConfig: &network.EndpointIPAMConfig{
+			IPv4Address: net.IPv4Address,
+			IPv6Address: net.IPv6Address,
+		},
+	})
 }

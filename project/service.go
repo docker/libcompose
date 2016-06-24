@@ -22,7 +22,7 @@ type Service interface {
 	Pause(ctx context.Context) error
 	Pull(ctx context.Context) error
 	Restart(ctx context.Context, timeout int) error
-	Run(ctx context.Context, commandParts []string) (int, error)
+	Run(ctx context.Context, commandParts []string, options options.Run) (int, error)
 	Scale(ctx context.Context, count int, timeout int) error
 	Start(ctx context.Context) error
 	Stop(ctx context.Context, timeout int) error
@@ -74,6 +74,9 @@ const RelTypeVolumesFrom = ServiceRelationshipType("volumesFrom")
 
 // RelTypeDependsOn means the dependency was explicitly set using 'depends_on'.
 const RelTypeDependsOn = ServiceRelationshipType("dependsOn")
+
+// RelTypeNetworkMode means the services depends on another service on networkMode
+const RelTypeNetworkMode = ServiceRelationshipType("networkMode")
 
 // ServiceRelationship holds the relationship information between two services.
 type ServiceRelationship struct {

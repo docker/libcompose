@@ -28,6 +28,11 @@ type Create struct {
 	// ForceBuild bool
 }
 
+// Run holds options of compose run.
+type Run struct {
+	Detached bool
+}
+
 // Up holds options of compose up.
 type Up struct {
 	Create

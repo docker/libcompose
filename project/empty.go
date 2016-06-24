@@ -92,7 +92,7 @@ func (e *EmptyService) Unpause(ctx context.Context) error {
 }
 
 // Run implements Service.Run but does nothing.
-func (e *EmptyService) Run(ctx context.Context, commandParts []string) (int, error) {
+func (e *EmptyService) Run(ctx context.Context, commandParts []string, options options.Run) (int, error) {
 	return 0, nil
 }
 

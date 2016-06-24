@@ -6,7 +6,7 @@ LIBCOMPOSE_ENVS := \
 	-e DOCKER_TEST_HOST \
 	-e TESTDIRS \
 	-e TESTFLAGS \
-        -e SHOWWARNING \
+	-e SHOWWARNING \
 	-e TESTVERBOSE
 
 # (default to no bind mount if DOCKER_HOST is set)
