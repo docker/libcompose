@@ -100,8 +100,21 @@ args:
 		{
 			yaml: `context: .
 args:
-  - buildno: 1
-  - user: vincent`,
+  - buildno
+  - user`,
+			expected: &Build{
+				Context: ".",
+				Args: map[string]string{
+					"buildno": "\x00",
+					"user":    "\x00",
+				},
+			},
+		},
+		{
+			yaml: `context: .
+args:
+  - buildno=1
+  - user=vincent`,
 			expected: &Build{
 				Context: ".",
 				Args: map[string]string{
