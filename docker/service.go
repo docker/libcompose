@@ -87,28 +87,6 @@ func (s *Service) Create(ctx context.Context, options options.Create) error {
 	return err
 }
 
-func (s *Service) collectContainers(ctx context.Context) ([]*Container, error) {
-	client := s.clientFactory.Create(s)
-	containers, err := GetContainersByFilter(ctx, client, labels.SERVICE.Eq(s.name), labels.PROJECT.Eq(s.project.Name))
-	if err != nil {
-		return nil, err
-	}
-
-	result := []*Container{}
-
-	for _, container := range containers {
-		containerNumber, err := strconv.Atoi(container.Labels[labels.NUMBER.Str()])
-		if err != nil {
-			return nil, err
-		}
-		// Compose add "/" before name, so Name[1] will store actaul name.
-		name := strings.SplitAfter(container.Names[0], "/")
-		result = append(result, NewContainer(client, name[1], containerNumber, s))
-	}
-
-	return result, nil
-}
-
 func (s *Service) createOne(ctx context.Context, imageName string) (*Container, error) {
 	containers, err := s.constructContainers(ctx, imageName, 1)
 	if err != nil {
@@ -307,15 +285,36 @@ func (s *Service) up(ctx context.Context, imageName string, create bool, options
 		containers = []*Container{c}
 	}
 
-	return s.eachContainer(ctx, containers, func(c *Container) error {
+	createAction := func(c *Container) error {
+		logrus.Infof("up:create:%v", c)
 		if create {
 			if err := s.recreateIfNeeded(ctx, imageName, c, options.NoRecreate, options.ForceRecreate); err != nil {
 				return err
 			}
 		}
+		if err := c.Up(ctx, imageName); err != nil {
+			return err
+		}
+		return nil
+	}
+	logAction := func(c *Container) error {
+		logrus.Infof("up:log:%v", c)
+		if options.Log {
+			return c.Log(ctx, true)
+		}
+		return nil
+	}
+	actions := actionMap{
+		"start": logAction,
+		"die": func(c *Container) error {
+			logrus.Infof("up:die:%v", c)
+			// FIXME(vdemeester) add status code & co
+			logrus.Infof("Container %s exited.", c.Name())
+			return nil
+		},
+	}
 
-		return c.Up(ctx, imageName)
-	})
+	return s.watchContainers(ctx, containers, createAction, actions)
 }
 
 func (s *Service) recreateIfNeeded(ctx context.Context, imageName string, c *Container, noRecreate, forceRecreate bool) error {
@@ -342,6 +341,28 @@ func (s *Service) recreateIfNeeded(ctx context.Context, imageName string, c *Con
 	return nil
 }
 
+func (s *Service) collectContainers(ctx context.Context) ([]*Container, error) {
+	client := s.clientFactory.Create(s)
+	containers, err := GetContainersByFilter(ctx, client, labels.SERVICE.Eq(s.name), labels.PROJECT.Eq(s.project.Name))
+	if err != nil {
+		return nil, err
+	}
+
+	result := []*Container{}
+
+	for _, container := range containers {
+		containerNumber, err := strconv.Atoi(container.Labels[labels.NUMBER.Str()])
+		if err != nil {
+			return nil, err
+		}
+		// Compose add "/" before name, so Name[1] will store actaul name.
+		name := strings.SplitAfter(container.Names[0], "/")
+		result = append(result, NewContainer(client, name[1], containerNumber, s))
+	}
+
+	return result, nil
+}
+
 func (s *Service) collectContainersAndDo(ctx context.Context, action func(*Container) error) error {
 	containers, err := s.collectContainers(ctx)
 	if err != nil {
@@ -351,19 +372,56 @@ func (s *Service) collectContainersAndDo(ctx context.Context, action func(*Conta
 }
 
 func (s *Service) eachContainer(ctx context.Context, containers []*Container, action func(*Container) error) error {
-
 	tasks := utils.InParallel{}
 	for _, container := range containers {
-		task := func(container *Container) func() error {
-			return func() error {
-				return action(container)
-			}
-		}(container)
+		task := taskFunc(container, action)
+		tasks.Add(task)
+	}
+	return tasks.Wait()
+}
 
+func (s *Service) getFilters() filters.Args {
+	filter := filters.NewArgs()
+	filter.Add("label", fmt.Sprintf("%s=%s", labels.PROJECT, s.project.Name))
+	filter.Add("label", fmt.Sprintf("%s=%s", labels.SERVICE, s.name))
+	return filter
+}
+
+type actionMap map[string]func(*Container) error
+
+func (s *Service) watchContainers(ctx context.Context, initialContainers []*Container, createAction func(*Container) error, actions actionMap) error {
+	tasks := utils.InParallel{}
+
+	filter := s.getFilters()
+	cli := s.clientFactory.Create(s)
+
+	handler := dockerevents.NewHandler(dockerevents.ByAction)
+	for key, action := range actions {
+		handler.Handle(key, func(m eventtypes.Message) {
+			logrus.Infof("watch:%s: %v", key, m)
+			container, _ := ExistingContainer(ctx, cli, m.ID, s)
+			if container != nil {
+				tasks.Add(taskFunc(container, action))
+			}
+		})
+	}
+
+	dockerevents.MonitorWithHandler(ctx, cli, types.EventsOptions{
+		Filters: filter,
+	}, handler)
+
+	for _, container := range initialContainers {
+		task := taskFunc(container, createAction)
 		tasks.Add(task)
 	}
 
 	return tasks.Wait()
+}
+
+func taskFunc(container *Container, action func(*Container) error) func() error {
+	return func() error {
+		return action(container)
+	}
 }
 
 // Stop implements Service.Stop. It stops any containers related to the service.
@@ -396,9 +454,24 @@ func (s *Service) Delete(ctx context.Context, options options.Delete) error {
 
 // Log implements Service.Log. It returns the docker logs for each container related to the service.
 func (s *Service) Log(ctx context.Context, follow bool) error {
-	return s.collectContainersAndDo(ctx, func(c *Container) error {
+	containers, err := s.collectContainers(ctx)
+	if err != nil {
+		return err
+	}
+
+	logAction := func(c *Container) error {
 		return c.Log(ctx, follow)
-	})
+	}
+	actions := actionMap{
+		"create": logAction,
+		"die": func(c *Container) error {
+			// FIXME(vdemeester) add status code & co
+			logrus.Infof("Container %s exited.", c.Name())
+			return nil
+		},
+	}
+
+	return s.watchContainers(ctx, containers, logAction, actions)
 }
 
 // Scale implements Service.Scale. It creates or removes containers to have the specified number
@@ -488,9 +561,7 @@ var eventAttributes = []string{"image", "name"}
 // Events implements Service.Events. It listen to all real-time events happening
 // for the service, and put them into the specified chan.
 func (s *Service) Events(ctx context.Context, evts chan events.ContainerEvent) error {
-	filter := filters.NewArgs()
-	filter.Add("label", fmt.Sprintf("%s=%s", labels.PROJECT, s.project.Name))
-	filter.Add("label", fmt.Sprintf("%s=%s", labels.SERVICE, s.name))
+	filter := s.getFilters()
 	client := s.clientFactory.Create(s)
 	return <-dockerevents.Monitor(ctx, client, types.EventsOptions{
 		Filters: filter,
