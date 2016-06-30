@@ -3,6 +3,7 @@ package config
 import (
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -12,7 +13,7 @@ func TestMergeOnValidFixtures(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, file := range files {
-		if file.IsDir() {
+		if file.IsDir() || !strings.HasSuffix(file.Name(), ".yml") {
 			continue
 		}
 		data, err := ioutil.ReadFile(filepath.Join("testdata", file.Name()))
