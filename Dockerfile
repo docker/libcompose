@@ -39,7 +39,7 @@ WORKDIR /go/src/github.com/docker/libcompose
 
 # Compose COMMIT for acceptance test version, update that commit when
 # you want to update the acceptance test version to support.
-ENV COMPOSE_COMMIT f1603a3ee2b074df4cce61842bfc3dff2af8915e
+ENV COMPOSE_COMMIT 1.8.0-rc1
 RUN virtualenv venv && \
     git clone https://github.com/docker/compose.git venv/compose && \
     cd venv/compose && \

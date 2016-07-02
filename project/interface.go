@@ -26,7 +26,7 @@ type APIProject interface {
 	Port(ctx context.Context, index int, protocol, serviceName, privatePort string) (string, error)
 	Pull(ctx context.Context, services ...string) error
 	Restart(ctx context.Context, timeout int, services ...string) error
-	Run(ctx context.Context, serviceName string, commandParts []string) (int, error)
+	Run(ctx context.Context, serviceName string, commandParts []string, options options.Run) (int, error)
 	Scale(ctx context.Context, timeout int, servicesScale map[string]int) error
 	Start(ctx context.Context, services ...string) error
 	Stop(ctx context.Context, timeout int, services ...string) error

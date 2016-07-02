@@ -34,7 +34,7 @@ func (t *TestService) Name() string {
 	return t.name
 }
 
-func (t *TestService) Run(ctx context.Context, commandParts []string) (int, error) {
+func (t *TestService) Run(ctx context.Context, commandParts []string, opts options.Run) (int, error) {
 	return 0, nil
 }
 

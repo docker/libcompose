@@ -13,6 +13,7 @@ import (
 	"github.com/docker/libcompose/project/events"
 	"github.com/docker/libcompose/project/options"
 	"github.com/docker/libcompose/utils"
+	"github.com/docker/libcompose/yaml"
 )
 
 type wrapperAction func(*serviceWrapper, map[string]*serviceWrapper)
@@ -29,6 +30,7 @@ type Project struct {
 	ParseOptions   *config.ParseOptions
 
 	runtime       RuntimeProject
+	networks      Networks
 	configVersion string
 	context       *Context
 	reload        []string
@@ -181,13 +183,6 @@ func (p *Project) load(file string, bytes []byte) error {
 
 	p.configVersion = version
 
-	for name, config := range serviceConfigs {
-		err := p.AddConfig(name, config)
-		if err != nil {
-			return err
-		}
-	}
-
 	for name, config := range volumeConfigs {
 		err := p.AddVolumeConfig(name, config)
 		if err != nil {
@@ -202,6 +197,72 @@ func (p *Project) load(file string, bytes []byte) error {
 		}
 	}
 
+	for name, config := range serviceConfigs {
+		err := p.AddConfig(name, config)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Update network configuration a little bit
+	if p.isNetworkEnabled() {
+		for _, serviceName := range p.ServiceConfigs.Keys() {
+			serviceConfig, _ := p.ServiceConfigs.Get(serviceName)
+			if serviceConfig.NetworkMode != "" {
+				continue
+			}
+			if serviceConfig.Networks == nil || len(serviceConfig.Networks.Networks) == 0 {
+				// Add default as network
+				serviceConfig.Networks = &yaml.Networks{
+					Networks: []*yaml.Network{
+						{
+							Name: "default",
+						},
+					},
+				}
+			}
+			// Consolidate the name of the network
+			// FIXME(vdemeester) probably shouldn't be there, maybe move that to interface/factory
+			for _, network := range serviceConfig.Networks.Networks {
+				if net, ok := p.NetworkConfigs[network.Name]; ok {
+					if net.External.External {
+						network.RealName = network.Name
+						if net.External.Name != "" {
+							network.RealName = net.External.Name
+						}
+					} else {
+						network.RealName = p.Name + "_" + network.Name
+					}
+				}
+				// Ignoring if we don't find the network, it will be catched later
+			}
+		}
+	}
+
+	// FIXME(vdemeester) Not sure about this..
+	if p.context.NetworksFactory != nil {
+		networks, err := p.context.NetworksFactory.Create(p.Name, p.NetworkConfigs, p.ServiceConfigs, p.isNetworkEnabled())
+		if err != nil {
+			return err
+		}
+
+		p.networks = networks
+	}
+
+	return nil
+}
+
+func (p *Project) isNetworkEnabled() bool {
+	return p.configVersion == "2"
+}
+
+// initialize sets up required element for project before any action (on project and service).
+// This means it's not needed to be called on Config for example.
+func (p *Project) initialize(ctx context.Context) error {
+	if err := p.networks.Initialize(ctx); err != nil {
+		return err
+	}
+	// TODO Initialize volumes
 	return nil
 }
 
@@ -263,6 +324,14 @@ func (p *Project) Down(ctx context.Context, opts options.Down, services ...strin
 	if err := p.Delete(ctx, options.Delete{
 		RemoveVolume: opts.RemoveVolume,
 	}, services...); err != nil {
+		return err
+	}
+
+	networks, err := p.context.NetworksFactory.Create(p.Name, p.NetworkConfigs, p.ServiceConfigs, p.isNetworkEnabled())
+	if err != nil {
+		return err
+	}
+	if err := networks.Remove(ctx); err != nil {
 		return err
 	}
 
@@ -338,16 +407,19 @@ func (p *Project) Start(ctx context.Context, services ...string) error {
 }
 
 // Run executes a one off command (like `docker run image command`).
-func (p *Project) Run(ctx context.Context, serviceName string, commandParts []string) (int, error) {
+func (p *Project) Run(ctx context.Context, serviceName string, commandParts []string, opts options.Run) (int, error) {
 	if !p.ServiceConfigs.Has(serviceName) {
 		return 1, fmt.Errorf("%s is not defined in the template", serviceName)
 	}
 
+	if err := p.initialize(ctx); err != nil {
+		return 1, err
+	}
 	var exitCode int
 	err := p.forEach([]string{}, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, events.ServiceRunStart, events.ServiceRun, func(service Service) error {
 			if service.Name() == serviceName {
-				code, err := service.Run(ctx, commandParts)
+				code, err := service.Run(ctx, commandParts, opts)
 				exitCode = code
 				return err
 			}
@@ -361,6 +433,9 @@ func (p *Project) Run(ctx context.Context, serviceName string, commandParts []st
 
 // Up creates and starts the specified services (kinda like docker run).
 func (p *Project) Up(ctx context.Context, options options.Up, services ...string) error {
+	if err := p.initialize(ctx); err != nil {
+		return err
+	}
 	return p.perform(events.ProjectUpStart, events.ProjectUpDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, events.ServiceUpStart, events.ServiceUp, func(service Service) error {
 			return service.Up(ctx, options)

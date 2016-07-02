@@ -181,7 +181,11 @@ func ProjectRun(p project.APIProject, c *cli.Context) error {
 	serviceName := c.Args()[0]
 	commandParts := c.Args()[1:]
 
-	exitCode, err := p.Run(context.Background(), serviceName, commandParts)
+	options := options.Run{
+		Detached: c.Bool("d"),
+	}
+
+	exitCode, err := p.Run(context.Background(), serviceName, commandParts, options)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}

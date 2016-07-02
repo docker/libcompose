@@ -20,7 +20,7 @@ func TestMarshalNetworks(t *testing.T) {
 		},
 		{
 			networks: Networks{
-				Networks: []Network{
+				Networks: []*Network{
 					{
 						Name: "network1",
 					},
@@ -35,7 +35,7 @@ network2: {}
 		},
 		{
 			networks: Networks{
-				Networks: []Network{
+				Networks: []*Network{
 					{
 						Name:    "network1",
 						Aliases: []string{"alias1", "alias2"},
@@ -54,7 +54,7 @@ network2: {}
 		},
 		{
 			networks: Networks{
-				Networks: []Network{
+				Networks: []*Network{
 					{
 						Name:    "network1",
 						Aliases: []string{"alias1", "alias2"},
@@ -92,7 +92,7 @@ func TestUnmarshalNetworks(t *testing.T) {
 			yaml: `- network1
 - network2`,
 			expected: &Networks{
-				Networks: []Network{
+				Networks: []*Network{
 					{
 						Name: "network1",
 					},
@@ -105,7 +105,7 @@ func TestUnmarshalNetworks(t *testing.T) {
 		{
 			yaml: `network1: {}`,
 			expected: &Networks{
-				Networks: []Network{
+				Networks: []*Network{
 					{
 						Name: "network1",
 					},
@@ -118,7 +118,7 @@ func TestUnmarshalNetworks(t *testing.T) {
     - alias1
     - alias2`,
 			expected: &Networks{
-				Networks: []Network{
+				Networks: []*Network{
 					{
 						Name:    "network1",
 						Aliases: []string{"alias1", "alias2"},
@@ -134,7 +134,7 @@ func TestUnmarshalNetworks(t *testing.T) {
   ipv4_address: 172.16.238.10
   ipv6_address: 2001:3984:3989::10`,
 			expected: &Networks{
-				Networks: []Network{
+				Networks: []*Network{
 					{
 						Name:        "network1",
 						Aliases:     []string{"alias1", "alias2"},
