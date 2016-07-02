@@ -37,7 +37,7 @@ func NewSingleNamer(name string) Namer {
 
 // NewNamer returns a namer that returns names based on the specified project and
 // service name and an inner counter, e.g. project_service_1, project_service_2…
-func NewNamer(ctx context.Context, client client.APIClient, project, service string, oneOff bool) (Namer, error) {
+func NewNamer(ctx context.Context, client client.ContainerAPIClient, project, service string, oneOff bool) (Namer, error) {
 	namer := &defaultNamer{
 		project: project,
 		service: service,

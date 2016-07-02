@@ -16,7 +16,7 @@ import (
 
 // Network holds attributes and method for a network definition in compose
 type Network struct {
-	client        client.APIClient
+	client        client.NetworkAPIClient
 	name          string
 	projectName   string
 	driver        string
@@ -98,7 +98,7 @@ func convertToAPIIpam(ipam config.Ipam) network.IPAM {
 }
 
 // NewNetwork creates a new network from the specified name and config.
-func NewNetwork(projectName, name string, config *config.NetworkConfig, client client.APIClient) *Network {
+func NewNetwork(projectName, name string, config *config.NetworkConfig, client client.NetworkAPIClient) *Network {
 	networkName := name
 	if config.External.External {
 		networkName = config.External.Name
@@ -151,7 +151,7 @@ func (n *Networks) Remove(ctx context.Context) error {
 // NetworksFromServices creates a new Networks struct based on networks configurations and
 // services configuration. If a network is defined but not used by any service, it will return
 // an error along the Networks.
-func NetworksFromServices(cli client.APIClient, projectName string, networkConfigs map[string]*config.NetworkConfig, services *config.ServiceConfigs, networkEnabled bool) (*Networks, error) {
+func NetworksFromServices(cli client.NetworkAPIClient, projectName string, networkConfigs map[string]*config.NetworkConfig, services *config.ServiceConfigs, networkEnabled bool) (*Networks, error) {
 	var err error
 	networks := make([]*Network, 0, len(networkConfigs))
 	networkNames := map[string]*yaml.Network{}

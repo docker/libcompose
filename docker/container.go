@@ -199,7 +199,8 @@ func (c *Container) CreateWithOverride(ctx context.Context, imageName string, co
 // Stop stops the container.
 func (c *Container) Stop(ctx context.Context, timeout int) error {
 	return c.withContainer(ctx, func(container *types.ContainerJSON) error {
-		return c.client.ContainerStop(ctx, container.ID, time.Duration(timeout)*time.Second)
+		timeoutDuration := time.Duration(timeout) * time.Second
+		return c.client.ContainerStop(ctx, container.ID, &timeoutDuration)
 	})
 }
 
@@ -632,7 +633,8 @@ func (c *Container) Restart(ctx context.Context, timeout int) error {
 		return err
 	}
 
-	return c.client.ContainerRestart(ctx, container.ID, time.Duration(timeout)*time.Second)
+	timeoutDuration := time.Duration(timeout) * time.Second
+	return c.client.ContainerRestart(ctx, container.ID, &timeoutDuration)
 }
 
 // Log forwards container logs to the project configured logger.

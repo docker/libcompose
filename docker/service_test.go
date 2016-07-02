@@ -1,9 +1,10 @@
 package docker
 
 import (
+	"testing"
+
 	"github.com/docker/libcompose/config"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestSpecifiesHostPort(t *testing.T) {

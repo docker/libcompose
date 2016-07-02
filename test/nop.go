@@ -18,8 +18,12 @@ import (
 var (
 	errNoEngine = errors.New("Engine no longer exists")
 
-	// Make sure NopClient implements APIClient
-	_ client.APIClient = &NopClient{}
+	// Make sure NopClient implements ContainerAPIclient and other required interface
+	_ client.ContainerAPIClient = (*NopClient)(nil)
+	_ client.ImageAPIClient     = (*NopClient)(nil)
+	_ client.NetworkAPIClient   = (*NopClient)(nil)
+	_ client.VolumeAPIClient    = (*NopClient)(nil)
+	_ client.SystemAPIClient    = (*NopClient)(nil)
 )
 
 // NopClient is a nop API Client based on engine-api
@@ -147,7 +151,7 @@ func (client *NopClient) ContainerResize(ctx context.Context, container string, 
 }
 
 // ContainerRestart stops and starts a container again
-func (client *NopClient) ContainerRestart(ctx context.Context, container string, timeout time.Duration) error {
+func (client *NopClient) ContainerRestart(ctx context.Context, container string, timeout *time.Duration) error {
 	return errNoEngine
 }
 
@@ -167,7 +171,7 @@ func (client *NopClient) ContainerStart(ctx context.Context, container string, o
 }
 
 // ContainerStop stops a container without terminating the process
-func (client *NopClient) ContainerStop(ctx context.Context, container string, timeout time.Duration) error {
+func (client *NopClient) ContainerStop(ctx context.Context, container string, timeout *time.Duration) error {
 	return errNoEngine
 }
 

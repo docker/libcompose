@@ -34,7 +34,7 @@ type Builder interface {
 
 // DaemonBuilder is the daemon "docker build" Builder implementation.
 type DaemonBuilder struct {
-	Client           client.APIClient
+	Client           client.ImageAPIClient
 	ContextDirectory string
 	Dockerfile       string
 	AuthConfigs      map[string]types.AuthConfig
