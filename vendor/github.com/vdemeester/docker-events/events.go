@@ -14,7 +14,7 @@ import (
 // Monitor subscribes to the docker events api using engine api and will execute the
 // specified function on each message.
 // It will pass the specified options to the underline method (i.e Events).
-func Monitor(ctx context.Context, cli client.APIClient, options types.EventsOptions, fun func(m eventtypes.Message)) chan error {
+func Monitor(ctx context.Context, cli client.SystemAPIClient, options types.EventsOptions, fun func(m eventtypes.Message)) chan error {
 	handler := NewHandler(func(_ eventtypes.Message) string {
 		// Let's return always the same thing to not filter at all
 		return ""
@@ -27,7 +27,7 @@ func Monitor(ctx context.Context, cli client.APIClient, options types.EventsOpti
 // MonitorWithHandler subscribes to the docker events api using engine api and will pass the message
 // to the specified Handler, that will take care of it.
 // It will pass the specified options to the underline method (i.e Events).
-func MonitorWithHandler(ctx context.Context, cli client.APIClient, options types.EventsOptions, handler *Handler) chan error {
+func MonitorWithHandler(ctx context.Context, cli client.SystemAPIClient, options types.EventsOptions, handler *Handler) chan error {
 	eventChan := make(chan eventtypes.Message)
 	errChan := make(chan error)
 	started := make(chan struct{})
@@ -49,7 +49,7 @@ func MonitorWithHandler(ctx context.Context, cli client.APIClient, options types
 	return errChan
 }
 
-func monitorEvents(ctx context.Context, cli client.APIClient, options types.EventsOptions, started chan struct{}, eventChan chan eventtypes.Message, errChan chan error) {
+func monitorEvents(ctx context.Context, cli client.SystemAPIClient, options types.EventsOptions, started chan struct{}, eventChan chan eventtypes.Message, errChan chan error) {
 	body, err := cli.Events(ctx, options)
 	// Whether we successfully subscribed to events or not, we can now
 	// unblock the main goroutine.
