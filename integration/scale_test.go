@@ -35,10 +35,10 @@ func (s *CliSuite) TestScale(c *C) {
 	containers = s.GetContainersByProject(c, p)
 	c.Assert(1, Equals, len(containers))
 
-	cn = s.GetContainerByName(c, name2)
+	cn = s.GetContainerByName(c, name)
 	c.Assert(cn, IsNil)
 
-	cn = s.GetContainerByName(c, name)
+	cn = s.GetContainerByName(c, name2)
 	c.Assert(cn, NotNil)
 	c.Assert(cn.State.Running, Equals, true)
 }

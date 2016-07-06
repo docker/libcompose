@@ -45,8 +45,8 @@ func isVolume(s string) bool {
 }
 
 // ConvertToAPI converts a service configuration to a docker API container configuration.
-func ConvertToAPI(s *Service) (*ConfigWrapper, error) {
-	config, hostConfig, err := Convert(s.serviceConfig, s.context.Context, s.clientFactory)
+func ConvertToAPI(serviceConfig *config.ServiceConfig, ctx project.Context, clientFactory composeclient.Factory) (*ConfigWrapper, error) {
+	config, hostConfig, err := Convert(serviceConfig, ctx, clientFactory)
 	if err != nil {
 		return nil, err
 	}
@@ -246,6 +246,10 @@ func Convert(c *config.ServiceConfig, ctx project.Context, clientFactory compose
 		SecurityOpt:    utils.CopySlice(c.SecurityOpt),
 		VolumeDriver:   c.VolumeDriver,
 		Resources:      resources,
+	}
+
+	if config.Labels == nil {
+		config.Labels = map[string]string{}
 	}
 
 	return config, hostConfig, nil

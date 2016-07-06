@@ -18,6 +18,11 @@ import (
 	"github.com/docker/engine-api/types"
 )
 
+func inspectImage(ctx context.Context, client client.APIClient, image string) (types.ImageInspect, error) {
+	imageInspect, _, err := client.ImageInspectWithRaw(ctx, image, false)
+	return imageInspect, err
+}
+
 func removeImage(ctx context.Context, client client.APIClient, image string) error {
 	_, err := client.ImageRemove(ctx, image, types.ImageRemoveOptions{})
 	return err
