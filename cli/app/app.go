@@ -303,7 +303,7 @@ func ProjectScale(p project.APIProject, c *cli.Context) error {
 
 	err := p.Scale(context.Background(), c.Int("timeout"), servicesScale)
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		return cli.NewExitError(err.Error(), 0)
 	}
 	return nil
 }
