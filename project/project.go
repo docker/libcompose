@@ -259,8 +259,10 @@ func (p *Project) isNetworkEnabled() bool {
 // initialize sets up required element for project before any action (on project and service).
 // This means it's not needed to be called on Config for example.
 func (p *Project) initialize(ctx context.Context) error {
-	if err := p.networks.Initialize(ctx); err != nil {
-		return err
+	if p.networks != nil {
+		if err := p.networks.Initialize(ctx); err != nil {
+			return err
+		}
 	}
 	// TODO Initialize volumes
 	return nil
