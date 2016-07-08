@@ -1,9 +1,26 @@
 package command
 
 import (
+	"os"
+
 	"github.com/docker/libcompose/cli/app"
+	"github.com/docker/libcompose/project"
 	"github.com/urfave/cli"
 )
+
+// Populate updates the specified project context based on command line arguments and subcommands.
+func Populate(context *project.Context, c *cli.Context) {
+	context.ComposeFiles = c.GlobalStringSlice("file")
+
+	if len(context.ComposeFiles) == 0 {
+		context.ComposeFiles = []string{"docker-compose.yml"}
+		if _, err := os.Stat("docker-compose.override.yml"); err == nil {
+			context.ComposeFiles = append(context.ComposeFiles, "docker-compose.override.yml")
+		}
+	}
+
+	context.ProjectName = c.GlobalString("project-name")
+}
 
 // CreateCommand defines the libcompose create subcommand.
 func CreateCommand(factory app.ProjectFactory) cli.Command {
