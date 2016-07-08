@@ -47,7 +47,7 @@ type DaemonBuilder struct {
 // Build implements Builder. It consumes the docker build API endpoint and sends
 // a tar of the specified service build context.
 func (d *DaemonBuilder) Build(ctx context.Context, imageName string) error {
-	buildCtx, err := createTar(d.ContextDirectory, d.Dockerfile)
+	buildCtx, err := CreateTar(d.ContextDirectory, d.Dockerfile)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func (d *DaemonBuilder) Build(ctx context.Context, imageName string) error {
 }
 
 // CreateTar create a build context tar for the specified project and service name.
-func createTar(contextDirectory, dockerfile string) (io.ReadCloser, error) {
+func CreateTar(contextDirectory, dockerfile string) (io.ReadCloser, error) {
 	// This code was ripped off from docker/api/client/build.go
 	dockerfileName := filepath.Join(contextDirectory, dockerfile)
 
