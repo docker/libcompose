@@ -10,7 +10,7 @@ import (
 
 // this ensures EmptyService implements Service
 // useful since it's easy to forget adding new functions to EmptyService
-var _ Service = &EmptyService{}
+var _ Service = (*EmptyService)(nil)
 
 // EmptyService is a struct that implements Service but does nothing.
 type EmptyService struct {
@@ -119,4 +119,21 @@ func (e *EmptyService) Config() *config.ServiceConfig {
 // Name implements Service.Name with empty name.
 func (e *EmptyService) Name() string {
 	return ""
+}
+
+// this ensures EmptyNetworks implements Networks
+var _ Networks = (*EmptyNetworks)(nil)
+
+// EmptyNetworks is a struct that implements Networks but does nothing.
+type EmptyNetworks struct {
+}
+
+// Initialize implements Networks.Initialize but does nothing.
+func (e *EmptyNetworks) Initialize(ctx context.Context) error {
+	return nil
+}
+
+// Initialize implements Networks.Remove but does nothing.
+func (e *EmptyNetworks) Remove(ctx context.Context) error {
+	return nil
 }
