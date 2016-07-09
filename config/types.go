@@ -90,7 +90,7 @@ type ServiceConfig struct {
 	DependsOn     []string             `yaml:"depends_on,omitempty"`
 	DNS           yaml.Stringorslice   `yaml:"dns,omitempty"`
 	DNSSearch     yaml.Stringorslice   `yaml:"dns_search,omitempty"`
-	DomainName    string               `yaml:"domain_name,omitempty"`
+	DomainName    string               `yaml:"domainname,omitempty"`
 	Entrypoint    yaml.Command         `yaml:"entrypoint,flow,omitempty"`
 	EnvFile       yaml.Stringorslice   `yaml:"env_file,omitempty"`
 	Environment   yaml.MaporEqualSlice `yaml:"environment,omitempty"`
