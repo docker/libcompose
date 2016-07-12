@@ -7,8 +7,8 @@ import (
 	"text/template"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/version"
+	"github.com/urfave/cli"
 )
 
 var versionTemplate = `Version:      {{.Version}} ({{.GitCommit}})

@@ -1,8 +1,8 @@
 package command
 
 import (
-	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/cli/app"
+	"github.com/urfave/cli"
 )
 
 // CreateCommand defines the libcompose create subcommand.
