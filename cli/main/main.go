@@ -3,11 +3,11 @@ package main
 import (
 	"os"
 
-	"github.com/codegangsta/cli"
 	cliApp "github.com/docker/libcompose/cli/app"
 	"github.com/docker/libcompose/cli/command"
 	dockerApp "github.com/docker/libcompose/cli/docker/app"
 	"github.com/docker/libcompose/version"
+	"github.com/urfave/cli"
 )
 
 func main() {

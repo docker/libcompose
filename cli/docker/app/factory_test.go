@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/project"
+	"github.com/urfave/cli"
 )
 
 func TestProjectFactoryProjectNameIsNormalized(t *testing.T) {
