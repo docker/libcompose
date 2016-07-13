@@ -29,7 +29,6 @@ import (
 type Container struct {
 	// FIXME(vdemeester) Replace with ContainerClient with engine-api vendor update
 	client    client.APIClient
-	name      string
 	id        string
 	container *types.ContainerJSON
 }
@@ -40,18 +39,17 @@ func CreateContainer(ctx context.Context, client client.APIClient, name string, 
 	if err != nil {
 		return nil, err
 	}
-	return New(ctx, client, container.ID, name)
+	return New(ctx, client, container.ID)
 }
 
 // New creates a container struct with the specified client, id and name
-func New(ctx context.Context, client client.APIClient, id, name string) (*Container, error) {
+func New(ctx context.Context, client client.APIClient, id string) (*Container, error) {
 	container, err := GetContainer(ctx, client, id)
 	if err != nil {
 		return nil, err
 	}
 	return &Container{
 		client:    client,
-		name:      name,
 		id:        id,
 		container: container,
 	}, nil
@@ -61,7 +59,6 @@ func New(ctx context.Context, client client.APIClient, id, name string) (*Contai
 func NewInspected(client client.APIClient, container *types.ContainerJSON) *Container {
 	return &Container{
 		client:    client,
-		name:      container.Name,
 		id:        container.ID,
 		container: container,
 	}
@@ -290,9 +287,9 @@ func holdHijackedConnection(tty bool, inputStream io.ReadCloser, outputStream, e
 
 // Start the specified container with the specified host config
 func (c *Container) Start(ctx context.Context) error {
-	logrus.WithFields(logrus.Fields{"container.ID": c.container.ID, "c.name": c.name}).Debug("Starting container")
+	logrus.WithFields(logrus.Fields{"container.ID": c.container.ID, "container.Name": c.container.Name}).Debug("Starting container")
 	if err := c.client.ContainerStart(ctx, c.container.ID, types.ContainerStartOptions{}); err != nil {
-		logrus.WithFields(logrus.Fields{"container.ID": c.container.ID, "c.name": c.name}).Debug("Failed to start container")
+		logrus.WithFields(logrus.Fields{"container.ID": c.container.ID, "container.Name": c.container.Name}).Debug("Failed to start container")
 		return err
 	}
 	return nil
@@ -305,7 +302,7 @@ func (c *Container) ID() (string, error) {
 
 // Name returns the container name.
 func (c *Container) Name() string {
-	return c.name
+	return c.container.Name
 }
 
 // Restart restarts the container if existing, does nothing otherwise.
@@ -327,7 +324,7 @@ func (c *Container) Log(ctx context.Context, l logger.Logger, follow bool) error
 		Follow:     follow,
 		Tail:       "all",
 	}
-	responseBody, err := c.client.ContainerLogs(ctx, c.name, options)
+	responseBody, err := c.client.ContainerLogs(ctx, c.container.ID, options)
 	if err != nil {
 		return err
 	}

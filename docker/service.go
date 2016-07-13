@@ -122,9 +122,7 @@ func (s *Service) collectContainers(ctx context.Context) ([]*Container, error) {
 	result := []*Container{}
 
 	for _, container := range containers {
-		// Compose add "/" before name, so Name[1] will store actaul name.
-		name := strings.SplitAfter(container.Names[0], "/")
-		c, err := New(ctx, client, container.ID, name[1])
+		c, err := New(ctx, client, container.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -461,11 +459,11 @@ func (s *Service) recreateIfNeeded(ctx context.Context, c *Container, noRecreate
 }
 
 func (s *Service) recreate(ctx context.Context, c *Container) (*Container, error) {
-	name := c.name
+	name := c.Name()
 	newName := fmt.Sprintf("%s_%s", name, c.container.ID[:12])
 	logrus.Debugf("Renaming %s => %s", name, newName)
 	if err := c.Rename(ctx, newName); err != nil {
-		logrus.Errorf("Failed to rename old container %s", c.name)
+		logrus.Errorf("Failed to rename old container %s", c.Name())
 		return nil, err
 	}
 	namer := NewSingleNamer(name)
@@ -475,10 +473,10 @@ func (s *Service) recreate(ctx context.Context, c *Container) (*Container, error
 	}
 	logrus.Debugf("Created replacement container %s", newContainer.container.ID)
 	if err := c.Remove(ctx, false); err != nil {
-		logrus.Errorf("Failed to remove old container %s", c.name)
+		logrus.Errorf("Failed to remove old container %s", c.Name())
 		return nil, err
 	}
-	logrus.Debugf("Removed old container %s %s", c.name, c.container.ID)
+	logrus.Debugf("Removed old container %s %s", c.Name(), c.container.ID)
 	return newContainer, nil
 }
 
@@ -486,13 +484,13 @@ func (s *Service) recreate(ctx context.Context, c *Container) (*Container, error
 // It looks if the the service hash container label is the same as the computed one.
 func (s *Service) OutOfSync(ctx context.Context, c *Container) (bool, error) {
 	if c.ImageConfig() != s.serviceConfig.Image {
-		logrus.Debugf("Images for %s do not match %s!=%s", c.name, c.ImageConfig(), s.serviceConfig.Image)
+		logrus.Debugf("Images for %s do not match %s!=%s", c.Name(), c.ImageConfig(), s.serviceConfig.Image)
 		return true, nil
 	}
 
 	expectedHash := config.GetServiceHash(s.name, s.Config())
 	if c.Hash() != expectedHash {
-		logrus.Debugf("Hashes for %s do not match %s!=%s", c.name, c.Hash(), expectedHash)
+		logrus.Debugf("Hashes for %s do not match %s!=%s", c.Name(), c.Hash(), expectedHash)
 		return true, nil
 	}
 
