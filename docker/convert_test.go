@@ -21,7 +21,7 @@ func TestParseCommand(t *testing.T) {
 func TestParseBindsAndVolumes(t *testing.T) {
 	ctx := &Context{}
 	ctx.ComposeFiles = []string{"foo/docker-compose.yml"}
-	ctx.ResourceLookup = &lookup.FileConfigLookup{}
+	ctx.ResourceLookup = &lookup.FileResourceLookup{}
 
 	abs, err := filepath.Abs(".")
 	assert.Nil(t, err)
@@ -36,7 +36,7 @@ func TestParseBindsAndVolumes(t *testing.T) {
 func TestParseLabels(t *testing.T) {
 	ctx := &Context{}
 	ctx.ComposeFiles = []string{"foo/docker-compose.yml"}
-	ctx.ResourceLookup = &lookup.FileConfigLookup{}
+	ctx.ResourceLookup = &lookup.FileResourceLookup{}
 	bashCmd := "bash"
 	fooLabel := "foo.label"
 	fooLabelValue := "service.config.value"

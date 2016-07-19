@@ -3,6 +3,7 @@ package lookup
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -27,7 +28,7 @@ func TestLookupError(t *testing.T) {
 		input{"does/not/exists/file", "/tmp/"}:    "open /tmp/does/not/exists/file: no such file or directory",
 	}
 
-	fileConfigLookup := FileConfigLookup{}
+	fileConfigLookup := FileResourceLookup{}
 
 	for invalid, expectedError := range invalids {
 		_, _, err := fileConfigLookup.Lookup(invalid.file, invalid.relativeTo)
@@ -51,7 +52,7 @@ func TestLookupOK(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fileConfigLookup := FileConfigLookup{}
+	fileConfigLookup := FileResourceLookup{}
 
 	valids := map[input]string{
 		input{"file1", tmpFolder + "/"}:     "content1",
@@ -65,6 +66,37 @@ func TestLookupOK(t *testing.T) {
 		out, _, err := fileConfigLookup.Lookup(valid.file, valid.relativeTo)
 		if err != nil || string(out) != expectedContent {
 			t.Fatalf("Expected %s to contains '%s', got %s, %v.", valid.file, expectedContent, out, err)
+		}
+	}
+}
+
+func TestResolvePath(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		path       string
+		relativeTo string
+		expected   string
+	}{
+		{"../path:something", "./docker-compose.yml", filepath.Join(cwd, "../path") + ":something"},
+		{"../path:something", "docker-compose.yml", filepath.Join(cwd, "../path") + ":something"},
+		{"../path:something", "/tmp/docker-compose.yml", "/path:something"},
+		{"path:something", "/tmp/docker-compose.yml", "/tmp/path:something"},
+		{"/path:something", "/tmp/docker-compose.yml", "/path:something"},
+		{"path:something", "-", filepath.Join(cwd, "path") + ":something"},
+		{"path/:something", "-", filepath.Join(cwd, "path") + ":something"},
+		{"../path:something", "-", filepath.Join(cwd, "../path") + ":something"},
+	}
+
+	fileConfigLookup := FileResourceLookup{}
+
+	for index, c := range cases {
+		actual := fileConfigLookup.ResolvePath(c.path, c.relativeTo)
+		if actual != c.expected {
+			t.Errorf("Expected %s, got %s for case %d", c.expected, actual, index)
 		}
 	}
 }
