@@ -1,6 +1,7 @@
 package config
 
 import (
+	"io/ioutil"
 	"testing"
 )
 
@@ -12,6 +13,18 @@ func (n *NullLookup) Lookup(file, relativeTo string) ([]byte, string, error) {
 }
 
 func (n *NullLookup) ResolvePath(path, inFile string) string {
+	return ""
+}
+
+type FileLookup struct {
+}
+
+func (f *FileLookup) Lookup(file, relativeTo string) ([]byte, string, error) {
+	bytes, err := ioutil.ReadFile(file)
+	return bytes, file, err
+}
+
+func (f *FileLookup) ResolvePath(path, inFile string) string {
 	return ""
 }
 
@@ -194,6 +207,44 @@ services:
 
 		if child.Image != "foo" {
 			t.Fatal("Invalid image", child.Image)
+		}
+	}
+}
+
+func TestMergesEnvFile(t *testing.T) {
+	_, configV1, _, _, err := Merge(NewServiceConfigs(), nil, &FileLookup{}, "", []byte(`
+test:
+  image: foo
+  env_file:
+    - testdata/.env
+`), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, configV2, _, _, err := Merge(NewServiceConfigs(), nil, &FileLookup{}, "", []byte(`
+version: '2'
+services:
+  test:
+    image: foo
+    env_file:
+      - testdata/.env
+`), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, config := range []map[string]*ServiceConfig{configV1, configV2} {
+		test := config["test"]
+
+		if len(test.Environment) != 2 {
+			t.Fatal("env_file is not merged", test.Environment)
+		}
+
+		for _, environment := range test.Environment {
+			if (environment != "FOO=foo") && (environment != "BAR=bar") {
+				t.Fatal("Empty line and comment should be excluded", environment)
+			}
 		}
 	}
 }

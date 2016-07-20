@@ -125,18 +125,21 @@ func readEnvFile(resourceLookup ResourceLookup, inFile string, serviceData RawSe
 		scanner := bufio.NewScanner(bytes.NewBuffer(content))
 		for scanner.Scan() {
 			line := strings.TrimSpace(scanner.Text())
-			key := strings.SplitAfter(line, "=")[0]
 
-			found := false
-			for _, v := range vars {
-				if strings.HasPrefix(v, key) {
-					found = true
-					break
+			if len(line) > 0 && !strings.HasPrefix(line, "#") {
+				key := strings.SplitAfter(line, "=")[0]
+
+				found := false
+				for _, v := range vars {
+					if strings.HasPrefix(v, key) {
+						found = true
+						break
+					}
 				}
-			}
 
-			if !found {
-				vars = append(vars, line)
+				if !found {
+					vars = append(vars, line)
+				}
 			}
 		}
 
