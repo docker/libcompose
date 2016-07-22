@@ -496,37 +496,50 @@ func (p *Project) Pull(ctx context.Context, services ...string) error {
 	}), nil)
 }
 
-// ListStoppedContainers lists the stopped containers for the specified services.
-func (p *Project) ListStoppedContainers(ctx context.Context, services ...string) ([]string, error) {
-	stoppedContainers := []string{}
+// Containers lists the containers for the specified services. Can be filter using
+// the Filter struct.
+func (p *Project) Containers(ctx context.Context, filter Filter, services ...string) ([]string, error) {
+	containers := []string{}
 	err := p.forEach(services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, events.NoEvent, events.NoEvent, func(service Service) error {
-			containers, innerErr := service.Containers(ctx)
+			serviceContainers, innerErr := service.Containers(ctx)
 			if innerErr != nil {
 				return innerErr
 			}
 
-			for _, container := range containers {
+			for _, container := range serviceContainers {
 				running, innerErr := container.IsRunning(ctx)
 				if innerErr != nil {
 					log.Error(innerErr)
 				}
-				if !running {
-					containerID, innerErr := container.ID()
-					if innerErr != nil {
-						log.Error(innerErr)
+				switch filter.State {
+				case Running:
+					if !running {
+						continue
 					}
-					stoppedContainers = append(stoppedContainers, containerID)
+				case Stopped:
+					if running {
+						continue
+					}
+				case AnyState:
+					// Don't do a thing
+				default:
+					// Invalid state filter
+					return fmt.Errorf("Invalid container filter: %s", filter.State)
 				}
+				containerID, innerErr := container.ID()
+				if innerErr != nil {
+					log.Error(innerErr)
+				}
+				containers = append(containers, containerID)
 			}
-
 			return nil
 		})
 	}), nil)
 	if err != nil {
 		return nil, err
 	}
-	return stoppedContainers, nil
+	return containers, nil
 }
 
 // Delete removes the specified services (like docker rm).
