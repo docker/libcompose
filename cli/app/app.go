@@ -234,7 +234,9 @@ func ProjectDelete(p project.APIProject, c *cli.Context) error {
 		RemoveVolume: c.Bool("v"),
 	}
 	if !c.Bool("force") {
-		stoppedContainers, err := p.ListStoppedContainers(context.Background(), c.Args()...)
+		stoppedContainers, err := p.Containers(context.Background(), project.Filter{
+			State: project.Stopped,
+		}, c.Args()...)
 		if err != nil {
 			return cli.NewExitError(err.Error(), 1)
 		}
