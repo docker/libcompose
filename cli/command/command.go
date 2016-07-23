@@ -2,6 +2,7 @@ package command
 
 import (
 	"os"
+	"strings"
 
 	"github.com/docker/libcompose/cli/app"
 	"github.com/docker/libcompose/project"
@@ -10,7 +11,14 @@ import (
 
 // Populate updates the specified project context based on command line arguments and subcommands.
 func Populate(context *project.Context, c *cli.Context) {
-	context.ComposeFiles = c.GlobalStringSlice("file")
+	// urfave/cli does not distinguish whether the first string in the slice comes from the envvar
+	// or is from a flag. Worse off, it appends the flag values to the envvar value instead of
+	// overriding it. To ensure the multifile envvar case is always handled, the first string
+	// must always be split. It gives a more consistent behavior, then, to split each string in
+	// the slice.
+	for _, v := range c.GlobalStringSlice("file") {
+		context.ComposeFiles = append(context.ComposeFiles, strings.Split(v, string(os.PathListSeparator))...)
+	}
 
 	if len(context.ComposeFiles) == 0 {
 		context.ComposeFiles = []string{"docker-compose.yml"}
