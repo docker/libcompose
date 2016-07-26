@@ -171,10 +171,10 @@ func Convert(c *config.ServiceConfig, ctx project.Context, clientFactory compose
 
 	resources := container.Resources{
 		CgroupParent: c.CgroupParent,
-		Memory:       c.MemLimit,
-		MemorySwap:   c.MemSwapLimit,
-		CPUShares:    c.CPUShares,
-		CPUQuota:     c.CPUQuota,
+		Memory:       int64(c.MemLimit),
+		MemorySwap:   int64(c.MemSwapLimit),
+		CPUShares:    int64(c.CPUShares),
+		CPUQuota:     int64(c.CPUQuota),
 		CpusetCpus:   c.CPUSet,
 		Ulimits:      ulimits,
 		Devices:      deviceMappings,
@@ -242,7 +242,7 @@ func Convert(c *config.ServiceConfig, ctx project.Context, clientFactory compose
 		IpcMode:        container.IpcMode(c.Ipc),
 		PortBindings:   portBindings,
 		RestartPolicy:  *restartPolicy,
-		ShmSize:        c.ShmSize,
+		ShmSize:        int64(c.ShmSize),
 		SecurityOpt:    utils.CopySlice(c.SecurityOpt),
 		VolumeDriver:   c.VolumeDriver,
 		Resources:      resources,

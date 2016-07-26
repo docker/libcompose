@@ -3,7 +3,7 @@ package yaml
 import (
 	"testing"
 
-	yaml "github.com/cloudfoundry-incubator/candiedyaml"
+	"gopkg.in/yaml.v2"
 
 	"github.com/stretchr/testify/assert"
 )

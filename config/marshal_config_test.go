@@ -3,9 +3,9 @@ package config
 import (
 	"testing"
 
-	yaml "github.com/cloudfoundry-incubator/candiedyaml"
 	yamlTypes "github.com/docker/libcompose/yaml"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
 )
 
 type TestConfig struct {
