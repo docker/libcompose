@@ -127,6 +127,10 @@ func UpCommand(factory app.ProjectFactory) cli.Command {
 				Name:  "force-recreate",
 				Usage: "Recreate containers even if their configuration and image haven't changed. Incompatible with --no-recreate.",
 			},
+			cli.BoolFlag{
+				Name:  "build",
+				Usage: "Build images before starting containers.",
+			},
 		},
 	}
 }
