@@ -4,10 +4,31 @@ import (
 	"fmt"
 	"testing"
 
-	yaml "github.com/cloudfoundry-incubator/candiedyaml"
+	"gopkg.in/yaml.v2"
 
 	"github.com/stretchr/testify/assert"
 )
+
+type StructStringorInt struct {
+	Foo StringorInt
+}
+
+func TestStringorIntYaml(t *testing.T) {
+	for _, str := range []string{`{foo: 10}`, `{foo: "10"}`} {
+		s := StructStringorInt{}
+		yaml.Unmarshal([]byte(str), &s)
+
+		assert.Equal(t, StringorInt(10), s.Foo)
+
+		d, err := yaml.Marshal(&s)
+		assert.Nil(t, err)
+
+		s2 := StructStringorInt{}
+		yaml.Unmarshal(d, &s2)
+
+		assert.Equal(t, StringorInt(10), s2.Foo)
+	}
+}
 
 type StructStringorslice struct {
 	Foo Stringorslice

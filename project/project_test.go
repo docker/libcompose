@@ -92,7 +92,7 @@ func TestParseWithBadContent(t *testing.T) {
 		t.Fatal("Should have failed parse")
 	}
 
-	if !strings.HasPrefix(err.Error(), "Invalid timestamp: 'garbage'") {
+	if !strings.Contains(err.Error(), "cannot unmarshal !!str `garbage` into config.Config") {
 		t.Fatalf("Should have failed parse: %#v", err)
 	}
 }
@@ -204,5 +204,5 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	assert.Equal(t, "busybox", multipleConfig.Image)
 	assert.Equal(t, "multi", multipleConfig.ContainerName)
 	assert.Equal(t, []string{"8000", "9000", "10000"}, multipleConfig.Ports)
-	assert.Equal(t, int64(40000000), multipleConfig.MemLimit)
+	assert.Equal(t, yaml.StringorInt(40000000), multipleConfig.MemLimit)
 }

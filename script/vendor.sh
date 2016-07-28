@@ -27,7 +27,7 @@ clone git golang.org/x/crypto 3fbbcd23f1cb824e69491a5930cfeff09b12f4d2 https://g
 clone git golang.org/x/net 2beffdc2e92c8a3027590f898fe88f69af48a3f8 https://github.com/tonistiigi/net.git
 # clone git golang.org/x/net 47990a1ba55743e6ef1affd3a14e5bac8553615d https://github.com/golang/net.git
 clone git gopkg.in/check.v1 11d3bc7aa68e238947792f30573146a3231fc0f1
-clone git github.com/cloudfoundry-incubator/candiedyaml 5cef21e2e4f0fd147973b558d4db7395176bcd95
+clone git gopkg.in/yaml.v2 e4d366fc3c7938e2958e662b4258c7a89e1f0e3e
 clone git github.com/Azure/go-ansiterm 388960b655244e76e24c75f48631564eaefade62
 clone git github.com/Microsoft/go-winio v0.3.0
 clone git github.com/xeipuuv/gojsonpointer e0fe6f68307607d540ed8eac07a342c33fa1b54a
