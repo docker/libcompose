@@ -18,6 +18,7 @@ import (
 	"github.com/docker/libcompose/docker/auth"
 	"github.com/docker/libcompose/docker/builder"
 	composeclient "github.com/docker/libcompose/docker/client"
+	"github.com/docker/libcompose/docker/container"
 	"github.com/docker/libcompose/docker/image"
 	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/project"
@@ -80,7 +81,7 @@ func (s *Service) Create(ctx context.Context, options options.Create) error {
 	}
 
 	if len(containers) != 0 {
-		return s.eachContainer(ctx, containers, func(c *Container) error {
+		return s.eachContainer(ctx, containers, func(c *container.Container) error {
 			_, err := s.recreateIfNeeded(ctx, c, options.NoRecreate, options.ForceRecreate)
 			return err
 		})
@@ -114,17 +115,17 @@ func (s *Service) namer(ctx context.Context, count int) (Namer, error) {
 	return namer, nil
 }
 
-func (s *Service) collectContainers(ctx context.Context) ([]*Container, error) {
+func (s *Service) collectContainers(ctx context.Context) ([]*container.Container, error) {
 	client := s.clientFactory.Create(s)
-	containers, err := GetContainersByFilter(ctx, client, labels.SERVICE.Eq(s.name), labels.PROJECT.Eq(s.project.Name))
+	containers, err := container.ListByFilter(ctx, client, labels.SERVICE.Eq(s.name), labels.PROJECT.Eq(s.project.Name))
 	if err != nil {
 		return nil, err
 	}
 
-	result := []*Container{}
+	result := []*container.Container{}
 
-	for _, container := range containers {
-		c, err := New(ctx, client, container.ID)
+	for _, cont := range containers {
+		c, err := container.New(ctx, client, cont.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -198,7 +199,7 @@ func (s *Service) build(ctx context.Context, buildOptions options.Build) error {
 	return builder.Build(ctx, s.imageName())
 }
 
-func (s *Service) constructContainers(ctx context.Context, count int) ([]*Container, error) {
+func (s *Service) constructContainers(ctx context.Context, count int) ([]*container.Container, error) {
 	result, err := s.collectContainers(ctx)
 	if err != nil {
 		return nil, err
@@ -227,7 +228,8 @@ func (s *Service) constructContainers(ctx context.Context, count int) ([]*Contai
 		}
 
 		// FIXME(vdemeester) use property/method instead
-		logrus.Debugf("Created container %s: %v", c.container.ID, c.container.Name)
+		id, _ := c.ID()
+		logrus.Debugf("Created container %s: %v", id, c.Name())
 
 		result = append(result, c)
 	}
@@ -308,7 +310,7 @@ func (s *Service) Info(ctx context.Context, qFlag bool) (project.InfoSet, error)
 
 // Start implements Service.Start. It tries to start a container without creating it.
 func (s *Service) Start(ctx context.Context) error {
-	return s.collectContainersAndDo(ctx, func(c *Container) error {
+	return s.collectContainersAndDo(ctx, func(c *container.Container) error {
 		if err := s.connectContainerToNetworks(ctx, c, false); err != nil {
 			return err
 		}
@@ -333,10 +335,10 @@ func (s *Service) up(ctx context.Context, imageName string, create bool, options
 		if err != nil {
 			return err
 		}
-		containers = []*Container{c}
+		containers = []*container.Container{c}
 	}
 
-	return s.eachContainer(ctx, containers, func(c *Container) error {
+	return s.eachContainer(ctx, containers, func(c *container.Container) error {
 		var err error
 		if create {
 			c, err = s.recreateIfNeeded(ctx, c, options.NoRecreate, options.ForceRecreate)
@@ -361,7 +363,7 @@ func (s *Service) up(ctx context.Context, imageName string, create bool, options
 	})
 }
 
-func (s *Service) connectContainerToNetworks(ctx context.Context, c *Container, oneOff bool) error {
+func (s *Service) connectContainerToNetworks(ctx context.Context, c *container.Container, oneOff bool) error {
 	connectedNetworks, err := c.Networks()
 	if err != nil {
 		return nil
@@ -395,7 +397,7 @@ func (s *Service) connectContainerToNetworks(ctx context.Context, c *Container, 
 }
 
 // NetworkDisconnect disconnects the container from the specified network
-func (s *Service) NetworkDisconnect(ctx context.Context, c *Container, net *yaml.Network, oneOff bool) error {
+func (s *Service) NetworkDisconnect(ctx context.Context, c *container.Container, net *yaml.Network, oneOff bool) error {
 	containerID, _ := c.ID()
 	client := s.clientFactory.Create(s)
 	return client.NetworkDisconnect(ctx, net.RealName, containerID, true)
@@ -403,7 +405,7 @@ func (s *Service) NetworkDisconnect(ctx context.Context, c *Container, net *yaml
 
 // NetworkConnect connects the container to the specified network
 // FIXME(vdemeester) will be refactor with Container refactoring
-func (s *Service) NetworkConnect(ctx context.Context, c *Container, net *yaml.Network, oneOff bool) error {
+func (s *Service) NetworkConnect(ctx context.Context, c *container.Container, net *yaml.Network, oneOff bool) error {
 	containerID, _ := c.ID()
 	client := s.clientFactory.Create(s)
 	internalLinks, err := s.getLinks()
@@ -434,7 +436,7 @@ func (s *Service) NetworkConnect(ctx context.Context, c *Container, net *yaml.Ne
 	})
 }
 
-func (s *Service) recreateIfNeeded(ctx context.Context, c *Container, noRecreate, forceRecreate bool) (*Container, error) {
+func (s *Service) recreateIfNeeded(ctx context.Context, c *container.Container, noRecreate, forceRecreate bool) (*container.Container, error) {
 	if noRecreate {
 		return c, nil
 	}
@@ -460,31 +462,33 @@ func (s *Service) recreateIfNeeded(ctx context.Context, c *Container, noRecreate
 	return c, err
 }
 
-func (s *Service) recreate(ctx context.Context, c *Container) (*Container, error) {
+func (s *Service) recreate(ctx context.Context, c *container.Container) (*container.Container, error) {
 	name := c.Name()
-	newName := fmt.Sprintf("%s_%s", name, c.container.ID[:12])
+	id, _ := c.ID()
+	newName := fmt.Sprintf("%s_%s", name, id[:12])
 	logrus.Debugf("Renaming %s => %s", name, newName)
 	if err := c.Rename(ctx, newName); err != nil {
 		logrus.Errorf("Failed to rename old container %s", c.Name())
 		return nil, err
 	}
 	namer := NewSingleNamer(name)
-	newContainer, err := s.createContainer(ctx, namer, c.container.ID, nil, false)
+	newContainer, err := s.createContainer(ctx, namer, id, nil, false)
 	if err != nil {
 		return nil, err
 	}
-	logrus.Debugf("Created replacement container %s", newContainer.container.ID)
+	newID, _ := newContainer.ID()
+	logrus.Debugf("Created replacement container %s", newID)
 	if err := c.Remove(ctx, false); err != nil {
 		logrus.Errorf("Failed to remove old container %s", c.Name())
 		return nil, err
 	}
-	logrus.Debugf("Removed old container %s %s", c.Name(), c.container.ID)
+	logrus.Debugf("Removed old container %s %s", c.Name(), id)
 	return newContainer, nil
 }
 
 // OutOfSync checks if the container is out of sync with the service definition.
 // It looks if the the service hash container label is the same as the computed one.
-func (s *Service) OutOfSync(ctx context.Context, c *Container) (bool, error) {
+func (s *Service) OutOfSync(ctx context.Context, c *container.Container) (bool, error) {
 	if c.ImageConfig() != s.serviceConfig.Image {
 		logrus.Debugf("Images for %s do not match %s!=%s", c.Name(), c.ImageConfig(), s.serviceConfig.Image)
 		return true, nil
@@ -509,7 +513,7 @@ func (s *Service) OutOfSync(ctx context.Context, c *Container) (bool, error) {
 	return image.ID != c.Image(), err
 }
 
-func (s *Service) collectContainersAndDo(ctx context.Context, action func(*Container) error) error {
+func (s *Service) collectContainersAndDo(ctx context.Context, action func(*container.Container) error) error {
 	containers, err := s.collectContainers(ctx)
 	if err != nil {
 		return err
@@ -517,15 +521,15 @@ func (s *Service) collectContainersAndDo(ctx context.Context, action func(*Conta
 	return s.eachContainer(ctx, containers, action)
 }
 
-func (s *Service) eachContainer(ctx context.Context, containers []*Container, action func(*Container) error) error {
+func (s *Service) eachContainer(ctx context.Context, containers []*container.Container, action func(*container.Container) error) error {
 
 	tasks := utils.InParallel{}
-	for _, container := range containers {
-		task := func(container *Container) func() error {
+	for _, cont := range containers {
+		task := func(cont *container.Container) func() error {
 			return func() error {
-				return action(container)
+				return action(cont)
 			}
-		}(container)
+		}(cont)
 
 		tasks.Add(task)
 	}
@@ -535,28 +539,28 @@ func (s *Service) eachContainer(ctx context.Context, containers []*Container, ac
 
 // Stop implements Service.Stop. It stops any containers related to the service.
 func (s *Service) Stop(ctx context.Context, timeout int) error {
-	return s.collectContainersAndDo(ctx, func(c *Container) error {
+	return s.collectContainersAndDo(ctx, func(c *container.Container) error {
 		return c.Stop(ctx, timeout)
 	})
 }
 
 // Restart implements Service.Restart. It restarts any containers related to the service.
 func (s *Service) Restart(ctx context.Context, timeout int) error {
-	return s.collectContainersAndDo(ctx, func(c *Container) error {
+	return s.collectContainersAndDo(ctx, func(c *container.Container) error {
 		return c.Restart(ctx, timeout)
 	})
 }
 
 // Kill implements Service.Kill. It kills any containers related to the service.
 func (s *Service) Kill(ctx context.Context, signal string) error {
-	return s.collectContainersAndDo(ctx, func(c *Container) error {
+	return s.collectContainersAndDo(ctx, func(c *container.Container) error {
 		return c.Kill(ctx, signal)
 	})
 }
 
 // Delete implements Service.Delete. It removes any containers related to the service.
 func (s *Service) Delete(ctx context.Context, options options.Delete) error {
-	return s.collectContainersAndDo(ctx, func(c *Container) error {
+	return s.collectContainersAndDo(ctx, func(c *container.Container) error {
 		running, _ := c.IsRunning(ctx)
 		if !running || options.RemoveRunning {
 			return c.Remove(ctx, options.RemoveVolume)
@@ -567,7 +571,7 @@ func (s *Service) Delete(ctx context.Context, options options.Delete) error {
 
 // Log implements Service.Log. It returns the docker logs for each container related to the service.
 func (s *Service) Log(ctx context.Context, follow bool) error {
-	return s.collectContainersAndDo(ctx, func(c *Container) error {
+	return s.collectContainersAndDo(ctx, func(c *container.Container) error {
 		containerNumber, err := c.Number()
 		if err != nil {
 			return err
@@ -636,7 +640,7 @@ func (s *Service) Pull(ctx context.Context) error {
 // Pause implements Service.Pause. It puts into pause the container(s) related
 // to the service.
 func (s *Service) Pause(ctx context.Context) error {
-	return s.collectContainersAndDo(ctx, func(c *Container) error {
+	return s.collectContainersAndDo(ctx, func(c *container.Container) error {
 		return c.Pause(ctx)
 	})
 }
@@ -644,7 +648,7 @@ func (s *Service) Pause(ctx context.Context) error {
 // Unpause implements Service.Pause. It brings back from pause the container(s)
 // related to the service.
 func (s *Service) Unpause(ctx context.Context) error {
-	return s.collectContainersAndDo(ctx, func(c *Container) error {
+	return s.collectContainersAndDo(ctx, func(c *container.Container) error {
 		return c.Unpause(ctx)
 	})
 }
