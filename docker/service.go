@@ -15,8 +15,10 @@ import (
 	"github.com/docker/engine-api/types/network"
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/config"
+	"github.com/docker/libcompose/docker/auth"
 	"github.com/docker/libcompose/docker/builder"
 	composeclient "github.com/docker/libcompose/docker/client"
+	"github.com/docker/libcompose/docker/image"
 	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/events"
@@ -32,7 +34,7 @@ type Service struct {
 	project       *project.Project
 	serviceConfig *config.ServiceConfig
 	clientFactory composeclient.Factory
-	authLookup    AuthLookup
+	authLookup    auth.Lookup
 
 	// FIXME(vdemeester) remove this at some point
 	context *Context
@@ -494,7 +496,7 @@ func (s *Service) OutOfSync(ctx context.Context, c *Container) (bool, error) {
 		return true, nil
 	}
 
-	image, err := inspectImage(ctx, s.clientFactory.Create(s), c.ImageConfig())
+	image, err := image.InspectImage(ctx, s.clientFactory.Create(s), c.ImageConfig())
 	if err != nil {
 		if client.IsErrImageNotFound(err) {
 			logrus.Debugf("Image %s do not exist, do not know if it's out of sync", c.Image())
@@ -628,7 +630,7 @@ func (s *Service) Pull(ctx context.Context) error {
 		return nil
 	}
 
-	return pullImage(ctx, s.clientFactory.Create(s), s, s.Config().Image)
+	return image.PullImage(ctx, s.clientFactory.Create(s), s.name, s.authLookup, s.Config().Image)
 }
 
 // Pause implements Service.Pause. It puts into pause the container(s) related
@@ -655,9 +657,9 @@ func (s *Service) RemoveImage(ctx context.Context, imageType options.ImageType) 
 		if s.Config().Image != "" {
 			return nil
 		}
-		return removeImage(ctx, s.clientFactory.Create(s), s.imageName())
+		return image.RemoveImage(ctx, s.clientFactory.Create(s), s.imageName())
 	case "all":
-		return removeImage(ctx, s.clientFactory.Create(s), s.imageName())
+		return image.RemoveImage(ctx, s.clientFactory.Create(s), s.imageName())
 	default:
 		// Don't do a thing, should be validated up-front
 		return nil
