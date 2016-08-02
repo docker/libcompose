@@ -201,6 +201,13 @@ func (c *ServiceConfigs) Add(name string, service *ServiceConfig) {
 	c.mu.Unlock()
 }
 
+// Remove removes the config with the specified name
+func (c *ServiceConfigs) Remove(name string) {
+	c.mu.Lock()
+	delete(c.m, name)
+	c.mu.Unlock()
+}
+
 // Len returns the len of the configs
 func (c *ServiceConfigs) Len() int {
 	c.mu.RLock()
