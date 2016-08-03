@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-/*** Event ***/
 // Event holds project-wide event informations.
 type Event interface {
 	String() string
@@ -28,6 +27,7 @@ func (b *baseEvent) Service() string {
 	return b.ServiceName
 }
 
+// NewEvent creates a new Event which matches the Event interface
 func NewEvent(event, service string) Event {
 	return &baseEvent{
 		Event:       event,
@@ -35,26 +35,18 @@ func NewEvent(event, service string) Event {
 	}
 }
 
-/*** EventFactory ***/
 // EventFactory creates a new Event
-type EventFactory func() Event
+type EventFactory func(service string) Event
 
-// EventFactory creates a new Event for a specified service
-type ServiceEventFactory func(service string) Event
+// ErrorEventFactory creates a new Event for a specified service and error
+type ErrorEventFactory func(service string, err error) Event
 
-// ErrorEventFactory creates a new Event for a specified error
-type ErrorEventFactory func(err error) Event
-
-// ErrorServiceEventFactory creates a new Event for a specified service and error
-type ErrorServiceEventFactory func(service string, err error) Event
-
-/*** EventWrapper ***/
 // EventWrapper provides a wrapper around EventFactories to allow
 // state dependent Event generation
 type EventWrapper interface {
-	Started() Event
-	Failed(err error) Event
-	Done() Event
+	Started(string) Event
+	Failed(string, error) Event
+	Done(string) Event
 	Action() string
 }
 
@@ -67,32 +59,29 @@ type eventWrapper struct {
 
 // Started creates a new event using the provided EventFactory for
 // the 'started' condition
-func (wrapper *eventWrapper) Started() Event {
+func (wrapper *eventWrapper) Started(serviceName string) Event {
 	if wrapper.startedFactory != nil {
-		return wrapper.startedFactory()
-	} else {
-		return nil
+		return wrapper.startedFactory(serviceName)
 	}
+	return nil
 }
 
-// Failed creates a new event using the provided EventFactory for
+// Failed creates a new event using the provided eventFactory for
 // the 'failed' condition
-func (wrapper *eventWrapper) Failed(err error) Event {
+func (wrapper *eventWrapper) Failed(serviceName string, err error) Event {
 	if wrapper.failedFactory != nil {
-		return wrapper.failedFactory(err)
-	} else {
-		return nil
+		return wrapper.failedFactory(serviceName, err)
 	}
+	return nil
 }
 
-// Done creates a new event using the provided EventFactory for
+// Done creates a new event using the provided eventFactory for
 // the 'done' condition
-func (wrapper *eventWrapper) Done() Event {
+func (wrapper *eventWrapper) Done(serviceName string) Event {
 	if wrapper.doneFactory != nil {
-		return wrapper.doneFactory()
-	} else {
-		return nil
+		return wrapper.doneFactory(serviceName)
 	}
+	return nil
 }
 
 // Action returns the name of the action this wrapper is supporting
@@ -100,7 +89,7 @@ func (wrapper *eventWrapper) Action() string {
 	return wrapper.action
 }
 
-// NewServiceEventWrapper builds a wrapper around the provided ServiceEventFactories
+// NewEventWrapper builds a wrapper around the provided EventFactories
 func NewEventWrapper(action string, started EventFactory, done EventFactory, failed ErrorEventFactory) EventWrapper {
 	return &eventWrapper{
 		startedFactory: started,
@@ -110,68 +99,8 @@ func NewEventWrapper(action string, started EventFactory, done EventFactory, fai
 	}
 }
 
-// SeviceEventWrapper provides a wrapper around ServiceEventFactories to allow
-// state dependent Event generation
-type ServiceEventWrapper interface {
-	Started(string) Event
-	Failed(string, error) Event
-	Done(string) Event
-	Action() string
-}
-
-type serviceEventWrapper struct {
-	startedFactory ServiceEventFactory
-	failedFactory  ErrorServiceEventFactory
-	doneFactory    ServiceEventFactory
-	action         string
-}
-
-// Started creates a new event using the provided ServiceEventFactory for
-// the 'started' condition
-func (wrapper *serviceEventWrapper) Started(serviceName string) Event {
-	if wrapper.startedFactory != nil {
-		return wrapper.startedFactory(serviceName)
-	} else {
-		return nil
-	}
-}
-
-// Failed creates a new event using the provided ServiceEventFactory for
-// the 'failed' condition
-func (wrapper *serviceEventWrapper) Failed(serviceName string, err error) Event {
-	if wrapper.failedFactory != nil {
-		return wrapper.failedFactory(serviceName, err)
-	} else {
-		return nil
-	}
-}
-
-// Done creates a new event using the provided ServiceEventFactory for
-// the 'done' condition
-func (wrapper *serviceEventWrapper) Done(serviceName string) Event {
-	if wrapper.doneFactory != nil {
-		return wrapper.doneFactory(serviceName)
-	} else {
-		return nil
-	}
-}
-
-// Action returns the name of the action this wrapper is supporting
-func (wrapper *serviceEventWrapper) Action() string {
-	return wrapper.action
-}
-
-// NewServiceEventWrapper builds a wrapper around the provided ServiceEventFactories
-func NewServiceEventWrapper(action string, started ServiceEventFactory, done ServiceEventFactory, failed ErrorServiceEventFactory) ServiceEventWrapper {
-	return &serviceEventWrapper{
-		startedFactory: started,
-		failedFactory:  failed,
-		doneFactory:    done,
-		action:         action,
-	}
-}
-
-func NewDummyEventWrapper(action string) *dummyEventWrapper {
+// NewDummyEventWrapper returns an event wrapper which returns nil events
+func NewDummyEventWrapper(action string) EventWrapper {
 	return &dummyEventWrapper{
 		action: action,
 	}
@@ -181,43 +110,19 @@ type dummyEventWrapper struct {
 	action string
 }
 
-func (*dummyEventWrapper) Started() Event {
+func (*dummyEventWrapper) Started(string) Event {
 	return nil
 }
 
-func (*dummyEventWrapper) Done() Event {
+func (*dummyEventWrapper) Done(string) Event {
 	return nil
 }
-func (*dummyEventWrapper) Failed(error) Event {
+
+func (*dummyEventWrapper) Failed(string, error) Event {
 	return nil
 }
+
 func (w *dummyEventWrapper) Action() string {
-	return w.action
-}
-
-func NewDummyServiceEventWrapper(action string) *dummyServiceEventWrapper {
-	return &dummyServiceEventWrapper{
-		action: action,
-	}
-}
-
-type dummyServiceEventWrapper struct {
-	action string
-}
-
-func (*dummyServiceEventWrapper) Started(string) Event {
-	return nil
-}
-
-func (*dummyServiceEventWrapper) Done(string) Event {
-	return nil
-}
-
-func (*dummyServiceEventWrapper) Failed(string, error) Event {
-	return nil
-}
-
-func (w *dummyServiceEventWrapper) Action() string {
 	return w.action
 }
 
@@ -240,1296 +145,1077 @@ type ContainerEvent struct {
 	Type       string            `json:"type"`
 }
 
-// Represents a service being added to a project
+// ServiceAdd represents a service being added to a project
 type ServiceAdd struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new Service Add event
+// NewServiceAddEvent creates a new Service Add event
 func NewServiceAddEvent(serviceName string) Event {
 	return &ServiceAdd{
-		&baseEvent{
-			Event:       "Service Added",
-			ServiceName: serviceName,
-		},
+		NewEvent("Service Added", serviceName),
 	}
 }
 
-// Represents a volume being added to a project service
+// VolumeAdd Represents a volume being added to a project service
 type VolumeAdd struct {
-	*baseEvent
+	Event
 	Driver string
 }
 
-// Creates a new Volume Add event
+// NewVolumeAddEvent creates a new Volume Add event
 func NewVolumeAddEvent(serviceName, volumeDriver string) Event {
 	return &VolumeAdd{
-		baseEvent: &baseEvent{
-			Event:       "Volume Added",
-			ServiceName: serviceName,
-		},
+		Event:  NewEvent("Volume Added", serviceName),
 		Driver: volumeDriver,
 	}
 }
 
-// Represents a network being added to a project service
+// NetworkAdd Represents a network being added to a project service
 type NetworkAdd struct {
-	*baseEvent
+	Event
 	Driver string
 }
 
-// Creates a new Network Add event
+// NewNetworkAddEvent creates a new Network Add event
 func NewNetworkAddEvent(serviceName, networkDriver string) Event {
 	return &NetworkAdd{
-		baseEvent: &baseEvent{
-			Event:       "Network Added",
-			ServiceName: serviceName,
-		},
+		Event:  NewEvent("Network Added", serviceName),
 		Driver: networkDriver,
 	}
 }
 
-// Represents a service build starting
+// ServiceBuildStart Represents a service build starting
 type ServiceBuildStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service build starting event
+// NewServiceBuildStartEvent creates a new service build starting event
 func NewServiceBuildStartEvent(serviceName string) Event {
 	return &ServiceBuildStart{
-		&baseEvent{
-			Event:       "Building service",
-			ServiceName: serviceName,
-		},
+		NewEvent("Building Service", serviceName),
 	}
 }
 
-// Represents a service build completing
+// ServiceBuildDone represents a service build completing
 type ServiceBuildDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service build done event
+// NewServiceBuildDoneEvent creates a new service build done event
 func NewServiceBuildDoneEvent(serviceName string) Event {
 	return &ServiceBuildDone{
-		&baseEvent{
-			Event:       "Service built",
-			ServiceName: serviceName,
-		},
+		NewEvent("Service Built", serviceName),
 	}
 }
 
-// Represents a service build failing
+// ServiceBuildFailed represents a service build failing
 type ServiceBuildFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new service build failed event
+// NewServiceBuildFailedEvent creates a new service build failed event
 func NewServiceBuildFailedEvent(serviceName string, err error) Event {
 	return &ServiceBuildFailed{
-		baseEvent: &baseEvent{
-			Event:       "Service build failed",
-			ServiceName: serviceName,
-		},
-		err: err,
+		Event: NewEvent("Service Built Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a service create starting
+// ServiceCreateStart represents a service create starting
 type ServiceCreateStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service create starting event
+// NewServiceCreateStartEvent creates a new service create starting event
 func NewServiceCreateStartEvent(serviceName string) Event {
 	return &ServiceCreateStart{
-		&baseEvent{
-			Event:       "Creating service",
-			ServiceName: serviceName,
-		},
+		NewEvent("Creating Service", serviceName),
 	}
 }
 
-// Represents a service create completing
+// ServiceCreateDone represents a service create completing
 type ServiceCreateDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service create done event
+// NewServiceCreateDoneEvent creates a new service create done event
 func NewServiceCreateDoneEvent(serviceName string) Event {
 	return &ServiceCreateDone{
-		&baseEvent{
-			Event:       "Service created",
-			ServiceName: serviceName,
-		},
+		NewEvent("Service Created", serviceName),
 	}
 }
 
-// Represents a service create failing
+// ServiceCreateFailed represents a service create failing
 type ServiceCreateFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new service create failed event
+// NewServiceCreateFailedEvent creates a new service create failed event
 func NewServiceCreateFailedEvent(serviceName string, err error) Event {
 	return &ServiceCreateFailed{
-		baseEvent: &baseEvent{
-			Event:       "Service create failed",
-			ServiceName: serviceName,
-		},
-		err: err,
+		Event: NewEvent("Service Create Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a service stop starting
+// ServiceStopStart represents a service stop starting
 type ServiceStopStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service stop starting event
+// NewServiceStopStartEvent creates a new service stop starting event
 func NewServiceStopStartEvent(serviceName string) Event {
 	return &ServiceStopStart{
-		&baseEvent{
-			Event:       "Creating service",
-			ServiceName: serviceName,
-		},
+		NewEvent("Stopping Service", serviceName),
 	}
 }
 
-// Represents a service stop completing
+// ServiceStopDone represents a service stop completing
 type ServiceStopDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service stop done event
+// NewServiceStopDoneEvent creates a new service stop done event
 func NewServiceStopDoneEvent(serviceName string) Event {
 	return &ServiceStopDone{
-		&baseEvent{
-			Event:       "Service stopped",
-			ServiceName: serviceName,
-		},
+		Event: NewEvent("Service Stopped", serviceName),
 	}
 }
 
-// Represents a service stop failing
+// ServiceStopFailed represents a service stop failing
 type ServiceStopFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new service stop failed event
+// NewServiceStopFailedEvent creates a new service stop failed event
 func NewServiceStopFailedEvent(serviceName string, err error) Event {
 	return &ServiceStopFailed{
-		baseEvent: &baseEvent{
-			Event:       "Service stop failed",
-			ServiceName: serviceName,
-		},
-		err: err,
+		Event: NewEvent("Service Stop Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a service restart starting
+// ServiceRestartStart represents a service restart starting
 type ServiceRestartStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service restart starting event
+// NewServiceRestartStartEvent creates a new service restart starting event
 func NewServiceRestartStartEvent(serviceName string) Event {
 	return &ServiceRestartStart{
-		&baseEvent{
-			Event:       "Restarting service",
-			ServiceName: serviceName,
-		},
+		NewEvent("Restarting Service", serviceName),
 	}
 }
 
-// Represents a service restart completing
+// ServiceRestartDone represents a service restart completing
 type ServiceRestartDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service restart done event
+// NewServiceRestartDoneEvent creates a new service restart done event
 func NewServiceRestartDoneEvent(serviceName string) Event {
 	return &ServiceRestartDone{
-		&baseEvent{
-			Event:       "Service restarted",
-			ServiceName: serviceName,
-		},
+		NewEvent("Service Restarted", serviceName),
 	}
 }
 
-// Represents a service restart failing
+// ServiceRestartFailed represents a service restart failing
 type ServiceRestartFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new service restart failed event
+// NewServiceRestartFailedEvent creates a new service restart failed event
 func NewServiceRestartFailedEvent(serviceName string, err error) Event {
 	return &ServiceRestartFailed{
-		baseEvent: &baseEvent{
-			Event:       "Service restart failed",
-			ServiceName: serviceName,
-		},
-		err: err,
+		Event: NewEvent("Service Restart Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a service start starting
+// ServiceStartStart represents a service start starting
 type ServiceStartStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service start starting event
+// NewServiceStartStartEvent creates a new service start starting event
 func NewServiceStartStartEvent(serviceName string) Event {
 	return &ServiceStartStart{
-		&baseEvent{
-			Event:       "Starting service",
-			ServiceName: serviceName,
-		},
+		NewEvent("Starting Service", serviceName),
 	}
 }
 
-// Represents a service start completing
+// ServiceStartDone represents a service start completing
 type ServiceStartDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service start done event
+// NewServiceStartDoneEvent creates a new service start done event
 func NewServiceStartDoneEvent(serviceName string) Event {
 	return &ServiceStartDone{
-		&baseEvent{
-			Event:       "Service started",
-			ServiceName: serviceName,
-		},
+		NewEvent("Service Started", serviceName),
 	}
 }
 
-// Represents a service start failing
+// ServiceStartFailed represents a service start failing
 type ServiceStartFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new service start failed event
+// NewServiceStartFailedEvent creates a new service start failed event
 func NewServiceStartFailedEvent(serviceName string, err error) Event {
 	return &ServiceStartFailed{
-		baseEvent: &baseEvent{
-			Event:       "Service start failed",
-			ServiceName: serviceName,
-		},
-		err: err,
+		Event: NewEvent("Service Start Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a service run starting
+// ServiceRunStart represents a service run starting
 type ServiceRunStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service run starting event
+// NewServiceRunStartEvent creates a new service run starting event
 func NewServiceRunStartEvent(serviceName string) Event {
 	return &ServiceRunStart{
-		&baseEvent{
-			Event:       "Running service",
-			ServiceName: serviceName,
-		},
+		NewEvent("Running Service", serviceName),
 	}
 }
 
-// Represents a service run completing
+// ServiceRunDone represents a service run completing
 type ServiceRunDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service run done event
+// NewServiceRunDoneEvent creates a new service run done event
 func NewServiceRunDoneEvent(serviceName string) Event {
 	return &ServiceRunDone{
-		&baseEvent{
-			Event:       "Service run",
-			ServiceName: serviceName,
-		},
+		NewEvent("Service Run", serviceName),
 	}
 }
 
-// Represents a service run failing
+// ServiceRunFailed represents a service run failing
 type ServiceRunFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new service run failed event
+// NewServiceRunFailedEvent creates a new service run failed event
 func NewServiceRunFailedEvent(serviceName string, err error) Event {
 	return &ServiceRunFailed{
-		baseEvent: &baseEvent{
-			Event:       "Service run failed",
-			ServiceName: serviceName,
-		},
-		err: err,
+		Event: NewEvent("Service Run Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a service up starting
+// ServiceUpStart represents a service up starting
 type ServiceUpStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service up starting event
+// NewServiceUpStartEvent creates a new service up starting event
 func NewServiceUpStartEvent(serviceName string) Event {
 	return &ServiceUpStart{
-		&baseEvent{
-			Event:       "Starting service",
-			ServiceName: serviceName,
-		},
+		NewEvent("Starting Service", serviceName),
 	}
 }
 
-// Represents a service up completing
+// ServiceUpDone represents a service up completing
 type ServiceUpDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service up done event
+// NewServiceUpDoneEvent creates a new service up done event
 func NewServiceUpDoneEvent(serviceName string) Event {
 	return &ServiceUpDone{
-		&baseEvent{
-			Event:       "Service started",
-			ServiceName: serviceName,
-		},
+		NewEvent("Service Started", serviceName),
 	}
 }
 
-// Represents a service up failing
+// ServiceUpFailed represents a service up failing
 type ServiceUpFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new service up failed event
+// NewServiceUpFailedEvent creates a new service up failed event
 func NewServiceUpFailedEvent(serviceName string, err error) Event {
 	return &ServiceUpFailed{
-		baseEvent: &baseEvent{
-			Event:       "Service start failed",
-			ServiceName: serviceName,
-		},
-		err: err,
+		Event: NewEvent("Service Start Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a service up being ignored
+// ServiceUpIgnored represents a service up being ignored
 type ServiceUpIgnored struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service up ignore event
+// NewServiceUpIgnoredEvent creates a new service up ignore event
 func NewServiceUpIgnoredEvent(serviceName string) Event {
-	return &ServiceUpFailed{
-		baseEvent: &baseEvent{
-			Event:       "Service start ignored",
-			ServiceName: serviceName,
-		},
+	return &ServiceUpIgnored{
+		NewEvent("Service Start Ignored", serviceName),
 	}
 }
 
-// Represents a service pull starting
+// ServicePullStart represents a service pull starting
 type ServicePullStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service pull starting event
+// NewServicePullStartEvent creates a new service pull starting event
 func NewServicePullStartEvent(serviceName string) Event {
 	return &ServicePullStart{
-		&baseEvent{
-			Event:       "Pulling service",
-			ServiceName: serviceName,
-		},
+		NewEvent("Pulling Service", serviceName),
 	}
 }
 
-// Represents a service pull completing
+// ServicePullDone represents a service pull completing
 type ServicePullDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service pull done event
+// NewServicePullDoneEvent creates a new service pull done event
 func NewServicePullDoneEvent(serviceName string) Event {
 	return &ServicePullDone{
-		&baseEvent{
-			Event:       "Service pulled",
-			ServiceName: serviceName,
-		},
+		NewEvent("Service Pulled", serviceName),
 	}
 }
 
-// Represents a service pull failing
+// ServicePullFailed represents a service pull failing
 type ServicePullFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new service pull failed event
+// NewServicePullFailedEvent creates a new service pull failed event
 func NewServicePullFailedEvent(serviceName string, err error) Event {
 	return &ServicePullFailed{
-		baseEvent: &baseEvent{
-			Event:       "Service pull failed",
-			ServiceName: serviceName,
-		},
-		err: err,
+		Event: NewEvent("Service Pull Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a service delete starting
+// ServiceDeleteStart represents a service delete starting
 type ServiceDeleteStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service delete starting event
+// NewServiceDeleteStartEvent creates a new service delete starting event
 func NewServiceDeleteStartEvent(serviceName string) Event {
 	return &ServiceDeleteStart{
-		&baseEvent{
-			Event:       "Deleting service",
-			ServiceName: serviceName,
-		},
+		NewEvent("Deleting Service", serviceName),
 	}
 }
 
-// Represents a service delete completing
+// ServiceDeleteDone represents a service delete completing
 type ServiceDeleteDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service delete done event
+// NewServiceDeleteDoneEvent creates a new service delete done event
 func NewServiceDeleteDoneEvent(serviceName string) Event {
 	return &ServiceDeleteDone{
-		&baseEvent{
-			Event:       "Service deleted",
-			ServiceName: serviceName,
-		},
+		NewEvent("Service Deleted", serviceName),
 	}
 }
 
-// Represents a service delete failing
+// ServiceDeleteFailed represents a service delete failing
 type ServiceDeleteFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new service delete failed event
+// NewServiceDeleteFailedEvent creates a new service delete failed event
 func NewServiceDeleteFailedEvent(serviceName string, err error) Event {
 	return &ServiceDeleteFailed{
-		baseEvent: &baseEvent{
-			Event:       "Service delete failed",
-			ServiceName: serviceName,
-		},
-		err: err,
+		Event: NewEvent("Service Delete Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a service kill starting
+// ServiceKillStart represents a service kill starting
 type ServiceKillStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service kill starting event
+// NewServiceKillStartEvent creates a new service kill starting event
 func NewServiceKillStartEvent(serviceName string) Event {
 	return &ServiceKillStart{
-		&baseEvent{
-			Event:       "Killing service",
-			ServiceName: serviceName,
-		},
+		NewEvent("Killing Service", serviceName),
 	}
 }
 
-// Represents a service kill completing
+// ServiceKillDone represents a service kill completing
 type ServiceKillDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service kill done event
+// NewServiceKillDoneEvent creates a new service kill done event
 func NewServiceKillDoneEvent(serviceName string) Event {
 	return &ServiceKillDone{
-		&baseEvent{
-			Event:       "Service killed",
-			ServiceName: serviceName,
-		},
+		NewEvent("Service Killed", serviceName),
 	}
 }
 
-// Represents a service kill failing
+// ServiceKillFailed represents a service kill failing
 type ServiceKillFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new service kill failed event
+// NewServiceKillFailedEvent creates a new service kill failed event
 func NewServiceKillFailedEvent(serviceName string, err error) Event {
 	return &ServiceKillFailed{
-		baseEvent: &baseEvent{
-			Event:       "Service kill failed",
-			ServiceName: serviceName,
-		},
-		err: err,
+		Event: NewEvent("Service Kill Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a service pause starting
+// ServicePauseStart represents a service pause starting
 type ServicePauseStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service pause starting event
+// NewServicePauseStartEvent creates a new service pause starting event
 func NewServicePauseStartEvent(serviceName string) Event {
 	return &ServicePauseStart{
-		&baseEvent{
-			Event:       "Pausing service",
-			ServiceName: serviceName,
-		},
+		NewEvent("Pausing Service", serviceName),
 	}
 }
 
-// Represents a service pause completing
+// ServicePauseDone represents a service pause completing
 type ServicePauseDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service pause done event
+// NewServicePauseDoneEvent creates a new service pause done event
 func NewServicePauseDoneEvent(serviceName string) Event {
 	return &ServicePauseDone{
-		&baseEvent{
-			Event:       "Service paused",
-			ServiceName: serviceName,
-		},
+		NewEvent("Service Paused", serviceName),
 	}
 }
 
-// Represents a service pause failing
+// ServicePauseFailed represents a service pause failing
 type ServicePauseFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new service pause failed event
+// NewServicePauseFailedEvent creates a new service pause failed event
 func NewServicePauseFailedEvent(serviceName string, err error) Event {
 	return &ServicePauseFailed{
-		baseEvent: &baseEvent{
-			Event:       "Service pause failed",
-			ServiceName: serviceName,
-		},
-		err: err,
+		Event: NewEvent("Service Pause Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a service unpause starting
+// ServiceUnpauseStart represents a service unpause starting
 type ServiceUnpauseStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service unpause starting event
+// NewServiceUnpauseStartEvent creates a new service unpause starting event
 func NewServiceUnpauseStartEvent(serviceName string) Event {
 	return &ServiceUnpauseStart{
-		&baseEvent{
-			Event:       "Unpause service",
-			ServiceName: serviceName,
-		},
+		NewEvent("Unpausing Service", serviceName),
 	}
 }
 
-// Represents a service unpause completing
+// ServiceUnpauseDone represents a service unpause completing
 type ServiceUnpauseDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service unpause done event
+// NewServiceUnpauseDoneEvent creates a new service unpause done event
 func NewServiceUnpauseDoneEvent(serviceName string) Event {
 	return &ServiceUnpauseDone{
-		&baseEvent{
-			Event:       "Service unpaused",
-			ServiceName: serviceName,
-		},
+		NewEvent("Service Unpaused", serviceName),
 	}
 }
 
-// Represents a service unpause failing
+// ServiceUnpauseFailed represents a service unpause failing
 type ServiceUnpauseFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new service unpause failed event
+// NewServiceUnpauseFailedEvent creates a new service unpause failed event
 func NewServiceUnpauseFailedEvent(serviceName string, err error) Event {
 	return &ServiceUnpauseFailed{
-		baseEvent: &baseEvent{
-			Event:       "Service unpause failed",
-			ServiceName: serviceName,
-		},
-		err: err,
+		Event: NewEvent("Service Unpause Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a service down starting
+// ServiceDownStart represents a service down starting
 type ServiceDownStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service down starting event
+// NewServiceDownStartEvent creates a new service down starting event
 func NewServiceDownStartEvent(serviceName string) Event {
 	return &ServiceDownStart{
-		&baseEvent{
-			Event:       "Stopping service",
-			ServiceName: serviceName,
-		},
+		NewEvent("Stopping Service", serviceName),
 	}
 }
 
-// Represents a service down completing
+// ServiceDownDone represents a service down completing
 type ServiceDownDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new service down done event
+// NewServiceDownDoneEvent creates a new service down done event
 func NewServiceDownDoneEvent(serviceName string) Event {
 	return &ServiceDownDone{
-		&baseEvent{
-			Event:       "Service stopped",
-			ServiceName: serviceName,
-		},
+		NewEvent("Service Stopped", serviceName),
 	}
 }
 
-// Represents a service down failing
+// ServiceDownFailed represents a service down failing
 type ServiceDownFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new service down failed event
+// NewServiceDownFailedEvent creates a new service down failed event
 func NewServiceDownFailedEvent(serviceName string, err error) Event {
 	return &ServiceDownFailed{
-		baseEvent: &baseEvent{
-			Event:       "Service stop failed",
-			ServiceName: serviceName,
-		},
-		err: err,
+		Event: NewEvent("Service Stop Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a project restart starting
+// ProjectRestartStart represents a project restart starting
 type ProjectRestartStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project restart starting event
-func NewProjectRestartStartEvent() Event {
+// NewProjectRestartStartEvent creates a new project restart starting event
+func NewProjectRestartStartEvent(serviceName string) Event {
 	return &ProjectRestartStart{
-		&baseEvent{
-			Event: "Restarting project",
-		},
+		NewEvent("Restarting Project", serviceName),
 	}
 }
 
-// Represents a project restart completing
+// ProjectRestartDone represents a project restart completing
 type ProjectRestartDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project restart done event
-func NewProjectRestartDoneEvent() Event {
+// NewProjectRestartDoneEvent creates a new project restart done event
+func NewProjectRestartDoneEvent(serviceName string) Event {
 	return &ProjectRestartDone{
-		&baseEvent{
-			Event: "Project restarted",
-		},
+		NewEvent("Project Restarted", serviceName),
 	}
 }
 
-// Represents a project restart failing
+// ProjectRestartFailed represents a project restart failing
 type ProjectRestartFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new project restart failed event
-func NewProjectRestartFailedEvent(err error) Event {
+// NewProjectRestartFailedEvent creates a new project restart failed event
+func NewProjectRestartFailedEvent(serviceName string, err error) Event {
 	return &ProjectRestartFailed{
-		baseEvent: &baseEvent{
-			Event: "Project restart failed",
-		},
-		err: err,
+		Event: NewEvent("Project Restart Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a project start starting
+// ProjectStartStart represents a project start starting
 type ProjectStartStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project start starting event
-func NewProjectStartStartEvent() Event {
+// NewProjectStartStartEvent creates a new project start starting event
+func NewProjectStartStartEvent(serviceName string) Event {
 	return &ProjectStartStart{
-		&baseEvent{
-			Event: "Starting project",
-		},
+		NewEvent("Starting Project", serviceName),
 	}
 }
 
-// Represents a project start completing
+// ProjectStartDone represents a project start completing
 type ProjectStartDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project start done event
-func NewProjectStartDoneEvent() Event {
+// NewProjectStartDoneEvent creates a new project start done event
+func NewProjectStartDoneEvent(serviceName string) Event {
 	return &ProjectStartDone{
-		&baseEvent{
-			Event: "Project started",
-		},
+		NewEvent("Project Started", serviceName),
 	}
 }
 
-// Represents a project start failing
+// ProjectStartFailed represents a project start failing
 type ProjectStartFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new project start failed event
-func NewProjectStartFailedEvent(err error) Event {
+// NewProjectStartFailedEvent creates a new project start failed event
+func NewProjectStartFailedEvent(serviceName string, err error) Event {
 	return &ProjectStartFailed{
-		baseEvent: &baseEvent{
-			Event: "Project start failed",
-		},
-		err: err,
+		Event: NewEvent("Project Start Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a project up starting
+// ProjectUpStart represents a project up starting
 type ProjectUpStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project up starting event
-func NewProjectUpStartEvent() Event {
+// NewProjectUpStartEvent creates a new project up starting event
+func NewProjectUpStartEvent(serviceName string) Event {
 	return &ProjectUpStart{
-		&baseEvent{
-			Event: "Starting project",
-		},
+		NewEvent("Starting Project", serviceName),
 	}
 }
 
-// Represents a project up completing
+// ProjectUpDone represents a project up completing
 type ProjectUpDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project up done event
-func NewProjectUpDoneEvent() Event {
+// NewProjectUpDoneEvent creates a new project up done event
+func NewProjectUpDoneEvent(serviceName string) Event {
 	return &ProjectUpDone{
-		&baseEvent{
-			Event: "Project started",
-		},
+		NewEvent("Project Started", serviceName),
 	}
 }
 
-// Represents a project up failing
+// ProjectUpFailed represents a project up failing
 type ProjectUpFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new project up failed event
-func NewProjectUpFailedEvent(err error) Event {
+// NewProjectUpFailedEvent creates a new project up failed event
+func NewProjectUpFailedEvent(serviceName string, err error) Event {
 	return &ProjectUpFailed{
-		baseEvent: &baseEvent{
-			Event: "Project up failed",
-		},
-		err: err,
+		Event: NewEvent("Project Up Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a project down starting
+// ProjectDownStart represents a project down starting
 type ProjectDownStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project down starting event
-func NewProjectDownStartEvent() Event {
+// NewProjectDownStartEvent creates a new project down starting event
+func NewProjectDownStartEvent(serviceName string) Event {
 	return &ProjectDownStart{
-		&baseEvent{
-			Event: "Stopping project",
-		},
+		NewEvent("Stopping Project", serviceName),
 	}
 }
 
-// Represents a project down completing
+// ProjectDownDone represents a project down completing
 type ProjectDownDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project down done event
-func NewProjectDownDoneEvent() Event {
+// NewProjectDownDoneEvent creates a new project down done event
+func NewProjectDownDoneEvent(serviceName string) Event {
 	return &ProjectDownDone{
-		&baseEvent{
-			Event: "Project stopped",
-		},
+		NewEvent("Project Stopped", serviceName),
 	}
 }
 
-// Represents a project down failing
+// ProjectDownFailed represents a project down failing
 type ProjectDownFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new project down failed event
-func NewProjectDownFailedEvent(err error) Event {
+// NewProjectDownFailedEvent creates a new project down failed event
+func NewProjectDownFailedEvent(serviceName string, err error) Event {
 	return &ProjectDownFailed{
-		baseEvent: &baseEvent{
-			Event: "Project down failed",
-		},
-		err: err,
+		Event: NewEvent("Project Down Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a project delete starting
+// ProjectDeleteStart represents a project delete starting
 type ProjectDeleteStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project delete starting event
-func NewProjectDeleteStartEvent() Event {
+// NewProjectDeleteStartEvent creates a new project delete starting event
+func NewProjectDeleteStartEvent(serviceName string) Event {
 	return &ProjectDeleteStart{
-		&baseEvent{
-			Event: "Deleting project",
-		},
+		NewEvent("Deleting Project", serviceName),
 	}
 }
 
-// Represents a project delete completing
+// ProjectDeleteDone represents a project delete completing
 type ProjectDeleteDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project delete done event
-func NewProjectDeleteDoneEvent() Event {
+// NewProjectDeleteDoneEvent creates a new project delete done event
+func NewProjectDeleteDoneEvent(serviceName string) Event {
 	return &ProjectDeleteDone{
-		&baseEvent{
-			Event: "Project deleted",
-		},
+		NewEvent("Project Deleted", serviceName),
 	}
 }
 
-// Represents a project delete failing
+// ProjectDeleteFailed represents a project delete failing
 type ProjectDeleteFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new project delete failed event
-func NewProjectDeleteFailedEvent(err error) Event {
+// NewProjectDeleteFailedEvent creates a new project delete failed event
+func NewProjectDeleteFailedEvent(serviceName string, err error) Event {
 	return &ProjectDeleteFailed{
-		baseEvent: &baseEvent{
-			Event: "Project delete failed",
-		},
-		err: err,
+		Event: NewEvent("Project Delete Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a project kill starting
+// ProjectKillStart represents a project kill starting
 type ProjectKillStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project kill starting event
-func NewProjectKillStartEvent() Event {
+// NewProjectKillStartEvent creates a new project kill starting event
+func NewProjectKillStartEvent(serviceName string) Event {
 	return &ProjectKillStart{
-		&baseEvent{
-			Event: "Killing project",
-		},
+		NewEvent("Killing Project", serviceName),
 	}
 }
 
-// Represents a project kill completing
+// ProjectKillDone represents a project kill completing
 type ProjectKillDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project kill done event
-func NewProjectKillDoneEvent() Event {
+// NewProjectKillDoneEvent creates a new project kill done event
+func NewProjectKillDoneEvent(serviceName string) Event {
 	return &ProjectKillDone{
-		&baseEvent{
-			Event: "Project killed",
-		},
+		NewEvent("Project Killed", serviceName),
 	}
 }
 
-// Represents a project kill failing
+// ProjectKillFailed represents a project kill failing
 type ProjectKillFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new project kill failed event
-func NewProjectKillFailedEvent(err error) Event {
+// NewProjectKillFailedEvent creates a new project kill failed event
+func NewProjectKillFailedEvent(serviceName string, err error) Event {
 	return &ProjectKillFailed{
-		baseEvent: &baseEvent{
-			Event: "Project kill failed",
-		},
-		err: err,
+		Event: NewEvent("Project Kill Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a project pause starting
+// ProjectPauseStart represents a project pause starting
 type ProjectPauseStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project pause starting event
-func NewProjectPauseStartEvent() Event {
+// NewProjectPauseStartEvent creates a new project pause starting event
+func NewProjectPauseStartEvent(serviceName string) Event {
 	return &ProjectPauseStart{
-		&baseEvent{
-			Event: "Pausing project",
-		},
+		NewEvent("Pausing Project", serviceName),
 	}
 }
 
-// Represents a project pause completing
+// ProjectPauseDone represents a project pause completing
 type ProjectPauseDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project pause done event
-func NewProjectPauseDoneEvent() Event {
+// NewProjectPauseDoneEvent creates a new project pause done event
+func NewProjectPauseDoneEvent(serviceName string) Event {
 	return &ProjectPauseDone{
-		&baseEvent{
-			Event: "Project paused",
-		},
+		NewEvent("Project Paused", serviceName),
 	}
 }
 
-// Represents a project pause failing
+// ProjectPauseFailed represents a project pause failing
 type ProjectPauseFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new project pause failed event
-func NewProjectPauseFailedEvent(err error) Event {
+// NewProjectPauseFailedEvent creates a new project pause failed event
+func NewProjectPauseFailedEvent(serviceName string, err error) Event {
 	return &ProjectPauseFailed{
-		baseEvent: &baseEvent{
-			Event: "Project pause failed",
-		},
-		err: err,
+		Event: NewEvent("Project Pause Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a project unpause starting
+// ProjectUnpauseStart represents a project unpause starting
 type ProjectUnpauseStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project unpause starting event
-func NewProjectUnpauseStartEvent() Event {
+// NewProjectUnpauseStartEvent creates a new project unpause starting event
+func NewProjectUnpauseStartEvent(serviceName string) Event {
 	return &ProjectUnpauseStart{
-		&baseEvent{
-			Event: "Unpausing project",
-		},
+		NewEvent("Unpausing Project", serviceName),
 	}
 }
 
-// Represents a project unpause completing
+// ProjectUnpauseDone represents a project unpause completing
 type ProjectUnpauseDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project unpause done event
-func NewProjectUnpauseDoneEvent() Event {
+// NewProjectUnpauseDoneEvent creates a new project unpause done event
+func NewProjectUnpauseDoneEvent(serviceName string) Event {
 	return &ProjectUnpauseDone{
-		&baseEvent{
-			Event: "Project unpaused",
-		},
+		NewEvent("Project Unpaused", serviceName),
 	}
 }
 
-// Represents a project unpause failing
+// ProjectUnpauseFailed represents a project unpause failing
 type ProjectUnpauseFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new project unpause failed event
-func NewProjectUnpauseFailedEvent(err error) Event {
+// NewProjectUnpauseFailedEvent creates a new project unpause failed event
+func NewProjectUnpauseFailedEvent(serviceName string, err error) Event {
 	return &ProjectUnpauseFailed{
-		baseEvent: &baseEvent{
-			Event: "Project unpause failed",
-		},
-		err: err,
+		Event: NewEvent("Project Unpause Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a project build starting
+// ProjectBuildStart represents a project build starting
 type ProjectBuildStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project build starting event
-func NewProjectBuildStartEvent() Event {
+// NewProjectBuildStartEvent creates a new project build starting event
+func NewProjectBuildStartEvent(serviceName string) Event {
 	return &ProjectBuildStart{
-		&baseEvent{
-			Event: "Building project",
-		},
+		NewEvent("Building Project", serviceName),
 	}
 }
 
-// Represents a project build completing
+// ProjectBuildDone represents a project build completing
 type ProjectBuildDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project build done event
-func NewProjectBuildDoneEvent() Event {
+// NewProjectBuildDoneEvent creates a new project build done event
+func NewProjectBuildDoneEvent(serviceName string) Event {
 	return &ProjectBuildDone{
-		&baseEvent{
-			Event: "Project built",
-		},
+		NewEvent("Project Built", serviceName),
 	}
 }
 
-// Represents a project build failing
+// ProjectBuildFailed represents a project build failing
 type ProjectBuildFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new project build failed event
-func NewProjectBuildFailedEvent(err error) Event {
+// NewProjectBuildFailedEvent creates a new project build failed event
+func NewProjectBuildFailedEvent(serviceName string, err error) Event {
 	return &ProjectBuildFailed{
-		baseEvent: &baseEvent{
-			Event: "Project build failed",
-		},
-		err: err,
+		Event: NewEvent("Project Build Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a project creating
+// ProjectCreateStart represents a project creating
 type ProjectCreateStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project creating event
-func NewProjectCreateStartEvent() Event {
+// NewProjectCreateStartEvent creates a new project creating event
+func NewProjectCreateStartEvent(serviceName string) Event {
 	return &ProjectCreateStart{
-		&baseEvent{
-			Event: "Create project",
-		},
+		NewEvent("Creating Project", serviceName),
 	}
 }
 
-// Represents a project create completing
+// ProjectCreateDone represents a project create completing
 type ProjectCreateDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project create done event
-func NewProjectCreateDoneEvent() Event {
+// NewProjectCreateDoneEvent creates a new project create done event
+func NewProjectCreateDoneEvent(serviceName string) Event {
 	return &ProjectCreateDone{
-		&baseEvent{
-			Event: "Project created",
-		},
+		NewEvent("Project Created", serviceName),
 	}
 }
 
-// Represents a project create failing
+// ProjectCreateFailed represents a project create failing
 type ProjectCreateFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new project create failed event
-func NewProjectCreateFailedEvent(err error) Event {
+// NewProjectCreateFailedEvent creates a new project create failed event
+func NewProjectCreateFailedEvent(serviceName string, err error) Event {
 	return &ProjectCreateFailed{
-		baseEvent: &baseEvent{
-			Event: "Project create failed",
-		},
-		err: err,
+		Event: NewEvent("Project Create Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a project stop
+// ProjectStopStart represents a project stop
 type ProjectStopStart struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project stopping event
-func NewProjectStopStartEvent() Event {
+// NewProjectStopStartEvent creates a new project stopping event
+func NewProjectStopStartEvent(serviceName string) Event {
 	return &ProjectStopStart{
-		&baseEvent{
-			Event: "Stop project",
-		},
+		NewEvent("Stopping Project", serviceName),
 	}
 }
 
-// Represents a project stop completing
+// ProjectStopDone represents a project stop completing
 type ProjectStopDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project stop done event
-func NewProjectStopDoneEvent() Event {
+// NewProjectStopDoneEvent creates a new project stop done event
+func NewProjectStopDoneEvent(serviceName string) Event {
 	return &ProjectStopDone{
-		&baseEvent{
-			Event: "Project stopped",
-		},
+		NewEvent("Project Stopped", serviceName),
 	}
 }
 
-// Represents a project stop failing
+// ProjectStopFailed represents a project stop failing
 type ProjectStopFailed struct {
-	*baseEvent
+	Event
 	err error
 }
 
-// Creates a new project stop failed event
-func NewProjectStopFailedEvent(err error) Event {
+// NewProjectStopFailedEvent creates a new project stop failed event
+func NewProjectStopFailedEvent(serviceName string, err error) Event {
 	return &ProjectStopFailed{
-		baseEvent: &baseEvent{
-			Event: "Project stop failed",
-		},
-		err: err,
+		Event: NewEvent("Project Stop Failed", serviceName),
+		err:   err,
 	}
 }
 
-// Represents a project reload completing
+// ProjectReloadDone represents a project reload completing
 type ProjectReloadDone struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project reload done event
+// NewProjectReloadDoneEvent creates a new project reload done event
 func NewProjectReloadDoneEvent(serviceName string) Event {
 	return &ProjectReloadDone{
-		&baseEvent{
-			Event:       "Project reloaded",
-			ServiceName: serviceName,
-		},
+		NewEvent("Project Reloaded", serviceName),
 	}
 }
 
-// Represents a project reload triggered
+// ProjectReloadTriggered represents a project reload triggered
 type ProjectReloadTriggered struct {
-	*baseEvent
+	Event
 }
 
-// Creates a new project reload triggered event
+// NewProjectReloadTriggeredEvent creates a new project reload triggered event
 func NewProjectReloadTriggeredEvent(serviceName string) Event {
 	return &ProjectReloadTriggered{
-		baseEvent: &baseEvent{
-			Event:       "Project reloading",
-			ServiceName: serviceName,
-		},
+		NewEvent("Reloading Project", serviceName),
 	}
 }
 
-// Represents a container create
+// ContainerCreateStart represents a container create
 type ContainerCreateStart struct {
-	*baseEvent
+	Event
 	ContainerName string
 }
 
-// Creates a new container creating event
+// NewContainerCreateStartEvent creates a new container creating event
 func NewContainerCreateStartEvent(serviceName, containerName string) Event {
 	return &ContainerCreateStart{
-		baseEvent: &baseEvent{
-			Event:       "Creating container",
-			ServiceName: serviceName,
-		},
+		Event:         NewEvent("Creating Container", serviceName),
 		ContainerName: containerName,
 	}
 }
 
-// Represents a container create completing
+// ContainerCreateDone represents a container create completing
 type ContainerCreateDone struct {
-	*baseEvent
+	Event
 	ContainerName string
 }
 
-// Creates a new container create done event
+// NewContainerCreateDoneEvent creates a new container create done event
 func NewContainerCreateDoneEvent(serviceName, containerName string) Event {
 	return &ContainerCreateDone{
-		baseEvent: &baseEvent{
-			Event:       "Container created",
-			ServiceName: serviceName,
-		},
+		Event:         NewEvent("Container Created", serviceName),
 		ContainerName: containerName,
 	}
 }
 
-// Represents a container create failing
+// ContainerCreateFailed represents a container create failing
 type ContainerCreateFailed struct {
-	*baseEvent
+	Event
 	err           error
 	ContainerName string
 }
 
-// Creates a new container create failed event
+// NewContainerCreateFailedEvent creates a new container create failed event
 func NewContainerCreateFailedEvent(serviceName, containerName string, err error) Event {
 	return &ContainerCreateFailed{
-		baseEvent: &baseEvent{
-			Event:       "Container create failed",
-			ServiceName: serviceName,
-		},
+		Event:         NewEvent("Container Create Failed", serviceName),
 		err:           err,
 		ContainerName: containerName,
 	}
 }
 
-// Represents a container start
+// ContainerStartStart represents a container start
 type ContainerStartStart struct {
-	*baseEvent
+	Event
 	ContainerName string
 }
 
-// Creates a new container starting event
+// NewContainerStartStartEvent creates a new container starting event
 func NewContainerStartStartEvent(serviceName, containerName string) Event {
 	return &ContainerStartStart{
-		baseEvent: &baseEvent{
-			Event:       "Starting container",
-			ServiceName: serviceName,
-		},
+		Event:         NewEvent("Container Starting", serviceName),
 		ContainerName: containerName,
 	}
 }
 
-// Represents a container start completing
+// ContainerStartDone represents a container start completing
 type ContainerStartDone struct {
-	*baseEvent
+	Event
 	ContainerName string
 }
 
-// Creates a new container start done event
+// NewContainerStartDoneEvent creates a new container start done event
 func NewContainerStartDoneEvent(serviceName, containerName string) Event {
 	return &ContainerStartDone{
-		baseEvent: &baseEvent{
-			Event:       "Container started",
-			ServiceName: serviceName,
-		},
+		Event:         NewEvent("Container Started", serviceName),
 		ContainerName: containerName,
 	}
 }
 
-// Represents a container start failing
+// ContainerStartFailed represents a container start failing
 type ContainerStartFailed struct {
-	*baseEvent
+	Event
 	err           error
 	ContainerName string
 }
 
-// Creates a new container start failed event
+// NewContainerStartFailedEvent creates a new container start failed event
 func NewContainerStartFailedEvent(serviceName, containerName string, err error) Event {
 	return &ContainerStartFailed{
-		baseEvent: &baseEvent{
-			Event:       "Container start failed",
-			ServiceName: serviceName,
-		},
+		Event:         NewEvent("Container Start Failed", serviceName),
 		err:           err,
 		ContainerName: containerName,
 	}

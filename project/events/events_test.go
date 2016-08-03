@@ -13,7 +13,7 @@ const (
 )
 
 var (
-	testErr = errors.New("test error")
+	errTest = errors.New("test error")
 )
 
 func TestNewEvent(t *testing.T) {
@@ -23,39 +23,6 @@ func TestNewEvent(t *testing.T) {
 }
 
 func TestEventWrapper(t *testing.T) {
-	startedEvent := NewEvent("started", serviceName)
-	startedFunc := func() Event {
-		return startedEvent
-	}
-	doneEvent := NewEvent("done", serviceName)
-	doneFunc := func() Event {
-		return doneEvent
-	}
-	var failedErr error
-	failedEvent := NewEvent("failed", serviceName)
-	failedFunc := func(err error) Event {
-		failedErr = err
-		return failedEvent
-	}
-	eventWrapper := NewEventWrapper(action, startedFunc, doneFunc, failedFunc)
-	assert.Equal(t, action, eventWrapper.Action())
-
-	assert.Equal(t, startedEvent, eventWrapper.Started())
-	assert.Equal(t, doneEvent, eventWrapper.Done())
-	assert.Equal(t, failedEvent, eventWrapper.Failed(testErr))
-	assert.Equal(t, testErr, failedErr)
-}
-
-func TestEventWrapperNil(t *testing.T) {
-	eventWrapper := NewEventWrapper(action, nil, nil, nil)
-	assert.Equal(t, action, eventWrapper.Action())
-
-	assert.Nil(t, eventWrapper.Started())
-	assert.Nil(t, eventWrapper.Done())
-	assert.Nil(t, eventWrapper.Failed(testErr))
-}
-
-func TestServiceEventWrapper(t *testing.T) {
 	startedFunc := func(s string) Event {
 		return NewEvent("started", s)
 	}
@@ -69,7 +36,7 @@ func TestServiceEventWrapper(t *testing.T) {
 		return NewEvent("failed", s)
 	}
 
-	eventWrapper := NewServiceEventWrapper(action, startedFunc, doneFunc, failedFunc)
+	eventWrapper := NewEventWrapper(action, startedFunc, doneFunc, failedFunc)
 	assert.Equal(t, action, eventWrapper.Action())
 
 	e1 := eventWrapper.Started(serviceName)
@@ -80,35 +47,26 @@ func TestServiceEventWrapper(t *testing.T) {
 	assert.Equal(t, "done", e2.String())
 	assert.Equal(t, serviceName, e2.Service())
 
-	e3 := eventWrapper.Failed(serviceName, testErr)
+	e3 := eventWrapper.Failed(serviceName, errTest)
 	assert.Equal(t, "failed", e3.String())
 	assert.Equal(t, serviceName, e3.Service())
-	assert.Equal(t, testErr, failedErr)
+	assert.Equal(t, errTest, failedErr)
 }
 
-func TestServiceEventWrapperNil(t *testing.T) {
-	eventWrapper := NewServiceEventWrapper(action, nil, nil, nil)
+func TestEventWrapperNil(t *testing.T) {
+	eventWrapper := NewEventWrapper(action, nil, nil, nil)
 	assert.Equal(t, action, eventWrapper.Action())
 
 	assert.Nil(t, eventWrapper.Started(serviceName))
 	assert.Nil(t, eventWrapper.Done(serviceName))
-	assert.Nil(t, eventWrapper.Failed(serviceName, testErr))
+	assert.Nil(t, eventWrapper.Failed(serviceName, errTest))
 }
 
 func TestDummyEventWrapper(t *testing.T) {
 	eventWrapper := NewDummyEventWrapper(action)
 	assert.Equal(t, action, eventWrapper.Action())
 
-	assert.Nil(t, eventWrapper.Started())
-	assert.Nil(t, eventWrapper.Done())
-	assert.Nil(t, eventWrapper.Failed(testErr))
-}
-
-func TestDummyServiceEventWrapper(t *testing.T) {
-	eventWrapper := NewDummyServiceEventWrapper(action)
-	assert.Equal(t, action, eventWrapper.Action())
-
 	assert.Nil(t, eventWrapper.Started(serviceName))
 	assert.Nil(t, eventWrapper.Done(serviceName))
-	assert.Nil(t, eventWrapper.Failed(serviceName, testErr))
+	assert.Nil(t, eventWrapper.Failed(serviceName, errTest))
 }

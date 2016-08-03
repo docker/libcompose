@@ -83,7 +83,7 @@ func (s *serviceWrapper) waitForDeps(wrappers map[string]*serviceWrapper) bool {
 	return true
 }
 
-func (s *serviceWrapper) Do(wrappers map[string]*serviceWrapper, eventWrapper events.ServiceEventWrapper, action func(service Service) error) {
+func (s *serviceWrapper) Do(wrappers map[string]*serviceWrapper, eventWrapper events.EventWrapper, action func(service Service) error) {
 	defer s.done.Done()
 
 	if s.state == StateExecuted {
