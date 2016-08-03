@@ -56,13 +56,15 @@ func (s *Service) createContainer(ctx context.Context, namer Namer, oldContainer
 
 	logrus.Debugf("Creating container %s %#v", containerName, configWrapper)
 	// FIXME(vdemeester): long-term will be container.Create(…)
+	s.project.Notify(events.NewContainerCreateStartEvent(s.name, containerName))
+
 	container, err := CreateContainer(ctx, client, containerName, configWrapper)
 	if err != nil {
+		s.project.Notify(events.NewContainerCreateFailedEvent(s.name, containerName, err))
 		return nil, err
 	}
-	s.project.Notify(events.ContainerCreated, s.name, map[string]string{
-		"name": containerName,
-	})
+	s.project.Notify(events.NewContainerCreateDoneEvent(s.name, containerName))
+
 	return container, nil
 }
 

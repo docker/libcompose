@@ -347,12 +347,14 @@ func (s *Service) up(ctx context.Context, imageName string, create bool, options
 			return err
 		}
 
+		s.project.Notify(events.NewContainerStartStartEvent(s.name, c.Name()))
+
 		err = c.Start(ctx)
 
 		if err == nil {
-			s.project.Notify(events.ContainerStarted, s.name, map[string]string{
-				"name": c.Name(),
-			})
+			s.project.Notify(events.NewContainerStartDoneEvent(s.name, c.Name()))
+		} else {
+			s.project.Notify(events.NewContainerStartFailedEvent(s.name, c.Name(), err))
 		}
 
 		return err
@@ -682,8 +684,7 @@ func (s *Service) Events(ctx context.Context, evts chan events.ContainerEvent) e
 			attributes[attr] = m.Actor.Attributes[attr]
 		}
 		e := events.ContainerEvent{
-			Service:    service,
-			Event:      m.Action,
+			Event:      events.NewEvent(service, m.Action),
 			Type:       m.Type,
 			ID:         m.Actor.ID,
 			Time:       time.Unix(m.Time, 0),
