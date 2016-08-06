@@ -26,7 +26,29 @@ func TestParseBindsAndVolumes(t *testing.T) {
 	abs, err := filepath.Abs(".")
 	assert.Nil(t, err)
 	cfg, hostCfg, err := Convert(&config.ServiceConfig{
-		Volumes: []string{"/foo", "/home:/home", "/bar/baz", ".:/home", "/usr/lib:/usr/lib:ro"},
+		Volumes: &yaml.Volumes{
+			Volumes: []*yaml.Volume{
+				{
+					Destination: "/foo",
+				},
+				{
+					Source:      "/home",
+					Destination: "/home",
+				},
+				{
+					Destination: "/bar/baz",
+				},
+				{
+					Source:      ".",
+					Destination: "/home",
+				},
+				{
+					Source:      "/usr/lib",
+					Destination: "/usr/lib",
+					AccessMode:  "ro",
+				},
+			},
+		},
 	}, ctx.Context, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, map[string]struct{}{"/foo": {}, "/bar/baz": {}}, cfg.Volumes)

@@ -167,6 +167,15 @@ func (s *CliSuite) GetContainerByName(c *C, name string) *types.ContainerJSON {
 	return container
 }
 
+func (s *CliSuite) GetVolumeByName(c *C, name string) *types.Volume {
+	client := GetClient(c)
+	volume, err := client.VolumeInspect(context.Background(), name)
+
+	c.Assert(err, IsNil)
+
+	return &volume
+}
+
 func (s *CliSuite) GetContainersByProject(c *C, project string) []types.Container {
 	client := GetClient(c)
 	containers, err := docker.GetContainersByFilter(context.Background(), client, labels.PROJECT.Eq(project))

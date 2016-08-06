@@ -31,6 +31,7 @@ type Project struct {
 
 	runtime       RuntimeProject
 	networks      Networks
+	volumes       Volumes
 	configVersion string
 	context       *Context
 	reload        []string
@@ -205,6 +206,31 @@ func (p *Project) load(file string, bytes []byte) error {
 	}
 
 	// Update network configuration a little bit
+	p.handleNetworkConfig()
+	p.handleVolumeConfig()
+
+	if p.context.NetworksFactory != nil {
+		networks, err := p.context.NetworksFactory.Create(p.Name, p.NetworkConfigs, p.ServiceConfigs, p.isNetworkEnabled())
+		if err != nil {
+			return err
+		}
+
+		p.networks = networks
+	}
+
+	if p.context.VolumesFactory != nil {
+		volumes, err := p.context.VolumesFactory.Create(p.Name, p.VolumeConfigs, p.ServiceConfigs, p.isVolumeEnabled())
+		if err != nil {
+			return err
+		}
+
+		p.volumes = volumes
+	}
+
+	return nil
+}
+
+func (p *Project) handleNetworkConfig() {
 	if p.isNetworkEnabled() {
 		for _, serviceName := range p.ServiceConfigs.Keys() {
 			serviceConfig, _ := p.ServiceConfigs.Get(serviceName)
@@ -238,21 +264,44 @@ func (p *Project) load(file string, bytes []byte) error {
 			}
 		}
 	}
-
-	// FIXME(vdemeester) Not sure about this..
-	if p.context.NetworksFactory != nil {
-		networks, err := p.context.NetworksFactory.Create(p.Name, p.NetworkConfigs, p.ServiceConfigs, p.isNetworkEnabled())
-		if err != nil {
-			return err
-		}
-
-		p.networks = networks
-	}
-
-	return nil
 }
 
 func (p *Project) isNetworkEnabled() bool {
+	return p.configVersion == "2"
+}
+
+func (p *Project) handleVolumeConfig() {
+	if p.isVolumeEnabled() {
+		for _, serviceName := range p.ServiceConfigs.Keys() {
+			serviceConfig, _ := p.ServiceConfigs.Get(serviceName)
+			// Consolidate the name of the volume
+			// FIXME(vdemeester) probably shouldn't be there, maybe move that to interface/factory
+			if serviceConfig.Volumes == nil {
+				continue
+			}
+			for _, volume := range serviceConfig.Volumes.Volumes {
+				if !IsNamedVolume(volume.Source) {
+					continue
+				}
+
+				vol, ok := p.VolumeConfigs[volume.Source]
+				if !ok {
+					continue
+				}
+
+				if vol.External.External {
+					if vol.External.Name != "" {
+						volume.Source = vol.External.Name
+					}
+				} else {
+					volume.Source = p.Name + "_" + volume.Source
+				}
+			}
+		}
+	}
+}
+
+func (p *Project) isVolumeEnabled() bool {
 	return p.configVersion == "2"
 }
 
@@ -264,7 +313,11 @@ func (p *Project) initialize(ctx context.Context) error {
 			return err
 		}
 	}
-	// TODO Initialize volumes
+	if p.volumes != nil {
+		if err := p.volumes.Initialize(ctx); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -335,6 +388,16 @@ func (p *Project) Down(ctx context.Context, opts options.Down, services ...strin
 	}
 	if err := networks.Remove(ctx); err != nil {
 		return err
+	}
+
+	if opts.RemoveVolume {
+		volumes, err := p.context.VolumesFactory.Create(p.Name, p.VolumeConfigs, p.ServiceConfigs, p.isVolumeEnabled())
+		if err != nil {
+			return err
+		}
+		if err := volumes.Remove(ctx); err != nil {
+			return err
+		}
 	}
 
 	return p.forEach([]string{}, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
@@ -745,4 +808,9 @@ func (p *Project) Notify(eventType events.EventType, serviceName string, data ma
 	for _, l := range p.listeners {
 		l <- event
 	}
+}
+
+// IsNamedVolume returns whether the specified volume (string) is a named volume or not.
+func IsNamedVolume(volume string) bool {
+	return !strings.HasPrefix(volume, ".") && !strings.HasPrefix(volume, "/") && !strings.HasPrefix(volume, "~")
 }

@@ -46,14 +46,37 @@ func newTestConfig() TestConfig {
 					"io.rancher.os.createonly": "true",
 					"io.rancher.os.scope":      "system",
 				},
-				Volumes: []string{
-					"/dev:/host/dev",
-					"/var/lib/rancher/conf:/var/lib/rancher/conf",
-					"/etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt.rancher",
-					"/lib/modules:/lib/modules",
-					"/lib/firmware:/lib/firmware",
-					"/var/run:/var/run",
-					"/var/log:/var/log",
+				Volumes: &yamlTypes.Volumes{
+					Volumes: []*yamlTypes.Volume{
+						{
+							Source:      "/dev",
+							Destination: "/host/dev",
+						},
+						{
+							Source:      "/var/lib/rancher/conf",
+							Destination: "/var/lib/rancher/conf",
+						},
+						{
+							Source:      "/etc/ssl/certs/ca-certificates.crt",
+							Destination: "/etc/ssl/certs/ca-certificates.crt.rancher",
+						},
+						{
+							Source:      "/lib/modules",
+							Destination: "lib/modules",
+						},
+						{
+							Source:      "/lib/firmware",
+							Destination: "/lib/firmware",
+						},
+						{
+							Source:      "/var/run",
+							Destination: "/var/run",
+						},
+						{
+							Source:      "/var/log",
+							Destination: "/var/log",
+						},
+					},
 				},
 				Logging: Log{
 					Driver: "json-file",
