@@ -56,7 +56,7 @@ func (s *serviceWrapper) Ignore() {
 	defer s.done.Done()
 
 	s.state = StateExecuted
-	s.project.Notify(events.ServiceUpIgnored, s.service.Name(), nil)
+	s.project.Notify(events.NewServiceUpIgnoredEvent(s.service.Name()))
 }
 
 func (s *serviceWrapper) waitForDeps(wrappers map[string]*serviceWrapper) bool {
@@ -71,7 +71,7 @@ func (s *serviceWrapper) waitForDeps(wrappers map[string]*serviceWrapper) bool {
 
 		if wrapper, ok := wrappers[dep.Target]; ok {
 			if wrapper.Wait() == ErrRestart {
-				s.project.Notify(events.ProjectReload, wrapper.service.Name(), nil)
+				s.project.Notify(events.NewProjectReloadDoneEvent(wrapper.service.Name()))
 				s.err = ErrRestart
 				return false
 			}
@@ -83,7 +83,7 @@ func (s *serviceWrapper) waitForDeps(wrappers map[string]*serviceWrapper) bool {
 	return true
 }
 
-func (s *serviceWrapper) Do(wrappers map[string]*serviceWrapper, start, done events.EventType, action func(service Service) error) {
+func (s *serviceWrapper) Do(wrappers map[string]*serviceWrapper, eventWrapper events.EventWrapper, action func(service Service) error) {
 	defer s.done.Done()
 
 	if s.state == StateExecuted {
@@ -96,16 +96,17 @@ func (s *serviceWrapper) Do(wrappers map[string]*serviceWrapper, start, done eve
 
 	s.state = StateExecuted
 
-	s.project.Notify(start, s.service.Name(), nil)
+	s.project.Notify(eventWrapper.Started(s.service.Name()))
 
 	s.err = action(s.service)
 	if s.err == ErrRestart {
-		s.project.Notify(done, s.service.Name(), nil)
-		s.project.Notify(events.ProjectReloadTrigger, s.service.Name(), nil)
+		s.project.Notify(eventWrapper.Done(s.service.Name()))
+		s.project.Notify(events.NewProjectReloadTriggeredEvent(s.service.Name()))
 	} else if s.err != nil {
-		log.Errorf("Failed %s %s : %v", start, s.name, s.err)
+		log.Errorf("Failed %s %s : %v", eventWrapper.Action(), s.name, s.err)
+		s.project.Notify(eventWrapper.Failed(s.service.Name(), s.err))
 	} else {
-		s.project.Notify(done, s.service.Name(), nil)
+		s.project.Notify(eventWrapper.Done(s.service.Name()))
 	}
 }
 

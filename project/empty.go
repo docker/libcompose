@@ -133,7 +133,7 @@ func (e *EmptyNetworks) Initialize(ctx context.Context) error {
 	return nil
 }
 
-// Initialize implements Networks.Remove but does nothing.
+// Remove implements Networks.Remove but does nothing.
 func (e *EmptyNetworks) Remove(ctx context.Context) error {
 	return nil
 }

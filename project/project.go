@@ -146,7 +146,7 @@ func (p *Project) CreateService(name string) (Service, error) {
 
 // AddConfig adds the specified service config for the specified name.
 func (p *Project) AddConfig(name string, config *config.ServiceConfig) error {
-	p.Notify(events.ServiceAdd, name, nil)
+	p.Notify(events.NewServiceAddEvent(name))
 
 	p.ServiceConfigs.Add(name, config)
 	p.reload = append(p.reload, name)
@@ -156,14 +156,14 @@ func (p *Project) AddConfig(name string, config *config.ServiceConfig) error {
 
 // AddVolumeConfig adds the specified volume config for the specified name.
 func (p *Project) AddVolumeConfig(name string, config *config.VolumeConfig) error {
-	p.Notify(events.VolumeAdd, name, nil)
+	p.Notify(events.NewVolumeAddEvent(name, config.Driver))
 	p.VolumeConfigs[name] = config
 	return nil
 }
 
 // AddNetworkConfig adds the specified network config for the specified name.
 func (p *Project) AddNetworkConfig(name string, config *config.NetworkConfig) error {
-	p.Notify(events.NetworkAdd, name, nil)
+	p.Notify(events.NewNetworkAddEvent(name, config.Driver))
 	p.NetworkConfigs[name] = config
 	return nil
 }
@@ -335,8 +335,10 @@ func (p *Project) loadWrappers(wrappers map[string]*serviceWrapper, servicesToCo
 
 // Build builds the specified services (like docker build).
 func (p *Project) Build(ctx context.Context, buildOptions options.Build, services ...string) error {
-	return p.perform(events.ProjectBuildStart, events.ProjectBuildDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(wrappers, events.ServiceBuildStart, events.ServiceBuild, func(service Service) error {
+	eventWrapper := events.NewEventWrapper("Project Build", events.NewProjectBuildStartEvent, events.NewProjectBuildDoneEvent, events.NewProjectBuildFailedEvent)
+	return p.perform(eventWrapper, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		serviceEventWrapper := events.NewEventWrapper("Service Build", events.NewServiceBuildStartEvent, events.NewServiceBuildDoneEvent, events.NewServiceBuildFailedEvent)
+		wrapper.Do(wrappers, serviceEventWrapper, func(service Service) error {
 			return service.Build(ctx, buildOptions)
 		})
 	}), nil)
@@ -347,8 +349,10 @@ func (p *Project) Create(ctx context.Context, options options.Create, services .
 	if options.NoRecreate && options.ForceRecreate {
 		return fmt.Errorf("no-recreate and force-recreate cannot be combined")
 	}
-	return p.perform(events.ProjectCreateStart, events.ProjectCreateDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(wrappers, events.ServiceCreateStart, events.ServiceCreate, func(service Service) error {
+	eventWrapper := events.NewEventWrapper("Project Create", events.NewProjectCreateStartEvent, events.NewProjectCreateDoneEvent, events.NewProjectCreateFailedEvent)
+	return p.perform(eventWrapper, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		serviceEventWrapper := events.NewEventWrapper("Service Create", events.NewServiceCreateStartEvent, events.NewServiceCreateDoneEvent, events.NewServiceCreateFailedEvent)
+		wrapper.Do(wrappers, serviceEventWrapper, func(service Service) error {
 			return service.Create(ctx, options)
 		})
 	}), nil)
@@ -356,8 +360,10 @@ func (p *Project) Create(ctx context.Context, options options.Create, services .
 
 // Stop stops the specified services (like docker stop).
 func (p *Project) Stop(ctx context.Context, timeout int, services ...string) error {
-	return p.perform(events.ProjectStopStart, events.ProjectStopDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(nil, events.ServiceStopStart, events.ServiceStop, func(service Service) error {
+	eventWrapper := events.NewEventWrapper("Project Stop", events.NewProjectStopStartEvent, events.NewProjectStopDoneEvent, events.NewProjectStopFailedEvent)
+	return p.perform(eventWrapper, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		serviceEventWrapper := events.NewEventWrapper("Service Stop", events.NewServiceStopStartEvent, events.NewServiceStopDoneEvent, events.NewServiceStopFailedEvent)
+		wrapper.Do(nil, serviceEventWrapper, func(service Service) error {
 			return service.Stop(ctx, timeout)
 		})
 	}), nil)
@@ -368,45 +374,55 @@ func (p *Project) Down(ctx context.Context, opts options.Down, services ...strin
 	if !opts.RemoveImages.Valid() {
 		return fmt.Errorf("--rmi flag must be local, all or empty")
 	}
-	if err := p.Stop(ctx, 10, services...); err != nil {
-		return err
-	}
-	if opts.RemoveOrphans {
-		if err := p.runtime.RemoveOrphans(ctx, p.Name, p.ServiceConfigs); err != nil {
+	p.Notify(events.NewProjectDownStartEvent(""))
+	err := func() error {
+		if err := p.Stop(ctx, 10, services...); err != nil {
 			return err
 		}
-	}
-	if err := p.Delete(ctx, options.Delete{
-		RemoveVolume: opts.RemoveVolume,
-	}, services...); err != nil {
-		return err
-	}
+		if opts.RemoveOrphans {
+			if err := p.runtime.RemoveOrphans(ctx, p.Name, p.ServiceConfigs); err != nil {
+				return err
+			}
+		}
+		if err := p.Delete(ctx, options.Delete{
+			RemoveVolume: opts.RemoveVolume,
+		}, services...); err != nil {
+			return err
+		}
 
-	networks, err := p.context.NetworksFactory.Create(p.Name, p.NetworkConfigs, p.ServiceConfigs, p.isNetworkEnabled())
-	if err != nil {
-		return err
-	}
-	if err := networks.Remove(ctx); err != nil {
-		return err
-	}
-
-	if opts.RemoveVolume {
-		volumes, err := p.context.VolumesFactory.Create(p.Name, p.VolumeConfigs, p.ServiceConfigs, p.isVolumeEnabled())
+		networks, err := p.context.NetworksFactory.Create(p.Name, p.NetworkConfigs, p.ServiceConfigs, p.isNetworkEnabled())
 		if err != nil {
 			return err
 		}
-		if err := volumes.Remove(ctx); err != nil {
+		if err := networks.Remove(ctx); err != nil {
 			return err
 		}
-	}
 
-	return p.forEach([]string{}, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(wrappers, events.NoEvent, events.NoEvent, func(service Service) error {
-			return service.RemoveImage(ctx, opts.RemoveImages)
+		if opts.RemoveVolume {
+			volumes, err := p.context.VolumesFactory.Create(p.Name, p.VolumeConfigs, p.ServiceConfigs, p.isVolumeEnabled())
+			if err != nil {
+				return err
+			}
+			if err := volumes.Remove(ctx); err != nil {
+				return err
+			}
+		}
+
+		return p.forEach([]string{}, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+			serviceEventWrapper := events.NewEventWrapper("Service Down", events.NewServiceDownStartEvent, events.NewServiceDownDoneEvent, events.NewServiceDownFailedEvent)
+			wrapper.Do(wrappers, serviceEventWrapper, func(service Service) error {
+				return service.RemoveImage(ctx, opts.RemoveImages)
+			})
+		}), func(service Service) error {
+			return service.Create(ctx, options.Create{})
 		})
-	}), func(service Service) error {
-		return service.Create(ctx, options.Create{})
-	})
+	}()
+	if err != nil {
+		p.Notify(events.NewProjectDownFailedEvent("", err))
+	} else {
+		p.Notify(events.NewProjectDownDoneEvent(""))
+	}
+	return err
 }
 
 // RemoveOrphans implements project.RuntimeProject.RemoveOrphans.
@@ -417,8 +433,10 @@ func (p *Project) RemoveOrphans(ctx context.Context) error {
 
 // Restart restarts the specified services (like docker restart).
 func (p *Project) Restart(ctx context.Context, timeout int, services ...string) error {
-	return p.perform(events.ProjectRestartStart, events.ProjectRestartDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(wrappers, events.ServiceRestartStart, events.ServiceRestart, func(service Service) error {
+	eventWrapper := events.NewEventWrapper("Project Restart", events.NewProjectRestartStartEvent, events.NewProjectRestartDoneEvent, events.NewProjectRestartFailedEvent)
+	return p.perform(eventWrapper, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		serviceEventWrapper := events.NewEventWrapper("Service Restart", events.NewServiceRestartStartEvent, events.NewServiceRestartDoneEvent, events.NewServiceRestartFailedEvent)
+		wrapper.Do(wrappers, serviceEventWrapper, func(service Service) error {
 			return service.Restart(ctx, timeout)
 		})
 	}), nil)
@@ -464,8 +482,10 @@ func (p *Project) Ps(ctx context.Context, onlyID bool, services ...string) (Info
 
 // Start starts the specified services (like docker start).
 func (p *Project) Start(ctx context.Context, services ...string) error {
-	return p.perform(events.ProjectStartStart, events.ProjectStartDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(wrappers, events.ServiceStartStart, events.ServiceStart, func(service Service) error {
+	eventWrapper := events.NewEventWrapper("Project Start", events.NewProjectStartStartEvent, events.NewProjectStartDoneEvent, events.NewProjectStartFailedEvent)
+	return p.perform(eventWrapper, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		serviceEventWrapper := events.NewEventWrapper("Project Start", events.NewServiceStartStartEvent, events.NewServiceStartDoneEvent, events.NewServiceStartFailedEvent)
+		wrapper.Do(wrappers, serviceEventWrapper, func(service Service) error {
 			return service.Start(ctx)
 		})
 	}), nil)
@@ -482,7 +502,8 @@ func (p *Project) Run(ctx context.Context, serviceName string, commandParts []st
 	}
 	var exitCode int
 	err := p.forEach([]string{}, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(wrappers, events.ServiceRunStart, events.ServiceRun, func(service Service) error {
+		serviceEventWrapper := events.NewEventWrapper("Service Run", events.NewServiceRunStartEvent, events.NewServiceRunDoneEvent, events.NewServiceRunFailedEvent)
+		wrapper.Do(wrappers, serviceEventWrapper, func(service Service) error {
 			if service.Name() == serviceName {
 				code, err := service.Run(ctx, commandParts, opts)
 				exitCode = code
@@ -501,8 +522,10 @@ func (p *Project) Up(ctx context.Context, options options.Up, services ...string
 	if err := p.initialize(ctx); err != nil {
 		return err
 	}
-	return p.perform(events.ProjectUpStart, events.ProjectUpDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(wrappers, events.ServiceUpStart, events.ServiceUp, func(service Service) error {
+	eventWrapper := events.NewEventWrapper("Project Up", events.NewProjectUpStartEvent, events.NewProjectUpDoneEvent, events.NewProjectUpFailedEvent)
+	return p.perform(eventWrapper, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		serviceEventWrapper := events.NewEventWrapper("Service Up", events.NewServiceUpStartEvent, events.NewServiceUpDoneEvent, events.NewServiceUpFailedEvent)
+		wrapper.Do(wrappers, serviceEventWrapper, func(service Service) error {
 			return service.Up(ctx, options)
 		})
 	}), func(service Service) error {
@@ -513,7 +536,7 @@ func (p *Project) Up(ctx context.Context, options options.Up, services ...string
 // Log aggregates and prints out the logs for the specified services.
 func (p *Project) Log(ctx context.Context, follow bool, services ...string) error {
 	return p.forEach(services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(nil, events.NoEvent, events.NoEvent, func(service Service) error {
+		wrapper.Do(nil, events.NewDummyEventWrapper("Log"), func(service Service) error {
 			return service.Log(ctx, follow)
 		})
 	}), nil)
@@ -553,7 +576,8 @@ func (p *Project) Scale(ctx context.Context, timeout int, servicesScale map[stri
 // Pull pulls the specified services (like docker pull).
 func (p *Project) Pull(ctx context.Context, services ...string) error {
 	return p.forEach(services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(nil, events.ServicePullStart, events.ServicePull, func(service Service) error {
+		serviceEventWrapper := events.NewEventWrapper("Service Pull", events.NewServicePullStartEvent, events.NewServicePullDoneEvent, events.NewServicePullFailedEvent)
+		wrapper.Do(nil, serviceEventWrapper, func(service Service) error {
 			return service.Pull(ctx)
 		})
 	}), nil)
@@ -564,7 +588,7 @@ func (p *Project) Pull(ctx context.Context, services ...string) error {
 func (p *Project) Containers(ctx context.Context, filter Filter, services ...string) ([]string, error) {
 	containers := []string{}
 	err := p.forEach(services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(nil, events.NoEvent, events.NoEvent, func(service Service) error {
+		wrapper.Do(nil, events.NewDummyEventWrapper("Container List"), func(service Service) error {
 			serviceContainers, innerErr := service.Containers(ctx)
 			if innerErr != nil {
 				return innerErr
@@ -607,8 +631,10 @@ func (p *Project) Containers(ctx context.Context, filter Filter, services ...str
 
 // Delete removes the specified services (like docker rm).
 func (p *Project) Delete(ctx context.Context, options options.Delete, services ...string) error {
-	return p.perform(events.ProjectDeleteStart, events.ProjectDeleteDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(nil, events.ServiceDeleteStart, events.ServiceDelete, func(service Service) error {
+	eventWrapper := events.NewEventWrapper("Project Delete", events.NewProjectDeleteStartEvent, events.NewProjectDeleteDoneEvent, events.NewProjectDeleteFailedEvent)
+	return p.perform(eventWrapper, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		serviceEventWrapper := events.NewEventWrapper("Service Delete", events.NewServiceDeleteStartEvent, events.NewServiceDeleteDoneEvent, events.NewServiceDeleteFailedEvent)
+		wrapper.Do(nil, serviceEventWrapper, func(service Service) error {
 			return service.Delete(ctx, options)
 		})
 	}), nil)
@@ -616,8 +642,10 @@ func (p *Project) Delete(ctx context.Context, options options.Delete, services .
 
 // Kill kills the specified services (like docker kill).
 func (p *Project) Kill(ctx context.Context, signal string, services ...string) error {
-	return p.perform(events.ProjectKillStart, events.ProjectKillDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(nil, events.ServiceKillStart, events.ServiceKill, func(service Service) error {
+	eventWrapper := events.NewEventWrapper("Project Kill", events.NewProjectKillStartEvent, events.NewProjectKillDoneEvent, events.NewProjectKillFailedEvent)
+	return p.perform(eventWrapper, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		serviceEventWrapper := events.NewEventWrapper("Service Pull", events.NewServiceKillStartEvent, events.NewServiceKillDoneEvent, events.NewServiceKillFailedEvent)
+		wrapper.Do(nil, serviceEventWrapper, func(service Service) error {
 			return service.Kill(ctx, signal)
 		})
 	}), nil)
@@ -625,8 +653,10 @@ func (p *Project) Kill(ctx context.Context, signal string, services ...string) e
 
 // Pause pauses the specified services containers (like docker pause).
 func (p *Project) Pause(ctx context.Context, services ...string) error {
-	return p.perform(events.ProjectPauseStart, events.ProjectPauseDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(nil, events.ServicePauseStart, events.ServicePause, func(service Service) error {
+	eventWrapper := events.NewEventWrapper("Project Pause", events.NewProjectPauseStartEvent, events.NewProjectPauseDoneEvent, events.NewProjectPauseFailedEvent)
+	return p.perform(eventWrapper, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		serviceEventWrapper := events.NewEventWrapper("Service Pause", events.NewServicePauseStartEvent, events.NewServicePauseDoneEvent, events.NewServicePauseFailedEvent)
+		wrapper.Do(nil, serviceEventWrapper, func(service Service) error {
 			return service.Pause(ctx)
 		})
 	}), nil)
@@ -634,19 +664,25 @@ func (p *Project) Pause(ctx context.Context, services ...string) error {
 
 // Unpause pauses the specified services containers (like docker pause).
 func (p *Project) Unpause(ctx context.Context, services ...string) error {
-	return p.perform(events.ProjectUnpauseStart, events.ProjectUnpauseDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
-		wrapper.Do(nil, events.ServiceUnpauseStart, events.ServiceUnpause, func(service Service) error {
+	eventWrapper := events.NewEventWrapper("Project Pause", events.NewProjectUnpauseStartEvent, events.NewProjectUnpauseDoneEvent, events.NewProjectUnpauseFailedEvent)
+	return p.perform(eventWrapper, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		serviceEventWrapper := events.NewEventWrapper("Service Pause", events.NewServiceUnpauseStartEvent, events.NewServiceUnpauseDoneEvent, events.NewServiceUnpauseFailedEvent)
+		wrapper.Do(nil, serviceEventWrapper, func(service Service) error {
 			return service.Unpause(ctx)
 		})
 	}), nil)
 }
 
-func (p *Project) perform(start, done events.EventType, services []string, action wrapperAction, cycleAction serviceAction) error {
-	p.Notify(start, "", nil)
+func (p *Project) perform(eventWrapper events.EventWrapper, services []string, action wrapperAction, cycleAction serviceAction) error {
+	p.Notify(eventWrapper.Started(""))
 
 	err := p.forEach(services, action, cycleAction)
 
-	p.Notify(done, "", nil)
+	if err != nil {
+		p.Notify(eventWrapper.Done(""))
+	} else {
+		p.Notify(eventWrapper.Failed("", err))
+	}
 	return err
 }
 
@@ -792,17 +828,11 @@ func (p *Project) AddListener(c chan<- events.Event) {
 	}
 }
 
-// Notify notifies all project listener with the specified eventType, service name and datas.
+// Notify notifies all project listener with the specified event
 // This implements implicitly events.Notifier interface.
-func (p *Project) Notify(eventType events.EventType, serviceName string, data map[string]string) {
-	if eventType == events.NoEvent {
+func (p *Project) Notify(event events.Event) {
+	if event == nil {
 		return
-	}
-
-	event := events.Event{
-		EventType:   eventType,
-		ServiceName: serviceName,
-		Data:        data,
 	}
 
 	for _, l := range p.listeners {
