@@ -17,10 +17,10 @@ Built:        {{.BuildTime}}
 OS/Arch:      {{.Os}}/{{.Arch}}`
 
 // Version prints the libcompose version number and additionnal informations.
-func Version(c *cli.Context) {
+func Version(c *cli.Context) error {
 	if c.Bool("short") {
 		fmt.Println(version.VERSION)
-		return
+		return nil
 	}
 
 	tmpl, err := template.New("").Parse(versionTemplate)
@@ -48,5 +48,5 @@ func Version(c *cli.Context) {
 		logrus.Fatal(err)
 	}
 	fmt.Printf("\n")
-	return
+	return nil
 }
