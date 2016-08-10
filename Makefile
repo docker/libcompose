@@ -14,7 +14,8 @@ BIND_DIR := $(if $(DOCKER_HOST),,bundles)
 LIBCOMPOSE_MOUNT := $(if $(BIND_DIR),-v "$(CURDIR)/$(BIND_DIR):/go/src/github.com/docker/libcompose/$(BIND_DIR)")
 
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
-LIBCOMPOSE_IMAGE := libcompose-dev$(if $(GIT_BRANCH),:$(GIT_BRANCH))
+GIT_BRANCH_CLEAN := $(shell echo $(GIT_BRANCH) | sed -e "s/[^[:alnum:]]/-/g")
+LIBCOMPOSE_IMAGE := libcompose-dev$(if $(GIT_BRANCH_CLEAN),:$(GIT_BRANCH_CLEAN))
 
 DAEMON_VERSION := $(if $(DAEMON_VERSION),$(DAEMON_VERSION),"default")
 TTY := $(shell [ -t 0 ] && echo "-t")
