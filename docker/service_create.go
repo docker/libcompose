@@ -9,15 +9,16 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/types"
-	"github.com/docker/engine-api/types/container"
+	containertypes "github.com/docker/engine-api/types/container"
 	"github.com/docker/libcompose/config"
+	composecontainer "github.com/docker/libcompose/docker/container"
 	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/events"
 	util "github.com/docker/libcompose/utils"
 )
 
-func (s *Service) createContainer(ctx context.Context, namer Namer, oldContainer string, configOverride *config.ServiceConfig, oneOff bool) (*Container, error) {
+func (s *Service) createContainer(ctx context.Context, namer Namer, oldContainer string, configOverride *config.ServiceConfig, oneOff bool) (*composecontainer.Container, error) {
 	serviceConfig := s.serviceConfig
 	if configOverride != nil {
 		serviceConfig.Command = configOverride.Command
@@ -56,7 +57,7 @@ func (s *Service) createContainer(ctx context.Context, namer Namer, oldContainer
 
 	logrus.Debugf("Creating container %s %#v", containerName, configWrapper)
 	// FIXME(vdemeester): long-term will be container.Create(…)
-	container, err := CreateContainer(ctx, client, containerName, configWrapper)
+	container, err := composecontainer.Create(ctx, client, containerName, configWrapper.Config, configWrapper.HostConfig, configWrapper.NetworkingConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +67,7 @@ func (s *Service) createContainer(ctx context.Context, namer Namer, oldContainer
 	return container, nil
 }
 
-func (s *Service) populateAdditionalHostConfig(hostConfig *container.HostConfig) error {
+func (s *Service) populateAdditionalHostConfig(hostConfig *containertypes.HostConfig) error {
 	links, err := s.getLinks()
 	if err != nil {
 		return err
@@ -149,7 +150,7 @@ func addLinks(links map[string]string, service project.Service, rel project.Serv
 	}
 }
 
-func addIpc(config *container.HostConfig, service project.Service, containers []project.Container, ipc string) (*container.HostConfig, error) {
+func addIpc(config *containertypes.HostConfig, service project.Service, containers []project.Container, ipc string) (*containertypes.HostConfig, error) {
 	if len(containers) == 0 {
 		return nil, fmt.Errorf("Failed to find container for IPC %v", ipc)
 	}
@@ -159,11 +160,11 @@ func addIpc(config *container.HostConfig, service project.Service, containers []
 		return nil, err
 	}
 
-	config.IpcMode = container.IpcMode("container:" + id)
+	config.IpcMode = containertypes.IpcMode("container:" + id)
 	return config, nil
 }
 
-func addNetNs(config *container.HostConfig, service project.Service, containers []project.Container, networkMode string) (*container.HostConfig, error) {
+func addNetNs(config *containertypes.HostConfig, service project.Service, containers []project.Container, networkMode string) (*containertypes.HostConfig, error) {
 	if len(containers) == 0 {
 		return nil, fmt.Errorf("Failed to find container for networks ns %v", networkMode)
 	}
@@ -173,7 +174,7 @@ func addNetNs(config *container.HostConfig, service project.Service, containers 
 		return nil, err
 	}
 
-	config.NetworkMode = container.NetworkMode("container:" + id)
+	config.NetworkMode = containertypes.NetworkMode("container:" + id)
 	return config, nil
 }
 

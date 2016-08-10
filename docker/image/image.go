@@ -1,4 +1,4 @@
-package docker
+package image
 
 import (
 	"encoding/base64"
@@ -16,20 +16,27 @@ import (
 	"github.com/docker/docker/registry"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
+	"github.com/docker/libcompose/docker/auth"
 )
 
-func inspectImage(ctx context.Context, client client.APIClient, image string) (types.ImageInspect, error) {
+// InspectImage inspect the specified image (can be a name, an id or a digest)
+// with the specified client.
+func InspectImage(ctx context.Context, client client.ImageAPIClient, image string) (types.ImageInspect, error) {
 	imageInspect, _, err := client.ImageInspectWithRaw(ctx, image, false)
 	return imageInspect, err
 }
 
-func removeImage(ctx context.Context, client client.APIClient, image string) error {
+// RemoveImage removes the specified image (can be a name, an id or a digest)
+// from the daemon store with the specified client.
+func RemoveImage(ctx context.Context, client client.ImageAPIClient, image string) error {
 	_, err := client.ImageRemove(ctx, image, types.ImageRemoveOptions{})
 	return err
 }
 
-func pullImage(ctx context.Context, client client.APIClient, service *Service, image string) error {
-	fmt.Fprintf(os.Stderr, "Pulling %s (%s)...\n", service.name, image)
+// PullImage pulls the specified image (can be a name, an id or a digest)
+// to the daemon store with the specified client.
+func PullImage(ctx context.Context, client client.ImageAPIClient, serviceName string, authLookup auth.Lookup, image string) error {
+	fmt.Fprintf(os.Stderr, "Pulling %s (%s)...\n", serviceName, image)
 	distributionRef, err := reference.ParseNamed(image)
 	if err != nil {
 		return err
@@ -40,8 +47,9 @@ func pullImage(ctx context.Context, client client.APIClient, service *Service, i
 		return err
 	}
 
-	authConfig := service.authLookup.Lookup(repoInfo)
+	authConfig := authLookup.Lookup(repoInfo)
 
+	// Use ConfigFile.SaveToWriter to not re-define encodeAuthToBase64
 	encodedAuth, err := encodeAuthToBase64(authConfig)
 	if err != nil {
 		return err

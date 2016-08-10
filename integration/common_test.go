@@ -14,8 +14,8 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
-	"github.com/docker/libcompose/docker"
 	lclient "github.com/docker/libcompose/docker/client"
+	"github.com/docker/libcompose/docker/container"
 	"github.com/docker/libcompose/labels"
 
 	. "gopkg.in/check.v1"
@@ -160,7 +160,7 @@ func GetClient(c *C) client.APIClient {
 
 func (s *CliSuite) GetContainerByName(c *C, name string) *types.ContainerJSON {
 	client := GetClient(c)
-	container, err := docker.GetContainer(context.Background(), client, name)
+	container, err := container.Get(context.Background(), client, name)
 
 	c.Assert(err, IsNil)
 
@@ -178,7 +178,7 @@ func (s *CliSuite) GetVolumeByName(c *C, name string) *types.Volume {
 
 func (s *CliSuite) GetContainersByProject(c *C, project string) []types.Container {
 	client := GetClient(c)
-	containers, err := docker.GetContainersByFilter(context.Background(), client, labels.PROJECT.Eq(project))
+	containers, err := container.ListByFilter(context.Background(), client, labels.PROJECT.Eq(project))
 
 	c.Assert(err, IsNil)
 

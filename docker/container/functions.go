@@ -1,4 +1,4 @@
-package docker
+package container
 
 import (
 	"golang.org/x/net/context"
@@ -8,9 +8,9 @@ import (
 	"github.com/docker/engine-api/types/filters"
 )
 
-// GetContainersByFilter looks up the hosts containers with the specified filters and
+// ListByFilter looks up the hosts containers with the specified filters and
 // returns a list of container matching it, or an error.
-func GetContainersByFilter(ctx context.Context, clientInstance client.APIClient, containerFilters ...map[string][]string) ([]types.Container, error) {
+func ListByFilter(ctx context.Context, clientInstance client.ContainerAPIClient, containerFilters ...map[string][]string) ([]types.Container, error) {
 	filterArgs := filters.NewArgs()
 
 	// FIXME(vdemeester) I don't like 3 for loops >_<
@@ -28,9 +28,9 @@ func GetContainersByFilter(ctx context.Context, clientInstance client.APIClient,
 	})
 }
 
-// GetContainer looks up the hosts containers with the specified ID
+// Get looks up the hosts containers with the specified ID
 // or name and returns it, or an error.
-func GetContainer(ctx context.Context, clientInstance client.APIClient, id string) (*types.ContainerJSON, error) {
+func Get(ctx context.Context, clientInstance client.ContainerAPIClient, id string) (*types.ContainerJSON, error) {
 	container, err := clientInstance.ContainerInspect(ctx, id)
 	if err != nil {
 		if client.IsErrContainerNotFound(err) {

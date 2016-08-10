@@ -14,6 +14,7 @@ import (
 	"github.com/docker/go-units"
 	"github.com/docker/libcompose/config"
 	composeclient "github.com/docker/libcompose/docker/client"
+	composecontainer "github.com/docker/libcompose/docker/container"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
 	// "github.com/docker/libcompose/yaml"
@@ -222,7 +223,7 @@ func Convert(c *config.ServiceConfig, ctx project.Context, clientFactory compose
 		case strings.HasPrefix(c.NetworkMode, "container:"):
 			containerName := c.NetworkMode[10:]
 			client := clientFactory.Create(nil)
-			container, err := GetContainer(context.Background(), client, containerName)
+			container, err := composecontainer.Get(context.Background(), client, containerName)
 			if err != nil {
 				return nil, nil, err
 			}

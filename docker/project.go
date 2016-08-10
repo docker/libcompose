@@ -10,6 +10,7 @@ import (
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/filters"
 	"github.com/docker/libcompose/config"
+	"github.com/docker/libcompose/docker/auth"
 	"github.com/docker/libcompose/docker/client"
 	"github.com/docker/libcompose/docker/network"
 	"github.com/docker/libcompose/docker/volume"
@@ -43,7 +44,7 @@ func NewProject(context *Context, parseOptions *config.ParseOptions) (project.AP
 	}
 
 	if context.AuthLookup == nil {
-		context.AuthLookup = NewConfigAuthLookup(context)
+		context.AuthLookup = auth.NewConfigLookup(context.ConfigFile)
 	}
 
 	if context.ServiceFactory == nil {

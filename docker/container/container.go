@@ -1,4 +1,4 @@
-package docker
+package container
 
 import (
 	"fmt"
@@ -17,6 +17,7 @@ import (
 	"github.com/docker/docker/pkg/term"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
+	"github.com/docker/engine-api/types/container"
 	"github.com/docker/engine-api/types/network"
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/config"
@@ -27,15 +28,14 @@ import (
 
 // Container holds information about a docker container and the service it is tied on.
 type Container struct {
-	// FIXME(vdemeester) Replace with ContainerClient with engine-api vendor update
-	client    client.APIClient
+	client    client.ContainerAPIClient
 	id        string
 	container *types.ContainerJSON
 }
 
-// CreateContainer creates a container and return a Container struct (and an error if any)
-func CreateContainer(ctx context.Context, client client.APIClient, name string, configWrapper *ConfigWrapper) (*Container, error) {
-	container, err := client.ContainerCreate(ctx, configWrapper.Config, configWrapper.HostConfig, configWrapper.NetworkingConfig, name)
+// Create creates a container and return a Container struct (and an error if any)
+func Create(ctx context.Context, client client.ContainerAPIClient, name string, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) (*Container, error) {
+	container, err := client.ContainerCreate(ctx, config, hostConfig, networkingConfig, name)
 	if err != nil {
 		return nil, err
 	}
@@ -43,8 +43,8 @@ func CreateContainer(ctx context.Context, client client.APIClient, name string, 
 }
 
 // New creates a container struct with the specified client, id and name
-func New(ctx context.Context, client client.APIClient, id string) (*Container, error) {
-	container, err := GetContainer(ctx, client, id)
+func New(ctx context.Context, client client.ContainerAPIClient, id string) (*Container, error) {
+	container, err := Get(ctx, client, id)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func New(ctx context.Context, client client.APIClient, id string) (*Container, e
 }
 
 // NewInspected creates a container struct from an inspected container
-func NewInspected(client client.APIClient, container *types.ContainerJSON) *Container {
+func NewInspected(client client.ContainerAPIClient, container *types.ContainerJSON) *Container {
 	return &Container{
 		client:    client,
 		id:        container.ID,
@@ -66,7 +66,7 @@ func NewInspected(client client.APIClient, container *types.ContainerJSON) *Cont
 
 // Info returns info about the container, like name, command, state or ports.
 func (c *Container) Info(ctx context.Context, qFlag bool) (project.Info, error) {
-	infos, err := GetContainersByFilter(ctx, c.client, map[string][]string{
+	infos, err := ListByFilter(ctx, c.client, map[string][]string{
 		"name": {c.container.Name},
 	})
 	if err != nil || len(infos) == 0 {
@@ -157,7 +157,7 @@ func (c *Container) Unpause(ctx context.Context) error {
 }
 
 func (c *Container) updateInnerContainer(ctx context.Context) error {
-	container, err := GetContainer(ctx, c.client, c.container.ID)
+	container, err := Get(ctx, c.client, c.container.ID)
 	if err != nil {
 		return err
 	}

@@ -3,6 +3,7 @@ package docker
 import (
 	"github.com/docker/docker/cliconfig"
 	"github.com/docker/docker/cliconfig/configfile"
+	"github.com/docker/libcompose/docker/auth"
 	"github.com/docker/libcompose/docker/client"
 	"github.com/docker/libcompose/project"
 )
@@ -14,7 +15,7 @@ type Context struct {
 	ClientFactory client.Factory
 	ConfigDir     string
 	ConfigFile    *configfile.ConfigFile
-	AuthLookup    AuthLookup
+	AuthLookup    auth.Lookup
 }
 
 func (c *Context) open() error {
