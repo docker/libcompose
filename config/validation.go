@@ -189,7 +189,7 @@ func invalidTypeMessage(service, key string, err gojsonschema.ResultError) strin
 }
 
 func validate(serviceMap RawServiceMap) error {
-	if err := setupSchemaLoaders(); err != nil {
+	if err := setupSchemaLoaders(schemaV1); err != nil {
 		return err
 	}
 
@@ -261,7 +261,7 @@ func validate(serviceMap RawServiceMap) error {
 }
 
 func validateServiceConstraints(service RawService, serviceName string) error {
-	if err := setupSchemaLoaders(); err != nil {
+	if err := setupSchemaLoaders(schemaV1); err != nil {
 		return err
 	}
 
@@ -293,6 +293,43 @@ func validateServiceConstraints(service RawService, serviceName string) error {
 			}
 		}
 
+		return fmt.Errorf(strings.Join(validationErrors, "\n"))
+	}
+
+	return nil
+}
+
+func validateServiceConstraintsv2(service RawService, serviceName string) error {
+	if err := setupSchemaLoaders(schemaV2); err != nil {
+		return err
+	}
+
+	service = convertServiceKeysToStrings(service)
+
+	var validationErrors []string
+
+	dataLoader := gojsonschema.NewGoLoader(service)
+
+	result, err := gojsonschema.Validate(constraintSchemaLoader, dataLoader)
+	if err != nil {
+		return err
+	}
+
+	if !result.Valid() {
+		for _, err := range result.Errors() {
+			if err.Type() == "required" {
+				_, containsImage := service["image"]
+				_, containsBuild := service["build"]
+
+				if containsBuild || !containsImage && !containsBuild {
+					validationErrors = append(validationErrors, fmt.Sprintf("Service '%s' has neither an image nor a build context specified. At least one must be provided.", serviceName))
+				}
+			} else if err.Type() == "number_any_of" {
+				for k := range err.Value().(map[string]interface{}) {
+					validationErrors = append(validationErrors, fmt.Sprintf("Unsupported config option for services.%s: '%s'", serviceName, k))
+				}
+			}
+		}
 		return fmt.Errorf(strings.Join(validationErrors, "\n"))
 	}
 
