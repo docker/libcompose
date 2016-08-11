@@ -174,7 +174,7 @@ func ProjectUp(p project.APIProject, c *cli.Context) error {
 
 // ProjectRun runs a given command within a service's container.
 func ProjectRun(p project.APIProject, c *cli.Context) error {
-	if len(c.Args()) == 1 {
+	if len(c.Args()) == 0 {
 		logrus.Fatal("No service specified")
 	}
 
