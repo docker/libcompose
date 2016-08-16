@@ -577,6 +577,9 @@ func (s *Service) Log(ctx context.Context, follow bool) error {
 			return err
 		}
 		name := fmt.Sprintf("%s_%d", s.name, containerNumber)
+		if s.Config().ContainerName != "" {
+			name = s.Config().ContainerName
+		}
 		l := s.context.LoggerFactory.CreateContainerLogger(name)
 		return c.Log(ctx, l, follow)
 	})
