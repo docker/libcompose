@@ -76,12 +76,12 @@ func (c *Container) Info(ctx context.Context, qFlag bool) (project.Info, error) 
 
 	result := project.Info{}
 	if qFlag {
-		result = append(result, project.InfoPart{Key: "Id", Value: c.container.ID})
+		result["Id"] = c.container.ID
 	} else {
-		result = append(result, project.InfoPart{Key: "Name", Value: name(info.Names)})
-		result = append(result, project.InfoPart{Key: "Command", Value: info.Command})
-		result = append(result, project.InfoPart{Key: "State", Value: info.Status})
-		result = append(result, project.InfoPart{Key: "Ports", Value: portString(info.Ports)})
+		result["Name"] = name(info.Names)
+		result["Command"] = info.Command
+		result["State"] = info.Status
+		result["Ports"] = portString(info.Ports)
 	}
 
 	return result, nil
