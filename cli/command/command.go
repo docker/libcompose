@@ -45,6 +45,15 @@ func CreateCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// ConfigCommand defines the libcompose config subcommand
+func ConfigCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "config",
+		Usage:  "Validate and view the compose file.",
+		Action: app.WithProject(factory, app.ProjectConfig),
+	}
+}
+
 // BuildCommand defines the libcompose build subcommand.
 func BuildCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{

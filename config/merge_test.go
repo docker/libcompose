@@ -58,15 +58,16 @@ services:
 		child := config["child"]
 
 		if parent.Image != "foo" {
-			t.Fatal("Invalid image", parent.Image)
+			t.Fatal("Invalid parent image", parent.Image)
 		}
 
+		t.Logf("%#v", config["child"])
 		if child.Build.Context != "" {
-			t.Fatal("Invalid build", child.Build)
+			t.Fatalf("Invalid build %#v", child.Build)
 		}
 
 		if child.Image != "foo" {
-			t.Fatal("Invalid image", child.Image)
+			t.Fatal("Invalid child image", child.Image)
 		}
 	}
 }
