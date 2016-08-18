@@ -32,6 +32,7 @@ func BeforeApp(c *cli.Context) error {
 	if c.GlobalBool("verbose") {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
+
 	if version.ShowWarning() {
 		logrus.Warning("Note: This is an experimental alternate implementation of the Compose CLI (https://github.com/docker/compose)")
 	}
@@ -52,11 +53,15 @@ func WithProject(factory ProjectFactory, action ProjectAction) func(context *cli
 // ProjectPs lists the containers.
 func ProjectPs(p project.APIProject, c *cli.Context) error {
 	qFlag := c.Bool("q")
-	allInfo, err := p.Ps(context.Background(), qFlag, c.Args()...)
+	allInfo, err := p.Ps(context.Background(), c.Args()...)
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
-	os.Stdout.WriteString(allInfo.String(!qFlag))
+	columns := []string{"Name", "Command", "State", "Ports"}
+	if qFlag {
+		columns = []string{"Id"}
+	}
+	os.Stdout.WriteString(allInfo.String(columns, !qFlag))
 	return nil
 }
 

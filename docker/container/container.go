@@ -65,7 +65,7 @@ func NewInspected(client client.ContainerAPIClient, container *types.ContainerJS
 }
 
 // Info returns info about the container, like name, command, state or ports.
-func (c *Container) Info(ctx context.Context, qFlag bool) (project.Info, error) {
+func (c *Container) Info(ctx context.Context) (project.Info, error) {
 	infos, err := ListByFilter(ctx, c.client, map[string][]string{
 		"name": {c.container.Name},
 	})
@@ -75,14 +75,11 @@ func (c *Container) Info(ctx context.Context, qFlag bool) (project.Info, error) 
 	info := infos[0]
 
 	result := project.Info{}
-	if qFlag {
-		result["Id"] = c.container.ID
-	} else {
-		result["Name"] = name(info.Names)
-		result["Command"] = info.Command
-		result["State"] = info.Status
-		result["Ports"] = portString(info.Ports)
-	}
+	result["Id"] = c.container.ID
+	result["Name"] = name(info.Names)
+	result["Command"] = info.Command
+	result["State"] = info.Status
+	result["Ports"] = portString(info.Ports)
 
 	return result, nil
 }

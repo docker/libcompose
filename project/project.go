@@ -444,7 +444,7 @@ func (p *Project) Port(ctx context.Context, index int, protocol, serviceName, pr
 }
 
 // Ps list containers for the specified services.
-func (p *Project) Ps(ctx context.Context, onlyID bool, services ...string) (InfoSet, error) {
+func (p *Project) Ps(ctx context.Context, services ...string) (InfoSet, error) {
 	allInfo := InfoSet{}
 	for _, name := range p.ServiceConfigs.Keys() {
 		service, err := p.CreateService(name)
@@ -452,7 +452,7 @@ func (p *Project) Ps(ctx context.Context, onlyID bool, services ...string) (Info
 			return nil, err
 		}
 
-		info, err := service.Info(ctx, onlyID)
+		info, err := service.Info(ctx)
 		if err != nil {
 			return nil, err
 		}

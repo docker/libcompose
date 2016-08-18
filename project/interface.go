@@ -21,7 +21,7 @@ type APIProject interface {
 	Kill(ctx context.Context, signal string, services ...string) error
 	Log(ctx context.Context, follow bool, services ...string) error
 	Pause(ctx context.Context, services ...string) error
-	Ps(ctx context.Context, onlyID bool, services ...string) (InfoSet, error)
+	Ps(ctx context.Context, services ...string) (InfoSet, error)
 	// FIXME(vdemeester) we could use nat.Port instead ?
 	Port(ctx context.Context, index int, protocol, serviceName, privatePort string) (string, error)
 	Pull(ctx context.Context, services ...string) error
