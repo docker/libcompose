@@ -290,7 +290,7 @@ func (s *Service) Run(ctx context.Context, commandParts []string, options option
 
 // Info implements Service.Info. It returns an project.InfoSet with the containers
 // related to this service (can be multiple if using the scale command).
-func (s *Service) Info(ctx context.Context, qFlag bool) (project.InfoSet, error) {
+func (s *Service) Info(ctx context.Context) (project.InfoSet, error) {
 	result := project.InfoSet{}
 	containers, err := s.collectContainers(ctx)
 	if err != nil {
@@ -298,7 +298,7 @@ func (s *Service) Info(ctx context.Context, qFlag bool) (project.InfoSet, error)
 	}
 
 	for _, c := range containers {
-		info, err := c.Info(ctx, qFlag)
+		info, err := c.Info(ctx)
 		if err != nil {
 			return nil, err
 		}
