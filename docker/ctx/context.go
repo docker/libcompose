@@ -1,4 +1,4 @@
-package docker
+package ctx
 
 import (
 	"github.com/docker/docker/cliconfig"
@@ -16,10 +16,6 @@ type Context struct {
 	ConfigDir     string
 	ConfigFile    *configfile.ConfigFile
 	AuthLookup    auth.Lookup
-}
-
-func (c *Context) open() error {
-	return c.LookupConfig()
 }
 
 // LookupConfig tries to load the docker configuration files, if any.

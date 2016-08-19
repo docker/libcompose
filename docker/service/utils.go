@@ -1,4 +1,4 @@
-package docker
+package service
 
 import (
 	"github.com/docker/engine-api/types/container"

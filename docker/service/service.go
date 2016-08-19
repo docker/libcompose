@@ -1,4 +1,4 @@
-package docker
+package service
 
 import (
 	"fmt"
@@ -19,6 +19,7 @@ import (
 	"github.com/docker/libcompose/docker/builder"
 	composeclient "github.com/docker/libcompose/docker/client"
 	"github.com/docker/libcompose/docker/container"
+	"github.com/docker/libcompose/docker/ctx"
 	"github.com/docker/libcompose/docker/image"
 	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/project"
@@ -38,11 +39,11 @@ type Service struct {
 	authLookup    auth.Lookup
 
 	// FIXME(vdemeester) remove this at some point
-	context *Context
+	context *ctx.Context
 }
 
 // NewService creates a service
-func NewService(name string, serviceConfig *config.ServiceConfig, context *Context) *Service {
+func NewService(name string, serviceConfig *config.ServiceConfig, context *ctx.Context) *Service {
 	return &Service{
 		name:          name,
 		project:       context.Project,

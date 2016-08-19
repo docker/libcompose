@@ -7,6 +7,7 @@ import (
 	check "gopkg.in/check.v1"
 
 	"github.com/docker/libcompose/docker"
+	"github.com/docker/libcompose/docker/ctx"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/events"
 	"github.com/docker/libcompose/project/options"
@@ -22,7 +23,7 @@ another:
   image: busybox:latest
   command: top
 `
-	project, err := docker.NewProject(&docker.Context{
+	project, err := docker.NewProject(&ctx.Context{
 		Context: project.Context{
 			ComposeBytes: [][]byte{[]byte(composeFile)},
 			ProjectName:  "test-api-events",

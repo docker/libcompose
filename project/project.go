@@ -15,6 +15,9 @@ import (
 	"github.com/docker/libcompose/yaml"
 )
 
+// ComposeVersion is name of docker-compose.yml file syntax supported version
+const ComposeVersion = "1.5.0"
+
 type wrapperAction func(*serviceWrapper, map[string]*serviceWrapper)
 type serviceAction func(service Service) error
 
