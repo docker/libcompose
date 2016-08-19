@@ -142,6 +142,7 @@ func ProjectUp(p project.APIProject, c *cli.Context) error {
 			NoRecreate:    c.Bool("no-recreate"),
 			ForceRecreate: c.Bool("force-recreate"),
 			NoBuild:       c.Bool("no-build"),
+			ForceBuild:    c.Bool("build"),
 		},
 	}
 	ctx, cancelFun := context.WithCancel(context.Background())

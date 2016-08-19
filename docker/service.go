@@ -76,7 +76,7 @@ func (s *Service) Create(ctx context.Context, options options.Create) error {
 		return err
 	}
 
-	if err := s.ensureImageExists(ctx, options.NoBuild); err != nil {
+	if err := s.ensureImageExists(ctx, options.NoBuild, options.ForceBuild); err != nil {
 		return err
 	}
 
@@ -135,7 +135,11 @@ func (s *Service) collectContainers(ctx context.Context) ([]*container.Container
 	return result, nil
 }
 
-func (s *Service) ensureImageExists(ctx context.Context, noBuild bool) error {
+func (s *Service) ensureImageExists(ctx context.Context, noBuild bool, forceBuild bool) error {
+	if forceBuild {
+		return s.build(ctx, options.Build{})
+	}
+
 	exists, err := s.ImageExists(ctx)
 	if err != nil {
 		return err
@@ -247,7 +251,7 @@ func (s *Service) Up(ctx context.Context, options options.Up) error {
 
 	var imageName = s.imageName()
 	if len(containers) == 0 || !options.NoRecreate {
-		if err = s.ensureImageExists(ctx, options.NoBuild); err != nil {
+		if err = s.ensureImageExists(ctx, options.NoBuild, options.ForceBuild); err != nil {
 			return err
 		}
 	}
@@ -258,7 +262,7 @@ func (s *Service) Up(ctx context.Context, options options.Up) error {
 // Run implements Service.Run. It runs a one of command within the service container.
 // It always create a new container.
 func (s *Service) Run(ctx context.Context, commandParts []string, options options.Run) (int, error) {
-	err := s.ensureImageExists(ctx, false)
+	err := s.ensureImageExists(ctx, false, false)
 	if err != nil {
 		return -1, err
 	}
@@ -617,7 +621,7 @@ func (s *Service) Scale(ctx context.Context, scale int, timeout int) error {
 	}
 
 	if len(containers) < scale {
-		err := s.ensureImageExists(ctx, false)
+		err := s.ensureImageExists(ctx, false, false)
 		if err != nil {
 			return err
 		}
