@@ -1,4 +1,4 @@
-.PHONY: all test validate-dco validate-gofmt validate build
+.PHONY: all build binary clean cross-binary help test test-unit test-integration test-acceptance validate
 
 LIBCOMPOSE_ENVS := \
 	-e OS_PLATFORM_ARG \
