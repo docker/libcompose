@@ -23,6 +23,7 @@ func main() {
 	app.Flags = append(command.CommonFlags(), dockerApp.DockerClientFlags()...)
 	app.Commands = []cli.Command{
 		command.BuildCommand(factory),
+		command.ConfigCommand(factory),
 		command.CreateCommand(factory),
 		command.EventsCommand(factory),
 		command.DownCommand(factory),

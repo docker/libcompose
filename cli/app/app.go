@@ -275,6 +275,16 @@ func ProjectKill(p project.APIProject, c *cli.Context) error {
 	return nil
 }
 
+// ProjectConfig validates and print the compose file.
+func ProjectConfig(p project.APIProject, c *cli.Context) error {
+	yaml, err := p.Config()
+	if err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
+	fmt.Println(yaml)
+	return nil
+}
+
 // ProjectPause pauses service containers.
 func ProjectPause(p project.APIProject, c *cli.Context) error {
 	err := p.Pause(context.Background(), c.Args()...)
