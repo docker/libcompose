@@ -88,6 +88,12 @@ func ParseNetworks(bytes []byte) (map[string]*NetworkConfig, error) {
 		return nil, err
 	}
 
+	for key, value := range networkConfigs {
+		if value == nil {
+			networkConfigs[key] = &NetworkConfig{}
+		}
+	}
+
 	return networkConfigs, nil
 }
 

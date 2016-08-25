@@ -103,6 +103,16 @@ func TestUnmarshalNetworks(t *testing.T) {
 			},
 		},
 		{
+			yaml: `network1:`,
+			expected: &Networks{
+				Networks: []*Network{
+					{
+						Name: "network1",
+					},
+				},
+			},
+		},
+		{
 			yaml: `network1: {}`,
 			expected: &Networks{
 				Networks: []*Network{
