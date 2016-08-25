@@ -12,18 +12,17 @@ import (
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/docker/auth"
 	"github.com/docker/libcompose/docker/client"
+	"github.com/docker/libcompose/docker/ctx"
 	"github.com/docker/libcompose/docker/network"
+	"github.com/docker/libcompose/docker/service"
 	"github.com/docker/libcompose/docker/volume"
 	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/lookup"
 	"github.com/docker/libcompose/project"
 )
 
-// ComposeVersion is name of docker-compose.yml file syntax supported version
-const ComposeVersion = "1.5.0"
-
 // NewProject creates a Project with the specified context.
-func NewProject(context *Context, parseOptions *config.ParseOptions) (project.APIProject, error) {
+func NewProject(context *ctx.Context, parseOptions *config.ParseOptions) (project.APIProject, error) {
 	if context.ResourceLookup == nil {
 		context.ResourceLookup = &lookup.FileResourceLookup{}
 	}
@@ -48,9 +47,7 @@ func NewProject(context *Context, parseOptions *config.ParseOptions) (project.AP
 	}
 
 	if context.ServiceFactory == nil {
-		context.ServiceFactory = &ServiceFactory{
-			context: context,
-		}
+		context.ServiceFactory = service.NewFactory(context)
 	}
 
 	if context.ClientFactory == nil {
@@ -86,7 +83,7 @@ func NewProject(context *Context, parseOptions *config.ParseOptions) (project.AP
 		return nil, err
 	}
 
-	if err = context.open(); err != nil {
+	if err = context.LookupConfig(); err != nil {
 		logrus.Errorf("Failed to open project %s: %v", p.Name, err)
 		return nil, err
 	}

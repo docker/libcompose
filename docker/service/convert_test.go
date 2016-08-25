@@ -1,10 +1,11 @@
-package docker
+package service
 
 import (
 	"path/filepath"
 	"testing"
 
 	"github.com/docker/libcompose/config"
+	"github.com/docker/libcompose/docker/ctx"
 	"github.com/docker/libcompose/lookup"
 	"github.com/docker/libcompose/yaml"
 	shlex "github.com/flynn/go-shlex"
@@ -19,7 +20,7 @@ func TestParseCommand(t *testing.T) {
 }
 
 func TestParseBindsAndVolumes(t *testing.T) {
-	ctx := &Context{}
+	ctx := &ctx.Context{}
 	ctx.ComposeFiles = []string{"foo/docker-compose.yml"}
 	ctx.ResourceLookup = &lookup.FileResourceLookup{}
 
@@ -56,7 +57,7 @@ func TestParseBindsAndVolumes(t *testing.T) {
 }
 
 func TestParseLabels(t *testing.T) {
-	ctx := &Context{}
+	ctx := &ctx.Context{}
 	ctx.ComposeFiles = []string{"foo/docker-compose.yml"}
 	ctx.ResourceLookup = &lookup.FileResourceLookup{}
 	bashCmd := "bash"

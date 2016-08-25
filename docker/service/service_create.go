@@ -1,4 +1,4 @@
-package docker
+package service
 
 import (
 	"fmt"
@@ -38,7 +38,7 @@ func (s *Service) createContainer(ctx context.Context, namer Namer, oldContainer
 	configWrapper.Config.Labels[labels.HASH.Str()] = config.GetServiceHash(s.name, serviceConfig)
 	configWrapper.Config.Labels[labels.ONEOFF.Str()] = strings.Title(strconv.FormatBool(oneOff))
 	configWrapper.Config.Labels[labels.NUMBER.Str()] = fmt.Sprintf("%d", containerNumber)
-	configWrapper.Config.Labels[labels.VERSION.Str()] = ComposeVersion
+	configWrapper.Config.Labels[labels.VERSION.Str()] = project.ComposeVersion
 
 	err = s.populateAdditionalHostConfig(configWrapper.HostConfig)
 	if err != nil {
