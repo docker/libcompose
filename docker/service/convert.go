@@ -17,7 +17,6 @@ import (
 	composecontainer "github.com/docker/libcompose/docker/container"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
-	// "github.com/docker/libcompose/yaml"
 )
 
 // ConfigWrapper wraps Config, HostConfig and NetworkingConfig for a container.
