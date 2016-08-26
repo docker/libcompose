@@ -22,6 +22,7 @@ import (
 	"github.com/docker/libcompose/docker/ctx"
 	"github.com/docker/libcompose/docker/image"
 	"github.com/docker/libcompose/labels"
+	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/events"
 	"github.com/docker/libcompose/project/options"
@@ -36,10 +37,8 @@ type Service struct {
 	project       *project.Project
 	serviceConfig *config.ServiceConfig
 	clientFactory composeclient.Factory
+	loggerFactory logger.Factory
 	authLookup    auth.Lookup
-
-	// FIXME(vdemeester) remove this at some point
-	context *ctx.Context
 }
 
 // NewService creates a service
@@ -50,7 +49,7 @@ func NewService(name string, serviceConfig *config.ServiceConfig, context *ctx.C
 		serviceConfig: serviceConfig,
 		clientFactory: context.ClientFactory,
 		authLookup:    context.AuthLookup,
-		context:       context,
+		loggerFactory: context.LoggerFactory,
 	}
 }
 
@@ -199,7 +198,7 @@ func (s *Service) build(ctx context.Context, buildOptions options.Build) error {
 		NoCache:          buildOptions.NoCache,
 		ForceRemove:      buildOptions.ForceRemove,
 		Pull:             buildOptions.Pull,
-		LoggerFactory:    s.context.LoggerFactory,
+		LoggerFactory:    s.loggerFactory,
 	}
 	return builder.Build(ctx, s.imageName())
 }
@@ -585,7 +584,7 @@ func (s *Service) Log(ctx context.Context, follow bool) error {
 		if s.Config().ContainerName != "" {
 			name = s.Config().ContainerName
 		}
-		l := s.context.LoggerFactory.CreateContainerLogger(name)
+		l := s.loggerFactory.CreateContainerLogger(name)
 		return c.Log(ctx, l, follow)
 	})
 }
