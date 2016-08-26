@@ -405,3 +405,18 @@ services:
 		}
 	}
 }
+
+func TestParseNetworks(t *testing.T) {
+	composeFile := []byte(`networks:
+  public:`)
+
+	networkConfigs, err := ParseNetworks(composeFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for key, networkConfig := range networkConfigs {
+		if networkConfig == nil {
+			t.Fatalf("networkConfig %s was nil, shouldn't be", key)
+		}
+	}
+}
