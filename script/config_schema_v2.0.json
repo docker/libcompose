@@ -3,41 +3,9 @@
   "id": "config_schema_v2.0.json",
   "type": "object",
 
-  "properties": {
-    "version": {
-      "type": "string"
-    },
-
-    "services": {
-      "id": "#/properties/services",
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "#/definitions/service"
-        }
-      },
-      "additionalProperties": false
-    },
-
-    "networks": {
-      "id": "#/properties/networks",
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "#/definitions/network"
-        }
-      }
-    },
-
-    "volumes": {
-      "id": "#/properties/volumes",
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "#/definitions/volume"
-        }
-      },
-      "additionalProperties": false
+  "patternProperties": {
+    "^[a-zA-Z0-9._-]+$": {
+      "$ref": "#/definitions/service"
     }
   },
 
@@ -269,8 +237,7 @@
           "properties": {
             "name": {"type": "string"}
           }
-        },
-        "additionalProperties": false
+        }
       },
       "additionalProperties": false
     },
