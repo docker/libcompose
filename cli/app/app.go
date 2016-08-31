@@ -282,7 +282,9 @@ func ProjectConfig(p project.APIProject, c *cli.Context) error {
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
-	fmt.Println(yaml)
+	if !c.Bool("quiet") {
+		fmt.Println(yaml)
+	}
 	return nil
 }
 
