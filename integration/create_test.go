@@ -6,8 +6,9 @@ import (
 	"os/exec"
 	"strings"
 
-	. "gopkg.in/check.v1"
 	"path/filepath"
+
+	. "gopkg.in/check.v1"
 )
 
 func (s *CliSuite) TestFields(c *C) {
@@ -293,6 +294,36 @@ func (s *CliSuite) TestValidation(c *C) {
 	c.Assert(strings.Contains(output, "Service 'test' configuration key 'devices' value [/dev/foo:/dev/foo /dev/foo:/dev/foo] has non-unique elements"), Equals, true)
 }
 
+func (s *CliSuite) TestValidationV2(c *C) {
+	template := `
+version: '2'
+services:
+  test:
+    image: busybox
+    ports: invalid_type
+	`
+	_, output := s.FromTextCaptureOutput(c, s.RandomProject(), "create", template)
+
+	c.Assert(strings.Contains(output, "Service 'test' configuration key 'ports' contains an invalid type, it should be an array."), Equals, true)
+
+	template = `
+version: '2'
+services:
+  test:
+    image: busybox
+    ports: invalid_type
+    links: invalid_type
+    devices:
+      - /dev/foo:/dev/foo
+      - /dev/foo:/dev/foo
+  `
+	_, output = s.FromTextCaptureOutput(c, s.RandomProject(), "create", template)
+
+	c.Assert(strings.Contains(output, "Service 'test' configuration key 'ports' contains an invalid type, it should be an array."), Equals, true)
+	c.Assert(strings.Contains(output, "Service 'test' configuration key 'links' contains an invalid type, it should be an array"), Equals, true)
+	c.Assert(strings.Contains(output, "Service 'test' configuration key 'devices' value [/dev/foo:/dev/foo /dev/foo:/dev/foo] has non-unique elements"), Equals, true)
+}
+
 func (s *CliSuite) TestValidationWithExtends(c *C) {
 	template := `
   base:
@@ -323,7 +354,7 @@ func (s *CliSuite) TestValidationWithExtends(c *C) {
 	template = `
   test:
     extends:
-      file: ./assets/validation/valid/docker-compose.yml
+      file: ./assets/validation/valid/docker-compose.v1.yml
       service: base
     devices:
       - /dev/foo:/dev/foo
@@ -337,7 +368,68 @@ func (s *CliSuite) TestValidationWithExtends(c *C) {
 	template = `
   test:
     extends:
-      file: ./assets/validation/invalid/docker-compose.yml
+      file: ./assets/validation/invalid/docker-compose.v1.yml
+      service: base
+	`
+
+	_, output = s.FromTextCaptureOutput(c, s.RandomProject(), "create", template)
+
+	c.Assert(strings.Contains(output, "Service 'base' configuration key 'ports' contains an invalid type, it should be an array."), Equals, true)
+}
+
+func (s *CliSuite) TestValidationWithExtendsV2(c *C) {
+	template := `
+version: '2'
+services:
+  base:
+    image: busybox
+    privilege: "something"
+  test:
+    extends:
+      service: base
+	`
+
+	_, output := s.FromTextCaptureOutput(c, s.RandomProject(), "create", template)
+
+	c.Assert(strings.Contains(output, "Unsupported config option for base service: 'privilege' (did you mean 'privileged'?)"), Equals, true)
+
+	template = `
+version: '2'
+services:
+  base:
+    image: busybox
+  test:
+    extends:
+      service: base
+    links: invalid_type
+	`
+
+	_, output = s.FromTextCaptureOutput(c, s.RandomProject(), "create", template)
+
+	c.Assert(strings.Contains(output, "Service 'test' configuration key 'links' contains an invalid type, it should be an array"), Equals, true)
+
+	template = `
+version: '2'
+services:
+  test:
+    extends:
+      file: ./assets/validation/valid/docker-compose.v2.yml
+      service: base
+    devices:
+      - /dev/foo:/dev/foo
+      - /dev/foo:/dev/foo
+	`
+
+	_, output = s.FromTextCaptureOutput(c, s.RandomProject(), "create", template)
+
+	c.Assert(strings.Contains(output, "Service 'test' configuration key 'devices' value [/dev/foo:/dev/foo /dev/foo:/dev/foo] has non-unique elements"), Equals, true)
+
+	template = `
+version: '2'
+services:
+  test:
+    extends:
+      file: ./assets/validation/invalid/docker-compose.v2.yml
       service: base
 	`
 

@@ -32,6 +32,12 @@ func MergeServicesV2(existingServices *ServiceConfigs, environmentLookup Environ
 		}
 	}
 
+	if options.Validate {
+		if err := validateV2(datas); err != nil {
+			return nil, err
+		}
+	}
+
 	for name, data := range datas {
 		data, err := parseV2(resourceLookup, environmentLookup, file, data, datas, options)
 		if err != nil {
@@ -151,6 +157,12 @@ func parseV2(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup,
 		if options.Interpolate {
 			err = Interpolate(environmentLookup, &baseRawServices)
 			if err != nil {
+				return nil, err
+			}
+		}
+
+		if options.Validate {
+			if err := validate(baseRawServices); err != nil {
 				return nil, err
 			}
 		}

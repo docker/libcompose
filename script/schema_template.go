@@ -1,5 +1,5 @@
 package config
 
-var schemaV1 = `{{.schemaV1}}`
+var schemaDataV1 = `{{.schemaV1}}`
 
-var schemaV2 = `{{.schemaV2}}`
+var schemaDataV2 = `{{.schemaV2}}`

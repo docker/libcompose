@@ -9,17 +9,45 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testValidSchema(t *testing.T, serviceMap RawServiceMap) {
+func testValidSchemaV1(t *testing.T, serviceMap RawServiceMap) {
+	testValidSchema(t, serviceMap, validate, validateServiceConstraints)
+}
+
+func testValidSchemaV2(t *testing.T, serviceMap RawServiceMap) {
+	testValidSchema(t, serviceMap, validateV2, nil)
+}
+
+func testValidSchemaAll(t *testing.T, serviceMap RawServiceMap) {
+	testValidSchema(t, serviceMap, validate, validateServiceConstraints)
+	testValidSchema(t, serviceMap, validateV2, nil)
+}
+
+func testValidSchema(t *testing.T, serviceMap RawServiceMap, validate func(RawServiceMap) error, validateServiceConstraints func(RawService, string) error) {
 	err := validate(serviceMap)
 	assert.Nil(t, err)
 
-	for name, service := range serviceMap {
-		err := validateServiceConstraints(service, name)
-		assert.Nil(t, err)
+	if validateServiceConstraints != nil {
+		for name, service := range serviceMap {
+			err := validateServiceConstraints(service, name)
+			assert.Nil(t, err)
+		}
 	}
 }
 
-func testInvalidSchema(t *testing.T, serviceMap RawServiceMap, errMsgs []string, errCount int) {
+func testInvalidSchemaV1(t *testing.T, serviceMap RawServiceMap, errMsgs []string, errCount int) {
+	testInvalidSchema(t, serviceMap, errMsgs, errCount, validate, validateServiceConstraints)
+}
+
+func testInvalidSchemaV2(t *testing.T, serviceMap RawServiceMap, errMsgs []string, errCount int) {
+	testInvalidSchema(t, serviceMap, errMsgs, errCount, validateV2, nil)
+}
+
+func testInvalidSchemaAll(t *testing.T, serviceMap RawServiceMap, errMsgs []string, errCount int) {
+	testInvalidSchema(t, serviceMap, errMsgs, errCount, validate, validateServiceConstraints)
+	testInvalidSchema(t, serviceMap, errMsgs, errCount, validateV2, nil)
+}
+
+func testInvalidSchema(t *testing.T, serviceMap RawServiceMap, errMsgs []string, errCount int, validate func(RawServiceMap) error, validateServiceConstraints func(RawService, string) error) {
 	var combinedErrMsg bytes.Buffer
 
 	err := validate(serviceMap)
@@ -28,11 +56,13 @@ func testInvalidSchema(t *testing.T, serviceMap RawServiceMap, errMsgs []string,
 		combinedErrMsg.WriteRune('\n')
 	}
 
-	for name, service := range serviceMap {
-		err := validateServiceConstraints(service, name)
-		if err != nil {
-			combinedErrMsg.WriteString(err.Error())
-			combinedErrMsg.WriteRune('\n')
+	if validateServiceConstraints != nil {
+		for name, service := range serviceMap {
+			err := validateServiceConstraints(service, name)
+			if err != nil {
+				combinedErrMsg.WriteString(err.Error())
+				combinedErrMsg.WriteRune('\n')
+			}
 		}
 	}
 
@@ -49,7 +79,7 @@ func TestInvalidServiceNames(t *testing.T) {
 	invalidServiceNames := []string{"?not?allowed", " ", "", "!", "/"}
 
 	for _, invalidServiceName := range invalidServiceNames {
-		testInvalidSchema(t, RawServiceMap{
+		testInvalidSchemaAll(t, RawServiceMap{
 			invalidServiceName: map[string]interface{}{
 				"image": "busybox",
 			},
@@ -61,7 +91,7 @@ func TestValidServiceNames(t *testing.T) {
 	validServiceNames := []string{"_", "-", ".__.", "_what-up.", "what_.up----", "whatup"}
 
 	for _, validServiceName := range validServiceNames {
-		testValidSchema(t, RawServiceMap{
+		testValidSchemaAll(t, RawServiceMap{
 			validServiceName: map[string]interface{}{
 				"image": "busybox",
 			},
@@ -80,7 +110,7 @@ func TestConfigInvalidPorts(t *testing.T) {
 	}
 
 	for _, portsValue := range portsValues {
-		testInvalidSchema(t, RawServiceMap{
+		testInvalidSchemaAll(t, RawServiceMap{
 			"web": map[string]interface{}{
 				"image": "busybox",
 				"ports": portsValue,
@@ -88,7 +118,7 @@ func TestConfigInvalidPorts(t *testing.T) {
 		}, []string{"Service 'web' configuration key 'ports' contains an invalid type, it should be an array"}, 1)
 	}
 
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaAll(t, RawServiceMap{
 		"web": map[string]interface{}{
 			"image": "busybox",
 			"ports": []interface{}{
@@ -109,7 +139,7 @@ func TestConfigValidPorts(t *testing.T) {
 	}
 
 	for _, portsValue := range portsValues {
-		testValidSchema(t, RawServiceMap{
+		testValidSchemaAll(t, RawServiceMap{
 			"web": map[string]interface{}{
 				"image": "busybox",
 				"ports": portsValue,
@@ -119,7 +149,7 @@ func TestConfigValidPorts(t *testing.T) {
 }
 
 func TestConfigHint(t *testing.T) {
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaAll(t, RawServiceMap{
 		"foo": map[string]interface{}{
 			"image":     "busybox",
 			"privilege": "something",
@@ -128,7 +158,7 @@ func TestConfigHint(t *testing.T) {
 }
 
 func TestTypeShouldBeAnArray(t *testing.T) {
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaAll(t, RawServiceMap{
 		"foo": map[string]interface{}{
 			"image": "busybox",
 			"links": "an_link",
@@ -137,7 +167,7 @@ func TestTypeShouldBeAnArray(t *testing.T) {
 }
 
 func TestInvalidTypeWithMultipleValidTypes(t *testing.T) {
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaAll(t, RawServiceMap{
 		"web": map[string]interface{}{
 			"image": "busybox",
 			"mem_limit": []interface{}{
@@ -149,7 +179,7 @@ func TestInvalidTypeWithMultipleValidTypes(t *testing.T) {
 
 func TestInvalidNotUniqueItems(t *testing.T) {
 	// Test property with array as only valid type
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaAll(t, RawServiceMap{
 		"foo": map[string]interface{}{
 			"image": "busybox",
 			"devices": []string{
@@ -160,7 +190,7 @@ func TestInvalidNotUniqueItems(t *testing.T) {
 	}, []string{"Service 'foo' configuration key 'devices' value [/dev/foo:/dev/foo /dev/foo:/dev/foo] has non-unique elements"}, 1)
 
 	// Test property with multiple valid types
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaAll(t, RawServiceMap{
 		"foo": map[string]interface{}{
 			"image": "busybox",
 			"environment": []string{
@@ -172,7 +202,7 @@ func TestInvalidNotUniqueItems(t *testing.T) {
 }
 
 func TestInvalidListOfStringsFormat(t *testing.T) {
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaAll(t, RawServiceMap{
 		"web": map[string]interface{}{
 			"build": ".",
 			"command": []interface{}{
@@ -183,7 +213,7 @@ func TestInvalidListOfStringsFormat(t *testing.T) {
 }
 
 func TestInvalidExtraHostsString(t *testing.T) {
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaAll(t, RawServiceMap{
 		"web": map[string]interface{}{
 			"image":       "busybox",
 			"extra_hosts": "somehost:162.242.195.82",
@@ -193,7 +223,7 @@ func TestInvalidExtraHostsString(t *testing.T) {
 
 func TestValidConfigWhichAllowsTwoTypeDefinitions(t *testing.T) {
 	for _, exposeValue := range []interface{}{"8000", 9000} {
-		testValidSchema(t, RawServiceMap{
+		testValidSchemaAll(t, RawServiceMap{
 			"web": map[string]interface{}{
 				"image": "busybox",
 				"expose": []interface{}{
@@ -213,7 +243,7 @@ func TestValidConfigOneOfStringOrList(t *testing.T) {
 	}
 
 	for _, entrypointValue := range entrypointValues {
-		testValidSchema(t, RawServiceMap{
+		testValidSchemaAll(t, RawServiceMap{
 			"web": map[string]interface{}{
 				"image":      "busybox",
 				"entrypoint": entrypointValue,
@@ -223,7 +253,7 @@ func TestValidConfigOneOfStringOrList(t *testing.T) {
 }
 
 func TestInvalidServiceProperty(t *testing.T) {
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaAll(t, RawServiceMap{
 		"web": map[string]interface{}{
 			"image":            "busybox",
 			"invalid_property": "value",
@@ -232,13 +262,13 @@ func TestInvalidServiceProperty(t *testing.T) {
 }
 
 func TestServiceInvalidMissingImageAndBuild(t *testing.T) {
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaV1(t, RawServiceMap{
 		"web": map[string]interface{}{},
 	}, []string{"Service 'web' has neither an image nor a build path specified. Exactly one must be provided."}, 1)
 }
 
 func TestServiceInvalidSpecifiesImageAndBuild(t *testing.T) {
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaV1(t, RawServiceMap{
 		"web": map[string]interface{}{
 			"image": "busybox",
 			"build": ".",
@@ -247,7 +277,7 @@ func TestServiceInvalidSpecifiesImageAndBuild(t *testing.T) {
 }
 
 func TestServiceInvalidSpecifiesImageAndDockerfile(t *testing.T) {
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaV1(t, RawServiceMap{
 		"web": map[string]interface{}{
 			"image":      "busybox",
 			"dockerfile": "Dockerfile",
@@ -256,7 +286,7 @@ func TestServiceInvalidSpecifiesImageAndDockerfile(t *testing.T) {
 }
 
 func TestInvalidServiceForMultipleErrors(t *testing.T) {
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaAll(t, RawServiceMap{
 		"foo": map[string]interface{}{
 			"image": "busybox",
 			"ports": "invalid_type",
@@ -274,7 +304,7 @@ func TestInvalidServiceForMultipleErrors(t *testing.T) {
 }
 
 func TestInvalidServiceWithAdditionalProperties(t *testing.T) {
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaAll(t, RawServiceMap{
 		"foo": map[string]interface{}{
 			"image": "busybox",
 			"ports": "invalid_type",
@@ -292,7 +322,7 @@ func TestInvalidServiceWithAdditionalProperties(t *testing.T) {
 }
 
 func TestMultipleInvalidServices(t *testing.T) {
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaAll(t, RawServiceMap{
 		"foo1": map[string]interface{}{
 			"image": "busybox",
 			"ports": "invalid_type",
@@ -308,7 +338,7 @@ func TestMultipleInvalidServices(t *testing.T) {
 }
 
 func TestMixedInvalidServicesAndInvalidServiceNames(t *testing.T) {
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaAll(t, RawServiceMap{
 		"foo1": map[string]interface{}{
 			"image": "busybox",
 			"ports": "invalid_type",
@@ -328,7 +358,7 @@ func TestMixedInvalidServicesAndInvalidServiceNames(t *testing.T) {
 }
 
 func TestMultipleInvalidServicesForMultipleErrors(t *testing.T) {
-	testInvalidSchema(t, RawServiceMap{
+	testInvalidSchemaAll(t, RawServiceMap{
 		"foo1": map[string]interface{}{
 			"image": "busybox",
 			"ports": "invalid_type",
