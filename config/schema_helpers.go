@@ -31,13 +31,13 @@ func (checker portsFormatChecker) IsFormat(input string) bool {
 	return err == nil
 }
 
-func setupSchemaLoaders() error {
+func setupSchemaLoaders(schemaData string) error {
 	if schema != nil {
 		return nil
 	}
 
 	var schemaRaw interface{}
-	err := json.Unmarshal([]byte(schemaV1), &schemaRaw)
+	err := json.Unmarshal([]byte(schemaData), &schemaRaw)
 	if err != nil {
 		return err
 	}
