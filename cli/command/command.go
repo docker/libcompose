@@ -59,6 +59,12 @@ func ConfigCommand(factory app.ProjectFactory) cli.Command {
 		Name:   "config",
 		Usage:  "Validate and view the compose file.",
 		Action: app.WithProject(factory, app.ProjectConfig),
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "quiet,q",
+				Usage: "Only validate the configuration, don't print anything.",
+			},
+		},
 	}
 }
 
