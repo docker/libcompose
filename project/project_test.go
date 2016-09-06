@@ -110,6 +110,19 @@ func TestParseWithGoodContent(t *testing.T) {
 	}
 }
 
+func TestParseWithDefaultEnvironmentLookup(t *testing.T) {
+	p := NewProject(&Context{
+		ComposeBytes: [][]byte{
+			[]byte("not-garbage:\n  image: foo:${version}"),
+		},
+	}, nil, nil)
+
+	err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 type TestEnvironmentLookup struct {
 }
 

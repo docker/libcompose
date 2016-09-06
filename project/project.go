@@ -3,6 +3,8 @@ package project
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -10,6 +12,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/logger"
+	"github.com/docker/libcompose/lookup"
 	"github.com/docker/libcompose/project/events"
 	"github.com/docker/libcompose/utils"
 	"github.com/docker/libcompose/yaml"
@@ -55,6 +58,26 @@ func NewProject(context *Context, runtime RuntimeProject, parseOptions *config.P
 
 	if context.LoggerFactory == nil {
 		context.LoggerFactory = &logger.NullLogger{}
+	}
+
+	if context.ResourceLookup == nil {
+		context.ResourceLookup = &lookup.FileResourceLookup{}
+	}
+
+	if context.EnvironmentLookup == nil {
+		cwd, err := os.Getwd()
+		if err != nil {
+			log.Errorf("Could not get the rooted path name to the current directory: %v", err)
+			return nil
+		}
+		context.EnvironmentLookup = &lookup.ComposableEnvLookup{
+			Lookups: []config.EnvironmentLookup{
+				&lookup.EnvfileLookup{
+					Path: filepath.Join(cwd, ".env"),
+				},
+				&lookup.OsEnvLookup{},
+			},
+		}
 	}
 
 	context.Project = p

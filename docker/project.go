@@ -1,9 +1,6 @@
 package docker
 
 import (
-	"os"
-	"path/filepath"
-
 	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
@@ -17,31 +14,11 @@ import (
 	"github.com/docker/libcompose/docker/service"
 	"github.com/docker/libcompose/docker/volume"
 	"github.com/docker/libcompose/labels"
-	"github.com/docker/libcompose/lookup"
 	"github.com/docker/libcompose/project"
 )
 
 // NewProject creates a Project with the specified context.
 func NewProject(context *ctx.Context, parseOptions *config.ParseOptions) (project.APIProject, error) {
-	if context.ResourceLookup == nil {
-		context.ResourceLookup = &lookup.FileResourceLookup{}
-	}
-
-	if context.EnvironmentLookup == nil {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return nil, err
-		}
-		context.EnvironmentLookup = &lookup.ComposableEnvLookup{
-			Lookups: []config.EnvironmentLookup{
-				&lookup.EnvfileLookup{
-					Path: filepath.Join(cwd, ".env"),
-				},
-				&lookup.OsEnvLookup{},
-			},
-		}
-	}
-
 	if context.AuthLookup == nil {
 		context.AuthLookup = auth.NewConfigLookup(context.ConfigFile)
 	}
