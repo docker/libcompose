@@ -134,7 +134,7 @@ func (p *Project) CreateService(name string) (Service, error) {
 
 		for _, env := range config.Environment {
 			parts := strings.SplitN(env, "=", 2)
-			if len(parts) > 1 && parts[1] != "" {
+			if len(parts) > 1 {
 				parsedEnv = append(parsedEnv, env)
 				continue
 			} else {
