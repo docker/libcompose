@@ -135,3 +135,70 @@ func TestMaporsliceYaml(t *testing.T) {
 	assert.True(t, contains(s2.Foo, "far=1"))
 	assert.True(t, contains(s2.Foo, "qux"))
 }
+
+func TestMapWithEmptyValue(t *testing.T) {
+	str := `foo:
+  bar: baz
+  far: 1
+  qux: null
+  empty: ""
+  lookup:`
+
+	s := StructMaporslice{}
+	yaml.Unmarshal([]byte(str), &s)
+
+	assert.Equal(t, 5, len(s.Foo))
+	assert.True(t, contains(s.Foo, "bar=baz"))
+	assert.True(t, contains(s.Foo, "far=1"))
+	assert.True(t, contains(s.Foo, "qux"))
+	assert.True(t, contains(s.Foo, "empty="))
+	assert.True(t, contains(s.Foo, "lookup"))
+
+	d, err := yaml.Marshal(&s)
+	assert.Nil(t, err)
+
+	s2 := StructMaporslice{}
+	yaml.Unmarshal(d, &s2)
+
+	assert.Equal(t, 5, len(s2.Foo))
+	assert.True(t, contains(s2.Foo, "bar=baz"))
+	assert.True(t, contains(s2.Foo, "far=1"))
+	assert.True(t, contains(s2.Foo, "qux"))
+	assert.True(t, contains(s2.Foo, "empty="))
+	assert.True(t, contains(s2.Foo, "lookup"))
+}
+
+func TestSliceWithEmptyValue(t *testing.T) {
+	str := `foo:
+  - bar=baz
+  - far=1
+  - qux=null
+  - quotes=""
+  - empty=
+  - lookup`
+
+	s := StructMaporslice{}
+	yaml.Unmarshal([]byte(str), &s)
+
+	assert.Equal(t, 6, len(s.Foo))
+	assert.True(t, contains(s.Foo, "bar=baz"))
+	assert.True(t, contains(s.Foo, "far=1"))
+	assert.True(t, contains(s.Foo, "qux=null"))
+	assert.True(t, contains(s.Foo, "quotes=\"\""))
+	assert.True(t, contains(s.Foo, "empty="))
+	assert.True(t, contains(s.Foo, "lookup"))
+
+	d, err := yaml.Marshal(&s)
+	assert.Nil(t, err)
+
+	s2 := StructMaporslice{}
+	yaml.Unmarshal(d, &s2)
+
+	assert.Equal(t, 6, len(s2.Foo))
+	assert.True(t, contains(s2.Foo, "bar=baz"))
+	assert.True(t, contains(s2.Foo, "far=1"))
+	assert.True(t, contains(s2.Foo, "qux=null"))
+	assert.True(t, contains(s2.Foo, "quotes=\"\""))
+	assert.True(t, contains(s2.Foo, "empty="))
+	assert.True(t, contains(s2.Foo, "lookup"))
+}

@@ -153,7 +153,7 @@ func TestEnvironmentResolve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(service.Config().Environment, yaml.MaporEqualSlice{"A=X", "A=X", "A=B"}) {
+	if !reflect.DeepEqual(service.Config().Environment, yaml.MaporEqualSlice{"A=X", "A=", "A=B"}) {
 		t.Fatal("Invalid environment", service.Config().Environment)
 	}
 }
