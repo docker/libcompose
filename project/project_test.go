@@ -80,6 +80,32 @@ func TestTwoCall(t *testing.T) {
 	}
 }
 
+func TestGetServiceConfig(t *testing.T) {
+
+	p := NewProject(&Context{}, nil, nil)
+	p.ServiceConfigs = config.NewServiceConfigs()
+	fooService := &config.ServiceConfig{}
+	p.ServiceConfigs.Add("foo", fooService)
+
+	config, ok := p.GetServiceConfig("foo")
+	if !ok {
+		t.Fatal("Foo service not found")
+	}
+
+	if config != fooService {
+		t.Fatal("Incorrect Service Config returned")
+	}
+
+	config, ok = p.GetServiceConfig("unknown")
+	if ok {
+		t.Fatal("Found service incorrectly")
+	}
+
+	if config != nil {
+		t.Fatal("Incorrect Service Config returned")
+	}
+}
+
 func TestParseWithBadContent(t *testing.T) {
 	p := NewProject(&Context{
 		ComposeBytes: [][]byte{
