@@ -99,6 +99,9 @@ $ go generate
 $ go build -o libcompose ./cli/main
 ```
 
+### Generating Events
+
+Event structs are generated from stub json definitions. Any time an Event struct needs to be updated, the go file should not be updated, but rather the json document with the fields and types. In order to update the struct definitions run `make build` or `make generate`, which will use gojson to update the structs.
 
 ## Running
 
