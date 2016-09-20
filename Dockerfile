@@ -1,5 +1,5 @@
 # This file describes the standard way to build libcompose, using docker
-FROM golang:1.7.0
+FROM golang:1.7.1
 
 
 # virtualenv is necessary to run acceptance tests
@@ -14,7 +14,7 @@ RUN go get github.com/aktau/github-release && \
     go get github.com/golang/lint/golint
 
 # Which docker version to test on and what default one to use
-ENV DOCKER_VERSIONS 1.9.1 1.10.3 1.11.0
+ENV DOCKER_VERSIONS 1.9.1 1.10.3 1.11.2 1.12.1
 ENV DEFAULT_DOCKER_VERSION 1.10.3
 
 # Download docker
