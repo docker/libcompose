@@ -11,8 +11,8 @@ Here is a list of known project that uses `libcompose`:
 
 - [rancher-compose](https://github.com/rancher/rancher-compose) and [rancher os](https://github.com/rancher/os) (by [Rancher](https://github.com/rancher))
 - [openshift](https://github.com/openshift/origin) (by [Red Hat](https://github.com/openshift))
-- [henge](https://github.com/redhat-developer/henge) (by [Red Hat](https://github.com/redhat-developer))
-- [kompose](https://github.com/skippbox/kompose2) (by [skippbox](https://github.com/skippbox))
+- [henge](https://github.com/redhat-developer/henge) (by [Red Hat](https://github.com/redhat-developer)) [Deprecated in favour of kompose]
+- [kompose](https://github.com/skippbox/kompose) (by [skippbox](https://github.com/skippbox))
 - [compose2kube](https://github.com/kelseyhightower/compose2kube) (by [kelseyhightower](https://github.com/kelseyhightower))
 - [amazon-ecs-cli](https://github.com/aws/amazon-ecs-cli) (by [Amazon AWS](https://github.com/aws))
 - [libkermit](https://github.com/libkermit/docker) (by [vdemeester](https://github.com/vdemeester))
@@ -62,7 +62,7 @@ or `go` in order to build libcompose.
 ### Building with `docker`
 
 You need Docker and ``make`` and then run the ``binary`` target. This
-will create binary for all platform in the `bundles` folder. 
+will create binary for all platform in the `bundles` folder.
 
 ```bash
 $ make binary
