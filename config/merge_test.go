@@ -406,15 +406,17 @@ services:
 	}
 }
 
-func TestParseNetworks(t *testing.T) {
-	composeFile := []byte(`networks:
+func TestNilNetworks(t *testing.T) {
+	composeFile := []byte(`
+version: '2'
+networks:
   public:`)
 
-	networkConfigs, err := ParseNetworks(composeFile)
+	config, err := CreateConfig(composeFile)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for key, networkConfig := range networkConfigs {
+	for key, networkConfig := range config.Networks {
 		if networkConfig == nil {
 			t.Fatalf("networkConfig %s was nil, shouldn't be", key)
 		}
