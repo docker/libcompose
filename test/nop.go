@@ -7,12 +7,13 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/docker/engine-api/client"
-	"github.com/docker/engine-api/types"
-	"github.com/docker/engine-api/types/container"
-	"github.com/docker/engine-api/types/filters"
-	"github.com/docker/engine-api/types/network"
-	"github.com/docker/engine-api/types/registry"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/events"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/registry"
+	"github.com/docker/docker/client"
 )
 
 var (
@@ -161,8 +162,8 @@ func (client *NopClient) ContainerStatPath(ctx context.Context, container, path 
 }
 
 // ContainerStats returns near realtime stats for a given container
-func (client *NopClient) ContainerStats(ctx context.Context, container string, stream bool) (io.ReadCloser, error) {
-	return nil, errNoEngine
+func (client *NopClient) ContainerStats(ctx context.Context, container string, stream bool) (types.ContainerStats, error) {
+	return types.ContainerStats{}, errNoEngine
 }
 
 // ContainerStart sends a request to the docker daemon to start a container
@@ -186,8 +187,8 @@ func (client *NopClient) ContainerUnpause(ctx context.Context, container string)
 }
 
 // ContainerUpdate updates resources of a container
-func (client *NopClient) ContainerUpdate(ctx context.Context, container string, updateConfig container.UpdateConfig) error {
-	return errNoEngine
+func (client *NopClient) ContainerUpdate(ctx context.Context, container string, updateConfig container.UpdateConfig) (types.ContainerUpdateResponse, error) {
+	return types.ContainerUpdateResponse{}, errNoEngine
 }
 
 // ContainerWait pauses execution until a container exits
@@ -206,8 +207,8 @@ func (client *NopClient) CopyToContainer(ctx context.Context, container, path st
 }
 
 // Events returns a stream of events in the daemon in a ReadCloser
-func (client *NopClient) Events(ctx context.Context, options types.EventsOptions) (io.ReadCloser, error) {
-	return nil, errNoEngine
+func (client *NopClient) Events(ctx context.Context, options types.EventsOptions) (<-chan events.Message, <-chan error) {
+	return nil, nil
 }
 
 // ImageBuild sends request to the daemon to build images
@@ -231,7 +232,7 @@ func (client *NopClient) ImageImport(ctx context.Context, source types.ImageImpo
 }
 
 // ImageInspectWithRaw returns the image information and it's raw representation
-func (client *NopClient) ImageInspectWithRaw(ctx context.Context, image string, getSize bool) (types.ImageInspect, []byte, error) {
+func (client *NopClient) ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error) {
 	return types.ImageInspect{}, nil, errNoEngine
 }
 
@@ -350,6 +351,6 @@ func (client *NopClient) VolumeList(ctx context.Context, filter filters.Args) (t
 }
 
 // VolumeRemove removes a volume from the docker host
-func (client *NopClient) VolumeRemove(ctx context.Context, volumeID string) error {
+func (client *NopClient) VolumeRemove(ctx context.Context, volumeID string, force bool) error {
 	return errNoEngine
 }

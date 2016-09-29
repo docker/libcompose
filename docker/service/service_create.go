@@ -8,8 +8,8 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/engine-api/types"
-	containertypes "github.com/docker/engine-api/types/container"
+	"github.com/docker/docker/api/types"
+	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/libcompose/config"
 	composecontainer "github.com/docker/libcompose/docker/container"
 	"github.com/docker/libcompose/labels"

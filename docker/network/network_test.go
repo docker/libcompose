@@ -6,8 +6,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/docker/engine-api/types"
-	"github.com/docker/engine-api/types/network"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/test"
 	"github.com/docker/libcompose/yaml"
@@ -239,10 +239,10 @@ func (c *networkClient) NetworkCreate(ctx context.Context, name string, options 
 		if options.Driver != c.expectedNetworkCreate.Driver {
 			return types.NetworkCreateResponse{}, fmt.Errorf("Invalid network create, expected driver %q, got %q", c.expectedNetworkCreate.Driver, options.Driver)
 		}
-		if options.IPAM.Driver != c.expectedNetworkCreate.IPAM.Driver {
+		if c.expectedNetworkCreate.IPAM != nil && options.IPAM.Driver != c.expectedNetworkCreate.IPAM.Driver {
 			return types.NetworkCreateResponse{}, fmt.Errorf("Invalid network create, expected ipam %q, got %q", c.expectedNetworkCreate.IPAM, options.IPAM)
 		}
-		if len(options.IPAM.Config) != len(c.expectedNetworkCreate.IPAM.Config) {
+		if c.expectedNetworkCreate.IPAM != nil && len(options.IPAM.Config) != len(c.expectedNetworkCreate.IPAM.Config) {
 			return types.NetworkCreateResponse{}, fmt.Errorf("Invalid network create, expected ipam %q, got %q", c.expectedNetworkCreate.Driver, options.Driver)
 		}
 		return types.NetworkCreateResponse{
@@ -329,7 +329,7 @@ func TestNetworksInitialize(t *testing.T) {
 			expectedName: "net1",
 			expectedNetworkCreate: types.NetworkCreate{
 				Driver: "driver1",
-				IPAM: network.IPAM{
+				IPAM: &network.IPAM{
 					Driver: "ipamDriver",
 					Config: []network.IPAMConfig{
 						{

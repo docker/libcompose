@@ -8,11 +8,10 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/engine-api/client"
-	"github.com/docker/engine-api/types"
-	eventtypes "github.com/docker/engine-api/types/events"
-	"github.com/docker/engine-api/types/filters"
-	"github.com/docker/engine-api/types/network"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/docker/auth"
@@ -27,7 +26,6 @@ import (
 	"github.com/docker/libcompose/project/options"
 	"github.com/docker/libcompose/utils"
 	"github.com/docker/libcompose/yaml"
-	dockerevents "github.com/vdemeester/docker-events"
 )
 
 // Service is a project.Service implementations.
@@ -141,7 +139,7 @@ func (s *Service) ensureImageExists(ctx context.Context, noBuild bool, forceBuil
 		return s.build(ctx, options.Build{})
 	}
 
-	exists, err := s.ImageExists(ctx)
+	exists, err := image.Exists(ctx, s.clientFactory.Create(s), s.imageName())
 	if err != nil {
 		return err
 	}
@@ -157,21 +155,6 @@ func (s *Service) ensureImageExists(ctx context.Context, noBuild bool, forceBuil
 	}
 
 	return s.Pull(ctx)
-}
-
-// ImageExists returns whether or not the service image already exists
-func (s *Service) ImageExists(ctx context.Context) (bool, error) {
-	dockerClient := s.clientFactory.Create(s)
-
-	_, _, err := dockerClient.ImageInspectWithRaw(ctx, s.imageName(), false)
-	if err == nil {
-		return true, nil
-	}
-	if err != nil && client.IsErrImageNotFound(err) {
-		return false, nil
-	}
-
-	return false, err
 }
 
 func (s *Service) imageName() string {
@@ -687,24 +670,31 @@ func (s *Service) Events(ctx context.Context, evts chan events.ContainerEvent) e
 	filter.Add("label", fmt.Sprintf("%s=%s", labels.PROJECT, s.project.Name))
 	filter.Add("label", fmt.Sprintf("%s=%s", labels.SERVICE, s.name))
 	client := s.clientFactory.Create(s)
-	return <-dockerevents.Monitor(ctx, client, types.EventsOptions{
+	eventq, errq := client.Events(ctx, types.EventsOptions{
 		Filters: filter,
-	}, func(m eventtypes.Message) {
-		service := m.Actor.Attributes[labels.SERVICE.Str()]
-		attributes := map[string]string{}
-		for _, attr := range eventAttributes {
-			attributes[attr] = m.Actor.Attributes[attr]
-		}
-		e := events.ContainerEvent{
-			Service:    service,
-			Event:      m.Action,
-			Type:       m.Type,
-			ID:         m.Actor.ID,
-			Time:       time.Unix(m.Time, 0),
-			Attributes: attributes,
-		}
-		evts <- e
 	})
+	go func() {
+		for {
+			select {
+			case event := <-eventq:
+				service := event.Actor.Attributes[labels.SERVICE.Str()]
+				attributes := map[string]string{}
+				for _, attr := range eventAttributes {
+					attributes[attr] = event.Actor.Attributes[attr]
+				}
+				e := events.ContainerEvent{
+					Service:    service,
+					Event:      event.Action,
+					Type:       event.Type,
+					ID:         event.Actor.ID,
+					Time:       time.Unix(event.Time, 0),
+					Attributes: attributes,
+				}
+				evts <- e
+			}
+		}
+	}()
+	return <-errq
 }
 
 // Containers implements Service.Containers. It returns the list of containers

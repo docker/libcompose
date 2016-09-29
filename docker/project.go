@@ -4,8 +4,8 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/engine-api/types"
-	"github.com/docker/engine-api/types/filters"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/docker/auth"
 	"github.com/docker/libcompose/docker/client"

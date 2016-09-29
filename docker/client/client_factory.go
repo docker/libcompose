@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/docker/engine-api/client"
+	"github.com/docker/docker/client"
 	"github.com/docker/libcompose/project"
 )
 
@@ -18,7 +18,7 @@ type defaultFactory struct {
 }
 
 // NewDefaultFactory creates and returns the default client factory that uses
-// github.com/docker/engine-api client.
+// github.com/docker/docker client.
 func NewDefaultFactory(opts Options) (Factory, error) {
 	client, err := Create(opts)
 	if err != nil {

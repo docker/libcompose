@@ -5,8 +5,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/docker/engine-api/client"
-	"github.com/docker/engine-api/types"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/docker/libcompose/config"
 
 	composeclient "github.com/docker/libcompose/docker/client"
@@ -44,7 +44,7 @@ func (v *Volume) Remove(ctx context.Context) error {
 		return nil
 	}
 	fmt.Printf("Removing volume %q\n", v.fullName())
-	return v.client.VolumeRemove(ctx, v.fullName())
+	return v.client.VolumeRemove(ctx, v.fullName(), true)
 }
 
 // EnsureItExists make sure the volume exists and return an error if it does not exists

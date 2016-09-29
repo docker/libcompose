@@ -12,9 +12,9 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/jsonmessage"
-	"github.com/docker/engine-api/types"
 	"github.com/docker/libcompose/test"
 )
 
