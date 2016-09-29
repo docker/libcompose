@@ -73,7 +73,7 @@ func (s *Service) populateAdditionalHostConfig(hostConfig *containertypes.HostCo
 		return err
 	}
 
-	for _, link := range s.DependentServices() {
+	for _, link := range s.DependentServices(false) {
 		if !s.project.ServiceConfigs.Has(link.Target) {
 			continue
 		}
@@ -113,7 +113,7 @@ func (s *Service) populateAdditionalHostConfig(hostConfig *containertypes.HostCo
 // FIXME(vdemeester) this is temporary
 func (s *Service) getLinks() (map[string]string, error) {
 	links := map[string]string{}
-	for _, link := range s.DependentServices() {
+	for _, link := range s.DependentServices(false) {
 		if !s.project.ServiceConfigs.Has(link.Target) {
 			continue
 		}
