@@ -3,7 +3,7 @@ set -e
 
 cd "$(dirname "$BASH_SOURCE")/.."
 rm -rf vendor/
-source 'script/.vendor-helpers.sh'
+source 'hack/.vendor-helpers.sh'
 
 clone git github.com/Sirupsen/logrus v0.10.0
 clone git github.com/urfave/cli v1.18.0

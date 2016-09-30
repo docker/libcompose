@@ -24,28 +24,28 @@ DOCKER_RUN_LIBCOMPOSE := docker run --rm -i $(TTY) --privileged -e DAEMON_VERSIO
 default: binary
 
 all: build ## validate all checks, build linux binary, run all tests\ncross build non-linux binaries
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh
+	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh
 
 binary: build ## build the linux binary
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary
+	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh binary
 
 cross-binary: build ## cross build the non linux binaries (windows, darwin)
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh cross-binary
+	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh cross-binary
 
 test: build ## run the unit, integration and acceptance tests
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-unit test-integration test-acceptance
+	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh binary test-unit test-integration test-acceptance
 
 test-unit: build ## run the unit tests
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh test-unit
+	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh test-unit
 
 test-integration: build ## run the integration tests
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-integration
+	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh binary test-integration
 
 test-acceptance: build ## run the acceptance tests
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh binary test-acceptance
+	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh binary test-acceptance
 
 validate: build ## validate DCO, git conflicts marks, gofmt, golint and go vet
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-dco validate-git-marks validate-gofmt validate-lint validate-vet
+	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh validate-dco validate-git-marks validate-gofmt validate-lint validate-vet
 
 shell: build ## start a shell inside the build env
 	$(DOCKER_RUN_LIBCOMPOSE) bash
@@ -58,7 +58,7 @@ bundles:
 	mkdir bundles
 
 clean: 
-	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh clean
+	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh clean
 
 help: ## this help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {sub("\\\\n",sprintf("\n%22c"," "), $$2);printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)

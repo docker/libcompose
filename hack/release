@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 if [ -z "$1" ]; then
-    echo "Pass the version number as the first arg. E.g.: script/release 1.2.3"
+    echo "Pass the version number as the first arg. E.g.: hack/release 1.2.3"
     exit 1
 fi
 VERSION=$1
@@ -10,9 +10,9 @@ if [ -z "$GITHUB_TOKEN" ]; then
     exit 1
 fi
 
-script/build
+hack/build
 
-docker run --rm -v `pwd`:/go/src/github.com/docker/libcompose docker-compose ./script/generate-sums
+docker run --rm -v `pwd`:/go/src/github.com/docker/libcompose docker-compose ./hack/generate-sums
 
 git tag $VERSION
 git push --tags
