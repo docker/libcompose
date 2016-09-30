@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+FILES=events/*.json
+
+go get github.com/ChimeraCoder/gojson/gojson
+
+for f in $FILES
+do
+  echo "Generating event for $f..."
+  EVENT_FILENAME=`basename ${f}`
+  EVENT_NAME="${EVENT_FILENAME%%.*}"
+  STRUCT_NAME=`echo "$EVENT_NAME" | sed -r 's/(^|_)([a-z])/\U\2/g'`
+  gojson -input $f -o project/events/${EVENT_NAME}.go -pkg events -name "$STRUCT_NAME"
+done

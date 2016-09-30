@@ -1,4 +1,4 @@
-.PHONY: all build binary clean cross-binary help test test-unit test-integration test-acceptance validate
+.PHONY: all build binary clean cross-binary help test test-unit test-integration test-acceptance validate generate-events
 
 LIBCOMPOSE_ENVS := \
 	-e OS_PLATFORM_ARG \
@@ -13,13 +13,16 @@ LIBCOMPOSE_ENVS := \
 BIND_DIR := $(if $(DOCKER_HOST),,bundles)
 LIBCOMPOSE_MOUNT := $(if $(BIND_DIR),-v "$(CURDIR)/$(BIND_DIR):/go/src/github.com/docker/libcompose/$(BIND_DIR)")
 
+EVENT_DIR := $(if $(DOCKER_HOST),,project/events)
+LIBCOMPOSE_EVENT_MOUNT := $(if $(EVENT_DIR),-v "$(CURDIR)/$(EVENT_DIR):/go/src/github.com/docker/libcompose/$(EVENT_DIR)")
+
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
 GIT_BRANCH_CLEAN := $(shell echo $(GIT_BRANCH) | sed -e "s/[^[:alnum:]]/-/g")
 LIBCOMPOSE_IMAGE := libcompose-dev$(if $(GIT_BRANCH_CLEAN),:$(GIT_BRANCH_CLEAN))
 
 DAEMON_VERSION := $(if $(DAEMON_VERSION),$(DAEMON_VERSION),"default")
 TTY := $(shell [ -t 0 ] && echo "-t")
-DOCKER_RUN_LIBCOMPOSE := docker run --rm -i $(TTY) --privileged -e DAEMON_VERSION="$(DAEMON_VERSION)" $(LIBCOMPOSE_ENVS) $(LIBCOMPOSE_MOUNT) "$(LIBCOMPOSE_IMAGE)"
+DOCKER_RUN_LIBCOMPOSE := docker run --rm -i $(TTY) --privileged -e DAEMON_VERSION="$(DAEMON_VERSION)" $(LIBCOMPOSE_ENVS) $(LIBCOMPOSE_MOUNT) $(LIBCOMPOSE_EVENT_MOUNT) "$(LIBCOMPOSE_IMAGE)"
 
 default: binary
 
@@ -46,6 +49,9 @@ test-acceptance: build ## run the acceptance tests
 
 validate: build ## validate DCO, git conflicts marks, gofmt, golint and go vet
 	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh validate-dco validate-git-marks validate-gofmt validate-lint validate-vet
+
+generate-events: build ## generate dynamic events from json
+	$(DOCKER_RUN_LIBCOMPOSE) ./script/make.sh generate-events
 
 shell: build ## start a shell inside the build env
 	$(DOCKER_RUN_LIBCOMPOSE) bash

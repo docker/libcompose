@@ -10,6 +10,7 @@ DEFAULT_BUNDLES=(
     validate-git-marks
     validate-lint
     validate-vet
+    generate-events
     binary
 
     test-unit
