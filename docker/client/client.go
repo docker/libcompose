@@ -8,8 +8,8 @@ import (
 	"runtime"
 
 	"github.com/docker/docker/cliconfig"
+	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/homedir"
-	"github.com/docker/engine-api/client"
 	"github.com/docker/go-connections/sockets"
 	"github.com/docker/go-connections/tlsconfig"
 	"github.com/docker/libcompose/version"

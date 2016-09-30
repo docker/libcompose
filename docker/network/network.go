@@ -7,9 +7,9 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/docker/engine-api/client"
-	"github.com/docker/engine-api/types"
-	"github.com/docker/engine-api/types/network"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/client"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/yaml"
 )
@@ -81,7 +81,7 @@ func (n *Network) create(ctx context.Context) error {
 	return err
 }
 
-func convertToAPIIpam(ipam config.Ipam) network.IPAM {
+func convertToAPIIpam(ipam config.Ipam) *network.IPAM {
 	ipamConfigs := []network.IPAMConfig{}
 	for _, config := range ipam.Config {
 		ipamConfigs = append(ipamConfigs, network.IPAMConfig{
@@ -91,7 +91,7 @@ func convertToAPIIpam(ipam config.Ipam) network.IPAM {
 			AuxAddress: config.AuxAddress,
 		})
 	}
-	return network.IPAM{
+	return &network.IPAM{
 		Driver: ipam.Driver,
 		Config: ipamConfigs,
 	}

@@ -12,8 +12,8 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/engine-api/client"
-	"github.com/docker/engine-api/types"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	lclient "github.com/docker/libcompose/docker/client"
 	"github.com/docker/libcompose/docker/container"
 	"github.com/docker/libcompose/labels"

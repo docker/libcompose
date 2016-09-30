@@ -10,19 +10,31 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/term"
 	"github.com/docker/docker/reference"
 	"github.com/docker/docker/registry"
-	"github.com/docker/engine-api/client"
-	"github.com/docker/engine-api/types"
 	"github.com/docker/libcompose/docker/auth"
 )
+
+// Exists return whether or not the service image already exists
+func Exists(ctx context.Context, clt client.ImageAPIClient, image string) (bool, error) {
+	_, err := InspectImage(ctx, clt, image)
+	if err != nil {
+		if client.IsErrImageNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
 
 // InspectImage inspect the specified image (can be a name, an id or a digest)
 // with the specified client.
 func InspectImage(ctx context.Context, client client.ImageAPIClient, image string) (types.ImageInspect, error) {
-	imageInspect, _, err := client.ImageInspectWithRaw(ctx, image, false)
+	imageInspect, _, err := client.ImageInspectWithRaw(ctx, image)
 	return imageInspect, err
 }
 

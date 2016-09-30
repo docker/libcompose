@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/docker/engine-api/types/container"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/libcompose/project"
 )
 
