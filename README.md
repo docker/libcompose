@@ -122,7 +122,7 @@ libcompose-cli_windows-386.exe
 You can run unit tests using the `test-unit` target and the
 integration test using the `test-integration` target. If you don't use
 Docker and `make` to build `libcompose`, you can use `go test` and the
-following scripts : `script/test-unit` and `script/test-integration`.
+following scripts : `hack/test-unit` and `hack/test-integration`.
 
 ```bash
 $ make test-unit

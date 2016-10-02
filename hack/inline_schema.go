@@ -7,16 +7,16 @@ import (
 )
 
 func main() {
-	t, err := template.New("schema_template.go").ParseFiles("./script/schema_template.go")
+	t, err := template.New("schema_template.go").ParseFiles("./hack/schema_template.go")
 	if err != nil {
 		panic(err)
 	}
 
-	schemaV1, err := ioutil.ReadFile("./script/config_schema_v1.json")
+	schemaV1, err := ioutil.ReadFile("./hack/config_schema_v1.json")
 	if err != nil {
 		panic(err)
 	}
-	schemaV2, err := ioutil.ReadFile("./script/config_schema_v2.0.json")
+	schemaV2, err := ioutil.ReadFile("./hack/config_schema_v2.0.json")
 	if err != nil {
 		panic(err)
 	}
