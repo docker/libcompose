@@ -81,6 +81,23 @@ func TestParseLabels(t *testing.T) {
 	assert.Equal(t, []string{"less"}, []string(cfg.Entrypoint))
 }
 
+func TestGroupAdd(t *testing.T) {
+	ctx := &ctx.Context{}
+	sc := &config.ServiceConfig{
+		GroupAdd: []string{
+			"root",
+			"1",
+		},
+	}
+	_, hostCfg, err := Convert(sc, ctx.Context, nil)
+	assert.Nil(t, err)
+
+	assert.True(t, reflect.DeepEqual([]string{
+		"root",
+		"1",
+	}, hostCfg.GroupAdd))
+}
+
 func TestOomScoreAdj(t *testing.T) {
 	ctx := &ctx.Context{}
 	sc := &config.ServiceConfig{
