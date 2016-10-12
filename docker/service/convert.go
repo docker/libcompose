@@ -167,6 +167,7 @@ func Convert(c *config.ServiceConfig, ctx project.Context, clientFactory compose
 		WorkingDir:   c.WorkingDir,
 		Volumes:      toMap(Filter(vols, isVolume)),
 		MacAddress:   c.MacAddress,
+		StopSignal:   c.StopSignal,
 	}
 
 	ulimits := []*units.Ulimit{}
