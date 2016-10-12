@@ -2,6 +2,7 @@ package service
 
 import (
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/docker/libcompose/config"
@@ -89,4 +90,17 @@ func TestStopSignal(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, "SIGTERM", cfg.StopSignal)
+}
+
+func TestTmpfs(t *testing.T) {
+	ctx := &ctx.Context{}
+	sc := &config.ServiceConfig{
+		Tmpfs: yaml.Stringorslice{"/run"},
+	}
+	_, hostCfg, err := Convert(sc, ctx.Context, nil)
+	assert.Nil(t, err)
+
+	assert.True(t, reflect.DeepEqual(map[string]string{
+		"/run": "",
+	}, hostCfg.Tmpfs))
 }
