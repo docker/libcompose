@@ -243,6 +243,7 @@ func Convert(c *config.ServiceConfig, ctx project.Context, clientFactory compose
 		VolumesFrom: volumesFrom,
 		CapAdd:      strslice.StrSlice(utils.CopySlice(c.CapAdd)),
 		CapDrop:     strslice.StrSlice(utils.CopySlice(c.CapDrop)),
+		GroupAdd:    c.GroupAdd,
 		ExtraHosts:  utils.CopySlice(c.ExtraHosts),
 		Privileged:  c.Privileged,
 		Binds:       Filter(vols, isBind),

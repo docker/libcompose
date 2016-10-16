@@ -36,6 +36,7 @@ type ServiceConfigV1 struct {
 	Entrypoint    yaml.Command         `yaml:"entrypoint,flow,omitempty"`
 	EnvFile       yaml.Stringorslice   `yaml:"env_file,omitempty"`
 	Environment   yaml.MaporEqualSlice `yaml:"environment,omitempty"`
+	GroupAdd      []string             `yaml:"group_add,omitempty"`
 	Hostname      string               `yaml:"hostname,omitempty"`
 	Image         string               `yaml:"image,omitempty"`
 	Labels        yaml.SliceorMap      `yaml:"labels,omitempty"`
@@ -101,6 +102,7 @@ type ServiceConfig struct {
 	Extends       yaml.MaporEqualSlice `yaml:"extends,omitempty"`
 	ExternalLinks []string             `yaml:"external_links,omitempty"`
 	ExtraHosts    []string             `yaml:"extra_hosts,omitempty"`
+	GroupAdd      []string             `yaml:"group_add,omitempty"`
 	Image         string               `yaml:"image,omitempty"`
 	Hostname      string               `yaml:"hostname,omitempty"`
 	Ipc           string               `yaml:"ipc,omitempty"`
