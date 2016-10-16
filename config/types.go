@@ -45,6 +45,7 @@ type ServiceConfigV1 struct {
 	MacAddress    string               `yaml:"mac_address,omitempty"`
 	MemLimit      yaml.StringorInt     `yaml:"mem_limit,omitempty"`
 	MemSwapLimit  yaml.StringorInt     `yaml:"memswap_limit,omitempty"`
+	MemSwappiness yaml.StringorInt     `yaml:"mem_swappiness,omitempty"`
 	Name          string               `yaml:"name,omitempty"`
 	Net           string               `yaml:"net,omitempty"`
 	OomScoreAdj   yaml.StringorInt     `yaml:"oom_score_adj,omitempty"`
@@ -112,6 +113,7 @@ type ServiceConfig struct {
 	MacAddress    string               `yaml:"mac_address,omitempty"`
 	MemLimit      yaml.StringorInt     `yaml:"mem_limit,omitempty"`
 	MemSwapLimit  yaml.StringorInt     `yaml:"memswap_limit,omitempty"`
+	MemSwappiness yaml.StringorInt     `yaml:"mem_swappiness,omitempty"`
 	NetworkMode   string               `yaml:"network_mode,omitempty"`
 	Networks      *yaml.Networks       `yaml:"networks,omitempty"`
 	OomScoreAdj   yaml.StringorInt     `yaml:"oom_score_adj,omitempty"`

@@ -98,6 +98,17 @@ func TestGroupAdd(t *testing.T) {
 	}, hostCfg.GroupAdd))
 }
 
+func TestMemSwappiness(t *testing.T) {
+	ctx := &ctx.Context{}
+	sc := &config.ServiceConfig{
+		MemSwappiness: yaml.StringorInt(10),
+	}
+	_, hostCfg, err := Convert(sc, ctx.Context, nil)
+	assert.Nil(t, err)
+
+	assert.Equal(t, int64(10), *hostCfg.MemorySwappiness)
+}
+
 func TestOomScoreAdj(t *testing.T) {
 	ctx := &ctx.Context{}
 	sc := &config.ServiceConfig{
