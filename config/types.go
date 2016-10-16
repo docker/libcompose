@@ -46,6 +46,7 @@ type ServiceConfigV1 struct {
 	MemSwapLimit  yaml.StringorInt     `yaml:"memswap_limit,omitempty"`
 	Name          string               `yaml:"name,omitempty"`
 	Net           string               `yaml:"net,omitempty"`
+	OomScoreAdj   yaml.StringorInt     `yaml:"oom_score_adj,omitempty"`
 	Pid           string               `yaml:"pid,omitempty"`
 	Uts           string               `yaml:"uts,omitempty"`
 	Ipc           string               `yaml:"ipc,omitempty"`
@@ -111,6 +112,7 @@ type ServiceConfig struct {
 	MemSwapLimit  yaml.StringorInt     `yaml:"memswap_limit,omitempty"`
 	NetworkMode   string               `yaml:"network_mode,omitempty"`
 	Networks      *yaml.Networks       `yaml:"networks,omitempty"`
+	OomScoreAdj   yaml.StringorInt     `yaml:"oom_score_adj,omitempty"`
 	Pid           string               `yaml:"pid,omitempty"`
 	Ports         []string             `yaml:"ports,omitempty"`
 	Privileged    bool                 `yaml:"privileged,omitempty"`
