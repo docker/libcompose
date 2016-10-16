@@ -234,6 +234,11 @@ func Convert(c *config.ServiceConfig, ctx project.Context, clientFactory compose
 		}
 	}
 
+	tmpfs := map[string]string{}
+	for _, path := range c.Tmpfs {
+		tmpfs[path] = ""
+	}
+
 	hostConfig := &container.HostConfig{
 		VolumesFrom: volumesFrom,
 		CapAdd:      strslice.StrSlice(utils.CopySlice(c.CapAdd)),
@@ -256,6 +261,7 @@ func Convert(c *config.ServiceConfig, ctx project.Context, clientFactory compose
 		RestartPolicy:  *restartPolicy,
 		ShmSize:        int64(c.ShmSize),
 		SecurityOpt:    utils.CopySlice(c.SecurityOpt),
+		Tmpfs:          tmpfs,
 		VolumeDriver:   c.VolumeDriver,
 		Resources:      resources,
 	}
