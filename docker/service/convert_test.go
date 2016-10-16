@@ -79,3 +79,14 @@ func TestParseLabels(t *testing.T) {
 	assert.Equal(t, yaml.Command{bashCmd}, sc.Entrypoint)
 	assert.Equal(t, []string{"less"}, []string(cfg.Entrypoint))
 }
+
+func TestStopSignal(t *testing.T) {
+	ctx := &ctx.Context{}
+	sc := &config.ServiceConfig{
+		StopSignal: "SIGTERM",
+	}
+	cfg, _, err := Convert(sc, ctx.Context, nil)
+	assert.Nil(t, err)
+
+	assert.Equal(t, "SIGTERM", cfg.StopSignal)
+}
