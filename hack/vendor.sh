@@ -9,7 +9,7 @@ clone git github.com/Sirupsen/logrus v0.10.0
 clone git github.com/urfave/cli v1.18.0
 clone git github.com/docker/distribution 77b9d2997abcded79a5314970fe69a44c93c25fb
 clone git github.com/vbatts/tar-split v0.9.11
-clone git github.com/docker/docker 601004e1a714d77d3a43e957b8ae8adbc867b280
+clone git github.com/docker/docker 8658748ef716e43a5f6d834825d818012ed6e2c4
 clone git github.com/docker/go-units f2145db703495b2e525c59662db69a7344b00bb8
 clone git github.com/docker/go-connections 988efe982fdecb46f01d53465878ff1f2ff411ce
 clone git github.com/flynn/go-shlex 3f9db97f856818214da2e1057f8ad84803971cff
