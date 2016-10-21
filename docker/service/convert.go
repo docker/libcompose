@@ -252,6 +252,7 @@ func Convert(c *config.ServiceConfig, ctx project.Context, clientFactory compose
 		Binds:       Filter(vols, isBind),
 		DNS:         utils.CopySlice(c.DNS),
 		DNSSearch:   utils.CopySlice(c.DNSSearch),
+		Isolation:   container.Isolation(c.Isolation),
 		LogConfig: container.LogConfig{
 			Type:   c.Logging.Driver,
 			Config: utils.CopyMap(c.Logging.Options),
