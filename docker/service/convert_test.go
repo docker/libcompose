@@ -81,6 +81,23 @@ func TestParseLabels(t *testing.T) {
 	assert.Equal(t, []string{"less"}, []string(cfg.Entrypoint))
 }
 
+func TestDNSOpt(t *testing.T) {
+	ctx := &ctx.Context{}
+	sc := &config.ServiceConfig{
+		DNSOpts: []string{
+			"use-vc",
+			"no-tld-query",
+		},
+	}
+	_, hostCfg, err := Convert(sc, ctx.Context, nil)
+	assert.Nil(t, err)
+
+	assert.True(t, reflect.DeepEqual([]string{
+		"use-vc",
+		"no-tld-query",
+	}, hostCfg.DNSOptions))
+}
+
 func TestGroupAdd(t *testing.T) {
 	ctx := &ctx.Context{}
 	sc := &config.ServiceConfig{
