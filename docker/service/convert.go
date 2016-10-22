@@ -251,6 +251,7 @@ func Convert(c *config.ServiceConfig, ctx project.Context, clientFactory compose
 		Privileged:  c.Privileged,
 		Binds:       Filter(vols, isBind),
 		DNS:         utils.CopySlice(c.DNS),
+		DNSOptions:  utils.CopySlice(c.DNSOpts),
 		DNSSearch:   utils.CopySlice(c.DNSSearch),
 		LogConfig: container.LogConfig{
 			Type:   c.Logging.Driver,
