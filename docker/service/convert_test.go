@@ -171,4 +171,14 @@ func TestTmpfs(t *testing.T) {
 	assert.True(t, reflect.DeepEqual(map[string]string{
 		"/run": "",
 	}, hostCfg.Tmpfs))
+
+	sc = &config.ServiceConfig{
+		Tmpfs: yaml.Stringorslice{"/run:rw,noexec,nosuid,size=65536k"},
+	}
+	_, hostCfg, err = Convert(sc, ctx.Context, nil)
+	assert.Nil(t, err)
+
+	assert.True(t, reflect.DeepEqual(map[string]string{
+		"/run": "rw,noexec,nosuid,size=65536k",
+	}, hostCfg.Tmpfs))
 }
