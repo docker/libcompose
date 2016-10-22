@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/docker/ctx"
 	"github.com/docker/libcompose/lookup"
@@ -113,6 +114,17 @@ func TestGroupAdd(t *testing.T) {
 		"root",
 		"1",
 	}, hostCfg.GroupAdd))
+}
+
+func TestIsolation(t *testing.T) {
+	ctx := &ctx.Context{}
+	sc := &config.ServiceConfig{
+		Isolation: "default",
+	}
+	_, hostCfg, err := Convert(sc, ctx.Context, nil)
+	assert.Nil(t, err)
+
+	assert.Equal(t, container.Isolation("default"), hostCfg.Isolation)
 }
 
 func TestMemSwappiness(t *testing.T) {
