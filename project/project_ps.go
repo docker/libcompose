@@ -9,11 +9,17 @@ import (
 // Ps list containers for the specified services.
 func (p *Project) Ps(ctx context.Context, services ...string) (InfoSet, error) {
 	allInfo := InfoSet{}
+
+	if services != nil {
+		sort.Strings(services)
+	}
+
 	for _, name := range p.ServiceConfigs.Keys() {
 		if services != nil { // apply filter
-			sort.Strings(services)
 			index := sort.SearchStrings(services, name)
-			if index > len(services) {
+			// index hold the position where the data should be,
+			// be it present or not
+			if index > len(services) || services[index] != name {
 				continue
 			}
 		}
