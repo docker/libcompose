@@ -130,7 +130,7 @@ func TestIsolation(t *testing.T) {
 func TestMemSwappiness(t *testing.T) {
 	ctx := &ctx.Context{}
 	sc := &config.ServiceConfig{
-		MemSwappiness: yaml.StringorInt(10),
+		MemSwappiness: yaml.MemStringorInt(10),
 	}
 	_, hostCfg, err := Convert(sc, ctx.Context, nil)
 	assert.Nil(t, err)
