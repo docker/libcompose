@@ -23,6 +23,7 @@ if test -n "${DAEMON_VERSION}" && test "${DAEMON_VERSION}" != "all"; then
     if test "${DAEMON_VERSION}" = "default"; then
         DAEMON_VERSION="${DEFAULT_DOCKER_VERSION}"
     fi
+    echo "Daemon version ${DAEMON_VERSION}"
     for version in $(echo ${DAEMON_VERSION} | cut -f1); do
         DOCKER_DAEMON_VERSION="${version}" run_integration_test
     done
