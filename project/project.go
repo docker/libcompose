@@ -160,7 +160,7 @@ func (p *Project) CreateService(name string) (Service, error) {
 					parts := strings.SplitN(envValue[0], "=", 2)
 					config.Build.Args[parts[0]] = parts[1]
 				default:
-					return nil, fmt.Errorf("Tried to set Build Arg %#v to multi-value %#v.", arg, envValue)
+					return nil, fmt.Errorf("tried to set Build Arg %#v to multi-value %#v", arg, envValue)
 				}
 			}
 		}
@@ -267,10 +267,12 @@ func (p *Project) handleNetworkConfig() {
 				serviceConfig.Networks = &yaml.Networks{
 					Networks: []*yaml.Network{
 						{
-							Name: "default",
+							Name:     "default",
+							RealName: fmt.Sprintf("%s_%s", p.Name, "default"),
 						},
 					},
 				}
+				p.AddNetworkConfig("default", &config.NetworkConfig{})
 			}
 			// Consolidate the name of the network
 			// FIXME(vdemeester) probably shouldn't be there, maybe move that to interface/factory
