@@ -141,7 +141,7 @@ func (p *Project) CreateService(name string) (Service, error) {
 				env = parts[0]
 			}
 
-			for _, value := range p.context.EnvironmentLookup.Lookup(env, name, &config) {
+			for _, value := range p.context.EnvironmentLookup.Lookup(env, &config) {
 				parsedEnv = append(parsedEnv, value)
 			}
 		}
@@ -151,7 +151,7 @@ func (p *Project) CreateService(name string) (Service, error) {
 		// check the environment for extra build Args that are set but not given a value in the compose file
 		for arg, value := range config.Build.Args {
 			if value == "\x00" {
-				envValue := p.context.EnvironmentLookup.Lookup(arg, name, &config)
+				envValue := p.context.EnvironmentLookup.Lookup(arg, &config)
 				// depending on what we get back we do different things
 				switch l := len(envValue); l {
 				case 0:

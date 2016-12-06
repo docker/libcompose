@@ -152,7 +152,7 @@ func TestParseWithDefaultEnvironmentLookup(t *testing.T) {
 type TestEnvironmentLookup struct {
 }
 
-func (t *TestEnvironmentLookup) Lookup(key, serviceName string, config *config.ServiceConfig) []string {
+func (t *TestEnvironmentLookup) Lookup(key string, config *config.ServiceConfig) []string {
 	return []string{fmt.Sprintf("%s=X", key)}
 }
 
