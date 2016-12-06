@@ -8,7 +8,7 @@ import (
 
 // EnvironmentLookup defines methods to provides environment variable loading.
 type EnvironmentLookup interface {
-	Lookup(key, serviceName string, config *ServiceConfig) []string
+	Lookup(key string, config *ServiceConfig) []string
 }
 
 // ResourceLookup defines methods to provides file loading.
@@ -172,10 +172,10 @@ type NetworkConfig struct {
 
 // Config holds libcompose top level configuration
 type Config struct {
-	Version  string                    `yaml:"version,omitempty"`
-	Services RawServiceMap             `yaml:"services,omitempty"`
-	Volumes  map[string]*VolumeConfig  `yaml:"volumes,omitempty"`
-	Networks map[string]*NetworkConfig `yaml:"networks,omitempty"`
+	Version  string                 `yaml:"version,omitempty"`
+	Services RawServiceMap          `yaml:"services,omitempty"`
+	Volumes  map[string]interface{} `yaml:"volumes,omitempty"`
+	Networks map[string]interface{} `yaml:"networks,omitempty"`
 }
 
 // NewServiceConfigs initializes a new Configs struct
