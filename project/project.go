@@ -267,10 +267,12 @@ func (p *Project) handleNetworkConfig() {
 				serviceConfig.Networks = &yaml.Networks{
 					Networks: []*yaml.Network{
 						{
-							Name: "default",
+							Name:     "default",
+							RealName: fmt.Sprintf("%s_%s", p.Name, "default"),
 						},
 					},
 				}
+				p.AddNetworkConfig("default", &config.NetworkConfig{})
 			}
 			// Consolidate the name of the network
 			// FIXME(vdemeester) probably shouldn't be there, maybe move that to interface/factory
