@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"path"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/utils"
@@ -33,6 +34,19 @@ func MergeServicesV2(existingServices *ServiceConfigs, environmentLookup Environ
 		}
 
 		datas[name] = data
+	}
+
+	if options.Validate {
+		var errs []string
+		for name, data := range datas {
+			err := validateServiceConstraintsv2(data, name)
+			if err != nil {
+				errs = append(errs, err.Error())
+			}
+		}
+		if len(errs) != 0 {
+			return nil, fmt.Errorf(strings.Join(errs, "\n"))
+		}
 	}
 
 	serviceConfigs := make(map[string]*ServiceConfig)
