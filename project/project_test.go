@@ -202,6 +202,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
   multiple:
     image: busybox
     mem_limit: "40m"
+    memswap_limit: 40000000
     ports:
       - 10000`)
 
@@ -244,4 +245,5 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	assert.Equal(t, "multi", multipleConfig.ContainerName)
 	assert.Equal(t, []string{"8000", "9000", "10000"}, multipleConfig.Ports)
 	assert.Equal(t, yaml.MemStringorInt(41943040), multipleConfig.MemLimit)
+	assert.Equal(t, yaml.MemStringorInt(40000000), multipleConfig.MemSwapLimit)
 }
