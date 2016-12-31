@@ -14,11 +14,11 @@ type StructStringorInt struct {
 }
 
 func TestStringorIntYaml(t *testing.T) {
-	for _, str := range []string{`{foo: 10}`, `{foo: "10"}`} {
+	for _, str := range []string{`{foo: 1048576}`, `{foo: "1048576"}`, `{foo: "1M"}`} {
 		s := StructStringorInt{}
 		yaml.Unmarshal([]byte(str), &s)
 
-		assert.Equal(t, StringorInt(10), s.Foo)
+		assert.Equal(t, StringorInt(1048576), s.Foo)
 
 		d, err := yaml.Marshal(&s)
 		assert.Nil(t, err)
@@ -26,7 +26,7 @@ func TestStringorIntYaml(t *testing.T) {
 		s2 := StructStringorInt{}
 		yaml.Unmarshal(d, &s2)
 
-		assert.Equal(t, StringorInt(10), s2.Foo)
+		assert.Equal(t, StringorInt(1048576), s2.Foo)
 	}
 }
 

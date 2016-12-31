@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/api/types/strslice"
+	units "github.com/docker/go-units"
 )
 
 // StringorInt represents a string or an integer.
@@ -22,7 +23,10 @@ func (s *StringorInt) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	var stringType string
 	if err := unmarshal(&stringType); err == nil {
-		intType, err := strconv.ParseInt(stringType, 10, 64)
+		if stringType == "" {
+			return errors.New("Unmarshalled string is empty. Failed to convert to IntType")
+		}
+		intType, err := units.RAMInBytes(stringType)
 		if err != nil {
 			return err
 		}

@@ -49,7 +49,7 @@ func ConvertByJSON(src, target interface{}) error {
 
 	err = json.Unmarshal(newBytes, target)
 	if err != nil {
-		logrus.Errorf("Failed to unmarshall: %v\n%s", err, string(newBytes))
+		logrus.Errorf("Failed to unmarshal: %v\n%s", err, string(newBytes))
 	}
 	return err
 }
@@ -64,7 +64,7 @@ func Convert(src, target interface{}) error {
 
 	err = yaml.Unmarshal(newBytes, target)
 	if err != nil {
-		logrus.Errorf("Failed to unmarshall: %v\n%s", err, string(newBytes))
+		logrus.Errorf("Failed to unmarshal: %v\n%s", err, string(newBytes))
 	}
 	return err
 }
