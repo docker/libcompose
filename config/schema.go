@@ -298,6 +298,7 @@ var servicesSchemaDataV2 = `{
 
         "mac_address": {"type": "string"},
         "mem_limit": {"type": ["number", "string"]},
+        "mem_reservation": {"type": ["number", "string"]},
         "memswap_limit": {"type": ["number", "string"]},
         "mem_swappiness": {"type": "integer"},
         "network_mode": {"type": "string"},
