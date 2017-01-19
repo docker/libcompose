@@ -184,16 +184,17 @@ func Convert(c *config.ServiceConfig, ctx project.Context, clientFactory compose
 	memorySwappiness := int64(c.MemSwappiness)
 
 	resources := container.Resources{
-		CgroupParent:     c.CgroupParent,
-		Memory:           int64(c.MemLimit),
-		MemorySwap:       int64(c.MemSwapLimit),
-		MemorySwappiness: &memorySwappiness,
-		CPUShares:        int64(c.CPUShares),
-		CPUQuota:         int64(c.CPUQuota),
-		CpusetCpus:       c.CPUSet,
-		Ulimits:          ulimits,
-		Devices:          deviceMappings,
-		OomKillDisable:   &c.OomKillDisable,
+		CgroupParent:      c.CgroupParent,
+		Memory:            int64(c.MemLimit),
+		MemoryReservation: int64(c.MemReservation),
+		MemorySwap:        int64(c.MemSwapLimit),
+		MemorySwappiness:  &memorySwappiness,
+		CPUShares:         int64(c.CPUShares),
+		CPUQuota:          int64(c.CPUQuota),
+		CpusetCpus:        c.CPUSet,
+		Ulimits:           ulimits,
+		Devices:           deviceMappings,
+		OomKillDisable:    &c.OomKillDisable,
 	}
 
 	networkMode := c.NetworkMode
