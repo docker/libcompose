@@ -7,7 +7,9 @@ rm -f libcompose-cli
 go generate
 
 BUILDTIME=$(date --rfc-3339 ns | sed -e 's/ /T/') &> /dev/null
-GITCOMMIT=$(git rev-parse --short HEAD)
+if test -z "$GITCOMMIT"; then
+    GITCOMMIT=$(git rev-parse --short HEAD)
+fi
 
 # Build binaries
 go build \
