@@ -150,7 +150,7 @@ func (p *Project) CreateService(name string) (Service, error) {
 
 		// check the environment for extra build Args that are set but not given a value in the compose file
 		for arg, value := range config.Build.Args {
-			if value == "\x00" {
+			if *value == "\x00" {
 				envValue := p.context.EnvironmentLookup.Lookup(arg, &config)
 				// depending on what we get back we do different things
 				switch l := len(envValue); l {
@@ -158,7 +158,7 @@ func (p *Project) CreateService(name string) (Service, error) {
 					delete(config.Build.Args, arg)
 				case 1:
 					parts := strings.SplitN(envValue[0], "=", 2)
-					config.Build.Args[parts[0]] = parts[1]
+					config.Build.Args[parts[0]] = &parts[1]
 				default:
 					return nil, fmt.Errorf("tried to set Build Arg %#v to multi-value %#v", arg, envValue)
 				}
