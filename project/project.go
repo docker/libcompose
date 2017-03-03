@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -65,7 +66,17 @@ func NewProject(context *Context, runtime RuntimeProject, parseOptions *config.P
 	}
 
 	if context.EnvironmentLookup == nil {
-		cwd, err := os.Getwd()
+		var envPath, absPath, cwd string
+		var err error
+		if len(context.ComposeFiles) > 0 {
+			absPath, err = filepath.Abs(context.ComposeFiles[0])
+			dir, _ := path.Split(absPath)
+			envPath = filepath.Join(dir, ".env")
+		} else {
+			cwd, err = os.Getwd()
+			envPath = filepath.Join(cwd, ".env")
+		}
+
 		if err != nil {
 			log.Errorf("Could not get the rooted path name to the current directory: %v", err)
 			return nil
@@ -73,7 +84,7 @@ func NewProject(context *Context, runtime RuntimeProject, parseOptions *config.P
 		context.EnvironmentLookup = &lookup.ComposableEnvLookup{
 			Lookups: []config.EnvironmentLookup{
 				&lookup.EnvfileLookup{
-					Path: filepath.Join(cwd, ".env"),
+					Path: envPath,
 				},
 				&lookup.OsEnvLookup{},
 			},
