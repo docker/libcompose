@@ -64,6 +64,7 @@ func TestTwoCall(t *testing.T) {
 	p := NewProject(&Context{
 		ServiceFactory: factory,
 	}, nil, nil)
+	defer p.Close()
 	p.ServiceConfigs = config.NewServiceConfigs()
 	p.ServiceConfigs.Add("foo", &config.ServiceConfig{})
 
@@ -83,6 +84,7 @@ func TestTwoCall(t *testing.T) {
 func TestGetServiceConfig(t *testing.T) {
 
 	p := NewProject(&Context{}, nil, nil)
+	defer p.Close()
 	p.ServiceConfigs = config.NewServiceConfigs()
 	fooService := &config.ServiceConfig{}
 	p.ServiceConfigs.Add("foo", fooService)
@@ -112,6 +114,7 @@ func TestParseWithBadContent(t *testing.T) {
 			[]byte("garbage"),
 		},
 	}, nil, nil)
+	defer p.Close()
 
 	err := p.Parse()
 	if err == nil {
@@ -129,6 +132,7 @@ func TestParseWithGoodContent(t *testing.T) {
 			[]byte("not-garbage:\n  image: foo"),
 		},
 	}, nil, nil)
+	defer p.Close()
 
 	err := p.Parse()
 	if err != nil {
@@ -142,6 +146,7 @@ func TestParseWithDefaultEnvironmentLookup(t *testing.T) {
 			[]byte("not-garbage:\n  image: foo:${version}"),
 		},
 	}, nil, nil)
+	defer p.Close()
 
 	err := p.Parse()
 	if err != nil {
@@ -165,6 +170,7 @@ func TestEnvironmentResolve(t *testing.T) {
 		ServiceFactory:    factory,
 		EnvironmentLookup: &TestEnvironmentLookup{},
 	}, nil, nil)
+	defer p.Close()
 	p.ServiceConfigs = config.NewServiceConfigs()
 	p.ServiceConfigs.Add("foo", &config.ServiceConfig{
 		Environment: yaml.MaporEqualSlice([]string{
@@ -209,6 +215,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	p := NewProject(&Context{
 		ComposeBytes: [][]byte{configOne, configTwo},
 	}, nil, nil)
+	defer p.Close()
 
 	err := p.Parse()
 
@@ -222,6 +229,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	p = NewProject(&Context{
 		ComposeBytes: [][]byte{configTwo, configOne},
 	}, nil, nil)
+	defer p.Close()
 
 	err = p.Parse()
 
@@ -235,6 +243,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	p = NewProject(&Context{
 		ComposeBytes: [][]byte{configOne, configTwo, configThree},
 	}, nil, nil)
+	defer p.Close()
 
 	err = p.Parse()
 

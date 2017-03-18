@@ -32,24 +32,29 @@ var (
 	}
 )
 
-type defaultListener struct {
-	project    *Project
-	listenChan chan events.Event
-	upCount    int
+// DefaultListener is a listener with the default logger
+type DefaultListener struct {
+	// Event channel
+	C chan events.Event
+
+	project *Project
+	upCount int
 }
 
 // NewDefaultListener create a default listener for the specified project.
-func NewDefaultListener(p *Project) chan<- events.Event {
-	l := defaultListener{
-		listenChan: make(chan events.Event),
-		project:    p,
+func NewDefaultListener(p *Project) *DefaultListener {
+	l := &DefaultListener{
+		C:       make(chan events.Event),
+		project: p,
 	}
-	go l.start()
-	return l.listenChan
+	go l.Start()
+	return l
 }
 
-func (d *defaultListener) start() {
-	for event := range d.listenChan {
+// Start runs the main event loop.
+// This method blocks until Close() is called.
+func (d *DefaultListener) Start() {
+	for event := range d.C {
 		buffer := bytes.NewBuffer(nil)
 		if event.Data != nil {
 			for k, v := range event.Data {
@@ -78,4 +83,9 @@ func (d *defaultListener) start() {
 			logf("[%d/%d] [%s]: %s %s", d.upCount, d.project.ServiceConfigs.Len(), event.ServiceName, event.EventType, buffer.Bytes())
 		}
 	}
+}
+
+// Close terminates event channel C.
+func (d *DefaultListener) Close() {
+	close(d.C)
 }

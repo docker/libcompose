@@ -35,15 +35,15 @@ type Project struct {
 	ReloadCallback func() error
 	ParseOptions   *config.ParseOptions
 
-	runtime       RuntimeProject
-	networks      Networks
-	volumes       Volumes
-	configVersion string
-	context       *Context
-	reload        []string
-	upCount       int
-	listeners     []chan<- events.Event
-	hasListeners  bool
+	runtime         RuntimeProject
+	networks        Networks
+	volumes         Volumes
+	configVersion   string
+	context         *Context
+	reload          []string
+	upCount         int
+	listeners       []chan<- events.Event
+	defaultListener *DefaultListener
 }
 
 // NewProject creates a new project with the specified context.
@@ -93,9 +93,16 @@ func NewProject(context *Context, runtime RuntimeProject, parseOptions *config.P
 
 	context.Project = p
 
-	p.listeners = []chan<- events.Event{NewDefaultListener(p)}
+	p.defaultListener = NewDefaultListener(p)
+	p.listeners = []chan<- events.Event{p.defaultListener.C}
 
 	return p
+}
+
+// Close releases resources attached to the project
+func (p *Project) Close() error {
+	p.defaultListener.Close()
+	return nil
 }
 
 // Parse populates project information based on its context. It sets up the name,
@@ -511,11 +518,7 @@ func (p *Project) traverse(start bool, selected map[string]bool, wrappers map[st
 // AddListener adds the specified listener to the project.
 // This implements implicitly events.Emitter.
 func (p *Project) AddListener(c chan<- events.Event) {
-	if !p.hasListeners {
-		for _, l := range p.listeners {
-			close(l)
-		}
-		p.hasListeners = true
+	if len(p.listeners) == 1 && p.listeners[0] == p.defaultListener.C {
 		p.listeners = []chan<- events.Event{c}
 	} else {
 		p.listeners = append(p.listeners, c)
