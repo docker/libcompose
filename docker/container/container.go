@@ -187,8 +187,6 @@ func (c *Container) Run(ctx context.Context, configOverride *config.ServiceConfi
 	}
 	if configOverride.Tty {
 		out = os.Stdout
-	}
-	if configOverride.Tty {
 		stderr = os.Stderr
 	}
 
