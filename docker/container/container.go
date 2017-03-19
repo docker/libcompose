@@ -221,6 +221,22 @@ func (c *Container) Run(ctx context.Context, configOverride *config.ServiceConfi
 		return -1, err
 	}
 
+	if configOverride.Tty {
+		ws, err := term.GetWinsize(inFd)
+		if err != nil {
+			return -1, err
+		}
+
+		resizeOpts := types.ResizeOptions{
+			Height: uint(ws.Height),
+			Width:  uint(ws.Width),
+		}
+
+		if err := c.client.ContainerResize(ctx, c.container.ID, resizeOpts); err != nil {
+			return -1, err
+		}
+	}
+
 	if err := <-errCh; err != nil {
 		logrus.Debugf("Error hijack: %s", err)
 		return -1, err
