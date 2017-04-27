@@ -546,6 +546,11 @@ func (p *Project) GetServiceConfig(name string) (*config.ServiceConfig, bool) {
 	return p.ServiceConfigs.Get(name)
 }
 
+// GetServiceNames returnes all service names in the project.
+func (p *Project) GetServiceNames() []string {
+	return p.ServiceConfigs.Keys()
+}
+
 // IsNamedVolume returns whether the specified volume (string) is a named volume or not.
 func IsNamedVolume(volume string) bool {
 	return !strings.HasPrefix(volume, ".") && !strings.HasPrefix(volume, "/") && !strings.HasPrefix(volume, "~")

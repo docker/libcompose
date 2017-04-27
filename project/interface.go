@@ -41,6 +41,7 @@ type APIProject interface {
 	Containers(ctx context.Context, filter Filter, services ...string) ([]string, error)
 
 	GetServiceConfig(service string) (*config.ServiceConfig, bool)
+	GetServiceNames() []string
 }
 
 // Filter holds filter element to filter containers
