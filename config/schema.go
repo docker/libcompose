@@ -281,6 +281,7 @@ var servicesSchemaDataV2 = `{
 
         "external_links": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "extra_hosts": {"$ref": "#/definitions/list_or_dict"},
+        "group_add": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "hostname": {"type": "string"},
         "image": {"type": "string"},
         "ipc": {"type": "string"},
