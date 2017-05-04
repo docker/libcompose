@@ -347,6 +347,7 @@ var servicesSchemaDataV2 = `{
         "security_opt": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "shm_size": {"type": ["number", "string"]},
         "stdin_open": {"type": "boolean"},
+        "stop_grace_period": {"type": "string"},
         "stop_signal": {"type": "string"},
         "tmpfs": {"$ref": "#/definitions/string_or_list"},
         "tty": {"type": "boolean"},
