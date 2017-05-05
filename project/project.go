@@ -540,6 +540,11 @@ func (p *Project) Notify(eventType events.EventType, serviceName string, data ma
 	}
 }
 
+// GetName returns the name of the project.
+func (p *Project) GetName() string {
+	return p.Name
+}
+
 // GetServiceConfig looks up a service config for a given service name, returning the ServiceConfig
 // object and a bool flag indicating whether it was found
 func (p *Project) GetServiceConfig(name string) (*config.ServiceConfig, bool) {
