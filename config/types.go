@@ -1,9 +1,14 @@
 package config
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/docker/libcompose/yaml"
+)
+
+const (
+	servicePrefix = "service:"
 )
 
 // EnvironmentLookup defines methods to provides environment variable loading.
@@ -250,6 +255,62 @@ func (c *ServiceConfigs) All() map[string]*ServiceConfig {
 	return c.m
 }
 
+// DependentServices returns a complete list of services needed to start the specified
+// service, including the passed service
+func (c *ServiceConfigs) DependentServices(name string) []string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	serviceSet := map[string]bool{}
+
+	c.addDependentServices(name, serviceSet)
+
+	keys := make([]string, len(serviceSet))
+	i := 0
+	for k := range serviceSet {
+		keys[i] = k
+		i++
+	}
+	return keys
+}
+
+func (c *ServiceConfigs) addDependentServices(name string, dependencies map[string]bool) {
+	config, ok := c.Get(name)
+	if ok {
+		dependencies[name] = true
+		for _, l := range config.Links {
+			linkServiceName := serviceFromColonString(l)
+			_, ok := dependencies[linkServiceName]
+			if !ok {
+				c.addDependentServices(linkServiceName, dependencies)
+			}
+		}
+
+		for _, v := range config.VolumesFrom {
+			volumeServiceName := serviceFromColonString(v)
+			_, ok := dependencies[volumeServiceName]
+			if !ok {
+				c.addDependentServices(volumeServiceName, dependencies)
+			}
+		}
+
+		for _, s := range config.DependsOn {
+			_, ok := dependencies[s]
+			if !ok {
+				c.addDependentServices(s, dependencies)
+			}
+		}
+
+		if strings.HasPrefix(config.NetworkMode, servicePrefix) {
+			networkService := strings.TrimPrefix(config.NetworkMode, servicePrefix)
+			_, ok := dependencies[networkService]
+			if !ok {
+				c.addDependentServices(networkService, dependencies)
+			}
+		}
+	}
+}
+
 // RawService is represent a Service in map form unparsed
 type RawService map[string]interface{}
 
@@ -262,4 +323,9 @@ type ParseOptions struct {
 	Validate    bool
 	Preprocess  func(RawServiceMap) (RawServiceMap, error)
 	Postprocess func(map[string]*ServiceConfig) (map[string]*ServiceConfig, error)
+}
+
+func serviceFromColonString(colonString string) string {
+	parts := strings.SplitN(colonString, ":", 2)
+	return parts[len(parts)-1]
 }
