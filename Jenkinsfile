@@ -10,8 +10,21 @@ wrappedNode(label: 'linux && x86_64') {
     stage "validate"
     makeTask(image, "validate")
 
-    stage "test"
-    makeTask(image, "test", ["DAEMON_VERSION=all", "SHOWWARNING=false"])
+    stage "unit-test"
+    makeTask(image, "test-unit")
+
+    def integrations = [:]
+
+    daemon_versions = ["1.9.1", "1.10.3", "1.11.2", "1.12.1"]
+    for (int i=0; i < daemon_versions.size(); i++) {
+        daemon_version = "${daemon_versions[i]}"
+    	integrations["test-${daemon_version}"] = {
+    	    makeTask(image, "test-integration", ["DAEMON_VERSION=${daemon_version}", "SHOWWARNING=false"])
+    	}
+    }
+
+    stage "integrations tests"
+    parallel integrations
 
     stage "build"
     makeTask(image, "cross-binary")
