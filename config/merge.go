@@ -236,12 +236,6 @@ func readEnvFile(resourceLookup ResourceLookup, inFile string, serviceData RawSe
 
 func mergeConfig(baseService, serviceData RawService) RawService {
 	for k, v := range serviceData {
-		// Image and build are mutually exclusive in merge
-		if k == "image" {
-			delete(baseService, "build")
-		} else if k == "build" {
-			delete(baseService, "image")
-		}
 		existing, ok := baseService[k]
 		if ok {
 			baseService[k] = merge(existing, v)
