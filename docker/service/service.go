@@ -63,7 +63,10 @@ func (s *Service) Config() *config.ServiceConfig {
 }
 
 // DependentServices returns the dependent services (as an array of ServiceRelationship) of the service.
-func (s *Service) DependentServices() []project.ServiceRelationship {
+func (s *Service) DependentServices(recursive bool) []project.ServiceRelationship {
+	if recursive {
+		return RecursiveDependentServices(s.project, s)
+	}
 	return DefaultDependentServices(s.project, s)
 }
 

@@ -17,6 +17,28 @@ func DefaultDependentServices(p *project.Project, s project.Service) []project.S
 	return result
 }
 
+// RecursiveDependentServices return the dependent services (as an array of ServiceRelationship)
+// for the specified project and service and for all dependent service. It looks for : links, volumesFrom,
+// net and ipc configuration. It uses default project implementation and append some docker specific ones.
+func RecursiveDependentServices(p *project.Project, s project.Service) []project.ServiceRelationship {
+	serviceMap := map[string]bool{}
+	return getDependentServices(p, s, &serviceMap)
+}
+
+func getDependentServices(p *project.Project, s project.Service, serviceMap *map[string]bool) []project.ServiceRelationship {
+	(*serviceMap)[s.Name()] = true
+	result := DefaultDependentServices(p, s)
+	for _, r := range result {
+		if _, ok := (*serviceMap)[r.Target]; !ok {
+			service, err := p.CreateService(r.Target)
+			if err == nil {
+				result = append(result, getDependentServices(p, service, serviceMap)...)
+			}
+		}
+	}
+	return result
+}
+
 func appendNs(p *project.Project, rels []project.ServiceRelationship, conf string, relType project.ServiceRelationshipType) []project.ServiceRelationship {
 	service := GetContainerFromIpcLikeConfig(p, conf)
 	if service != "" {
