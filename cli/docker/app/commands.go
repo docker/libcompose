@@ -2,9 +2,9 @@ package app
 
 import (
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/libcompose/cli/command"
-	"github.com/docker/libcompose/docker/client"
-	"github.com/docker/libcompose/docker/ctx"
+	"github.com/portainer/libcompose/cli/command"
+	"github.com/portainer/libcompose/docker/client"
+	"github.com/portainer/libcompose/docker/ctx"
 	"github.com/urfave/cli"
 )
 

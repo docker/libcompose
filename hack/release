@@ -12,7 +12,7 @@ fi
 
 hack/build
 
-docker run --rm -v `pwd`:/go/src/github.com/docker/libcompose docker-compose ./hack/generate-sums
+docker run --rm -v `pwd`:/go/src/github.com/portainer/libcompose docker-compose ./hack/generate-sums
 
 git tag $VERSION
 git push --tags
@@ -24,7 +24,7 @@ docker run --rm -e GITHUB_TOKEN docker-compose github-release release \
     --description "" \
     --pre-release
 for BINARY in docker-compose_*; do
-    docker run --rm -e GITHUB_TOKEN -v `pwd`:/go/src/github.com/docker/libcompose \
+    docker run --rm -e GITHUB_TOKEN -v `pwd`:/go/src/github.com/portainer/libcompose \
         docker-compose github-release upload \
         --user docker \
         --repo libcompose \

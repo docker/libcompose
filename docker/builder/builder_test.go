@@ -15,7 +15,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/jsonmessage"
-	"github.com/docker/libcompose/test"
+	"github.com/portainer/libcompose/test"
 )
 
 type DaemonClient struct {

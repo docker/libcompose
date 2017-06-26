@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/docker/libcompose/project/events"
+	"github.com/portainer/libcompose/project/events"
 )
 
 // Containers lists the containers for the specified services. Can be filter using

@@ -3,7 +3,7 @@ package project
 import (
 	"golang.org/x/net/context"
 
-	"github.com/docker/libcompose/config"
+	"github.com/portainer/libcompose/config"
 )
 
 // Volumes defines the methods a libcompose volume aggregate should define.

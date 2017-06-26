@@ -1,7 +1,7 @@
 package lookup
 
 import (
-	"github.com/docker/libcompose/config"
+	"github.com/portainer/libcompose/config"
 )
 
 // ComposableEnvLookup is a structure that implements the project.EnvironmentLookup interface.

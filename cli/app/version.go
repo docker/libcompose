@@ -7,7 +7,7 @@ import (
 	"text/template"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/libcompose/version"
+	"github.com/portainer/libcompose/version"
 	"github.com/urfave/cli"
 )
 
