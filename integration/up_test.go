@@ -7,7 +7,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
-	"github.com/docker/libcompose/utils"
+	"github.com/portainer/libcompose/utils"
 	"golang.org/x/net/context"
 	. "gopkg.in/check.v1"
 )

@@ -1,7 +1,7 @@
 package app
 
 import (
-	"github.com/docker/libcompose/project"
+	"github.com/portainer/libcompose/project"
 	"github.com/urfave/cli"
 )
 
