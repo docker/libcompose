@@ -49,9 +49,9 @@ func Populate(context *ctx.Context, c *cli.Context) {
 	opts := client.Options{}
 	opts.TLS = c.GlobalBool("tls")
 	opts.TLSVerify = c.GlobalBool("tlsverify")
-	opts.TLSOptions.CAFile = c.GlobalString("tlscacert")
-	opts.TLSOptions.CertFile = c.GlobalString("tlscert")
-	opts.TLSOptions.KeyFile = c.GlobalString("tlskey")
+	opts.TLSCAFile = c.GlobalString("tlscacert")
+	opts.TLSCertFile = c.GlobalString("tlscert")
+	opts.TLSKeyFile = c.GlobalString("tlskey")
 
 	clientFactory, err := client.NewDefaultFactory(opts)
 	if err != nil {

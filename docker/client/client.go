@@ -36,12 +36,15 @@ func init() {
 
 // Options holds docker client options (host, tls, ..)
 type Options struct {
-	TLS        bool
-	TLSVerify  bool
-	TLSOptions tlsconfig.Options
-	TrustKey   string
-	Host       string
-	APIVersion string
+	TLS       bool
+	TLSVerify bool
+	// TLSOptions tlsconfig.Options
+	TLSCAFile   string
+	TLSCertFile string
+	TLSKeyFile  string
+	TrustKey    string
+	Host        string
+	APIVersion  string
 }
 
 // Create creates a docker client based on the specified options.
@@ -62,15 +65,23 @@ func Create(c Options) (client.APIClient, error) {
 		apiVersion = DefaultAPIVersion
 	}
 
-	if c.TLSOptions.CAFile == "" {
-		c.TLSOptions.CAFile = filepath.Join(dockerCertPath, defaultCaFile)
+	tlsOptions := tlsconfig.Options{}
+
+	if c.TLSCAFile == "" {
+		c.TLSCAFile = filepath.Join(dockerCertPath, defaultCaFile)
 	}
-	if c.TLSOptions.CertFile == "" {
-		c.TLSOptions.CertFile = filepath.Join(dockerCertPath, defaultCertFile)
+	tlsOptions.CAFile = c.TLSCAFile
+
+	if c.TLSCertFile == "" {
+		c.TLSCertFile = filepath.Join(dockerCertPath, defaultCertFile)
 	}
-	if c.TLSOptions.KeyFile == "" {
-		c.TLSOptions.KeyFile = filepath.Join(dockerCertPath, defaultKeyFile)
+	tlsOptions.CertFile = c.TLSCertFile
+
+	if c.TLSKeyFile == "" {
+		c.TLSKeyFile = filepath.Join(dockerCertPath, defaultKeyFile)
 	}
+	tlsOptions.KeyFile = c.TLSKeyFile
+
 	if c.TrustKey == "" {
 		c.TrustKey = filepath.Join(homedir.Get(), ".docker", defaultTrustKeyFile)
 	}
@@ -78,12 +89,12 @@ func Create(c Options) (client.APIClient, error) {
 		c.TLS = true
 	}
 	if c.TLS {
-		c.TLSOptions.InsecureSkipVerify = !c.TLSVerify
+		tlsOptions.InsecureSkipVerify = !c.TLSVerify
 	}
 
 	var httpClient *http.Client
 	if c.TLS {
-		config, err := tlsconfig.Client(c.TLSOptions)
+		config, err := tlsconfig.Client(tlsOptions)
 		if err != nil {
 			return nil, err
 		}

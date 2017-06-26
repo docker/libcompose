@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	cliconfig "github.com/docker/docker/cli/config"
-	"github.com/docker/go-connections/tlsconfig"
 )
 
 // TestCreateWithEnv creates client(s) using environment variables, using an empty Options.
@@ -115,25 +114,31 @@ func TestCreateWithOptions(t *testing.T) {
 			options: Options{
 				Host: "tcp://host",
 				TLS:  true,
-				TLSOptions: tlsconfig.Options{
-					CertFile: "invalid/cert/file",
-					CAFile:   "invalid/ca/file",
-					KeyFile:  "invalid/key/file",
-				},
-				TrustKey:   "invalid/trust/key",
-				APIVersion: "v1.22",
+				// TLSOptions: tlsconfig.Options{
+				// 	CertFile: "invalid/cert/file",
+				// 	CAFile:   "invalid/ca/file",
+				// 	KeyFile:  "invalid/key/file",
+				// },
+				TLSCAFile:   "invalid/ca/file",
+				TLSCertFile: "invalid/cert/file",
+				TLSKeyFile:  "invalid/key/file",
+				TrustKey:    "invalid/trust/key",
+				APIVersion:  "v1.22",
 			},
 			expectedError: "Could not load X509 key pair: open invalid/cert/file: no such file or directory. Make sure the key is not encrypted",
 		},
 		{
 			options: Options{
-				Host:      "host",
-				TLSVerify: true,
-				TLSOptions: tlsconfig.Options{
-					CertFile: "fixtures/cert.pem",
-					CAFile:   "fixtures/ca.pem",
-					KeyFile:  "fixtures/key.pem",
-				},
+				Host:        "host",
+				TLSVerify:   true,
+				TLSCAFile:   "fixtures/ca.pem",
+				TLSCertFile: "fixtures/cert.pem",
+				TLSKeyFile:  "fixtures/key.pem",
+				// TLSOptions: tlsconfig.Options{
+				// 	CertFile: "fixtures/cert.pem",
+				// 	CAFile:   "fixtures/ca.pem",
+				// 	KeyFile:  "fixtures/key.pem",
+				// },
 				APIVersion: "v1.22",
 			},
 			expectedError: "unable to parse docker host `host`",
@@ -142,12 +147,15 @@ func TestCreateWithOptions(t *testing.T) {
 			options: Options{
 				Host:      "tcp://host",
 				TLSVerify: true,
-				TLSOptions: tlsconfig.Options{
-					CertFile: "fixtures/cert.pem",
-					CAFile:   "fixtures/ca.pem",
-					KeyFile:  "fixtures/key.pem",
-				},
-				APIVersion: "v1.22",
+				// TLSOptions: tlsconfig.Options{
+				// 	CertFile: "fixtures/cert.pem",
+				// 	CAFile:   "fixtures/ca.pem",
+				// 	KeyFile:  "fixtures/key.pem",
+				// },
+				TLSCAFile:   "fixtures/ca.pem",
+				TLSCertFile: "fixtures/cert.pem",
+				TLSKeyFile:  "fixtures/key.pem",
+				APIVersion:  "v1.22",
 			},
 			expectedVersion: "v1.22",
 		},
