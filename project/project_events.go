@@ -3,7 +3,7 @@ package project
 import (
 	"golang.org/x/net/context"
 
-	"github.com/docker/libcompose/project/events"
+	"github.com/portainer/libcompose/project/events"
 )
 
 // Events listen for real time events from containers (of the project).
