@@ -12,7 +12,7 @@ import (
 	"github.com/docker/docker/pkg/homedir"
 	"github.com/docker/go-connections/sockets"
 	"github.com/docker/go-connections/tlsconfig"
-	"github.com/docker/libcompose/version"
+	"github.com/portainer/libcompose/version"
 )
 
 const (
