@@ -5,9 +5,9 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/docker/libcompose/config"
-	"github.com/docker/libcompose/project/events"
-	"github.com/docker/libcompose/project/options"
+	"github.com/portainer/libcompose/config"
+	"github.com/portainer/libcompose/project/events"
+	"github.com/portainer/libcompose/project/options"
 )
 
 // Service defines what a libcompose service provides.

@@ -36,7 +36,7 @@ for OS in ${OS_PLATFORM_ARG[@]}; do
         fi
         echo "Building binary for $OS/$ARCH..."
         GOARCH=$ARCH GOOS=$OS CGO_ENABLED=0 go build \
-              -ldflags="-w -X github.com/docker/libcompose/version.GITCOMMIT=${GITCOMMIT} -X github.com/docker/libcompose/version.BUILDTIME=${BUILDTIME} -X github.com/docker/libcompose/version.SHOWWARNING=${SHOWWARNING}" \
+              -ldflags="-w -X github.com/portainer/libcompose/version.GITCOMMIT=${GITCOMMIT} -X github.com/portainer/libcompose/version.BUILDTIME=${BUILDTIME} -X github.com/portainer/libcompose/version.SHOWWARNING=${SHOWWARNING}" \
               -o ${OUTPUT_BIN} ./cli/main
     done
 done

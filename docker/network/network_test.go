@@ -8,9 +8,9 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/network"
-	"github.com/docker/libcompose/config"
-	"github.com/docker/libcompose/test"
-	"github.com/docker/libcompose/yaml"
+	"github.com/portainer/libcompose/config"
+	"github.com/portainer/libcompose/test"
+	"github.com/portainer/libcompose/yaml"
 )
 
 type networkNotFound struct {

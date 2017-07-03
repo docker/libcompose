@@ -1,7 +1,7 @@
 package project
 
 import (
-	"github.com/docker/libcompose/config"
+	"github.com/portainer/libcompose/config"
 	"gopkg.in/yaml.v2"
 )
 

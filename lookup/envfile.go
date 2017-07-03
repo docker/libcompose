@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/runconfig/opts"
-	"github.com/docker/libcompose/config"
+	"github.com/portainer/libcompose/config"
 )
 
 // EnvfileLookup is a structure that implements the project.EnvironmentLookup interface.
