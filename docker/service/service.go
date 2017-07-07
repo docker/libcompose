@@ -357,7 +357,7 @@ func (s *Service) connectContainerToNetworks(ctx context.Context, c *container.C
 	}
 	if s.serviceConfig.Networks != nil {
 		for _, network := range s.serviceConfig.Networks.Networks {
-			existingNetwork, ok := connectedNetworks[network.Name]
+			existingNetwork, ok := connectedNetworks[network.RealName]
 			if ok {
 				// FIXME(vdemeester) implement alias checking (to not disconnect/reconnect for nothing)
 				aliasPresent := false
