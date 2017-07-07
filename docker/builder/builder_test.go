@@ -12,21 +12,24 @@ import (
 
 	"golang.org/x/net/context"
 
+	"strings"
+
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/jsonmessage"
-	"github.com/portainer/libcompose/test"
+	"github.com/pkg/errors"
 )
 
-type DaemonClient struct {
-	test.NopClient
+type daemonClient struct {
+	client.Client
 	contextDir string
 	imageName  string
 	changes    int
 	message    jsonmessage.JSONMessage
 }
 
-func (c *DaemonClient) ImageBuild(ctx context.Context, context io.Reader, options types.ImageBuildOptions) (types.ImageBuildResponse, error) {
+func (c *daemonClient) ImageBuild(ctx context.Context, context io.Reader, options types.ImageBuildOptions) (types.ImageBuildResponse, error) {
 	if c.imageName != "" {
 		if len(options.Tags) != 1 || options.Tags[0] != c.imageName {
 			return types.ImageBuildResponse{}, fmt.Errorf("expected image %q, got %v", c.imageName, options.Tags)
@@ -55,7 +58,9 @@ func (c *DaemonClient) ImageBuild(ctx context.Context, context io.Reader, option
 			Body: ioutil.NopCloser(bytes.NewReader(b)),
 		}, nil
 	}
-	return c.NopClient.ImageBuild(ctx, context, options)
+	return types.ImageBuildResponse{
+		Body: ioutil.NopCloser(strings.NewReader("{}")),
+	}, errors.New("Engine no longer exists")
 }
 
 func TestBuildInvalidContextDirectoryOrDockerfile(t *testing.T) {
@@ -118,7 +123,7 @@ func TestBuildWithClientBuildError(t *testing.T) {
 	}
 
 	imageName := "image"
-	client := &DaemonClient{}
+	client := &daemonClient{}
 	builder := &DaemonBuilder{
 		ContextDirectory: tmpDir,
 		Client:           client,
@@ -144,7 +149,7 @@ func TestBuildWithDefaultDockerfile(t *testing.T) {
 	}
 
 	imageName := "image"
-	client := &DaemonClient{
+	client := &daemonClient{
 		contextDir: tmpDir,
 		imageName:  imageName,
 	}
@@ -173,7 +178,7 @@ func TestBuildWithDefaultLowercaseDockerfile(t *testing.T) {
 	}
 
 	imageName := "image"
-	client := &DaemonClient{
+	client := &daemonClient{
 		contextDir: tmpDir,
 		imageName:  imageName,
 	}
@@ -202,7 +207,7 @@ func TestBuildWithSpecificDockerfile(t *testing.T) {
 	}
 
 	imageName := "image"
-	client := &DaemonClient{
+	client := &daemonClient{
 		contextDir: tmpDir,
 		imageName:  imageName,
 	}
@@ -235,7 +240,7 @@ func TestBuildWithDockerignoreNothing(t *testing.T) {
 	}
 
 	imageName := "image"
-	client := &DaemonClient{
+	client := &daemonClient{
 		contextDir: tmpDir,
 		imageName:  imageName,
 	}
@@ -268,7 +273,7 @@ func TestBuildWithDockerignoreDockerfileAndItself(t *testing.T) {
 	}
 
 	imageName := "image"
-	client := &DaemonClient{
+	client := &daemonClient{
 		contextDir: tmpDir,
 		imageName:  imageName,
 	}
@@ -301,7 +306,7 @@ func TestBuildWithDockerignoreAfile(t *testing.T) {
 	}
 
 	imageName := "image"
-	client := &DaemonClient{
+	client := &daemonClient{
 		contextDir: tmpDir,
 		imageName:  imageName,
 		changes:    1,
@@ -332,7 +337,7 @@ func TestBuildWithErrorJSONMessage(t *testing.T) {
 	}
 
 	imageName := "image"
-	client := &DaemonClient{
+	client := &daemonClient{
 		contextDir: tmpDir,
 		imageName:  imageName,
 		message: jsonmessage.JSONMessage{

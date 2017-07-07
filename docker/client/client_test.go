@@ -3,9 +3,10 @@ package client
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
-	cliconfig "github.com/docker/docker/cli/config"
+	cliconfig "github.com/docker/cli/cli/config"
 )
 
 // TestCreateWithEnv creates client(s) using environment variables, using an empty Options.
@@ -23,13 +24,13 @@ func TestCreateWithEnv(t *testing.T) {
 			envs: map[string]string{
 				"DOCKER_CERT_PATH": "invalid/path",
 			},
-			expectedError: "Could not load X509 key pair: open invalid/path/cert.pem: no such file or directory. Make sure the key is not encrypted",
+			expectedError: "Could not load X509 key pair: open invalid/path/cert.pem: no such file or directory",
 		},
 		{
 			envs: map[string]string{
 				"DOCKER_HOST": "host",
 			},
-			expectedError: "unable to parse docker host `host`",
+			expectedError: "unable to parse docker host",
 		},
 		{
 			envs: map[string]string{
@@ -54,8 +55,8 @@ func TestCreateWithEnv(t *testing.T) {
 		recoverEnvs := setupEnvs(t, c.envs)
 		apiclient, err := Create(Options{})
 		if c.expectedError != "" {
-			if err == nil || err.Error() != c.expectedError {
-				t.Errorf("expected an error %s, got %s, for %v", c.expectedError, err.Error(), c)
+			if err == nil || !strings.Contains(err.Error(), c.expectedError) {
+				t.Errorf("expected an error '%s', got '%s', for %v", c.expectedError, err.Error(), c)
 			}
 		} else {
 			if err != nil {
@@ -80,7 +81,7 @@ func TestCreateWithOptions(t *testing.T) {
 			options: Options{
 				Host: "host",
 			},
-			expectedError: "unable to parse docker host `host`",
+			expectedError: "unable to parse docker host",
 		},
 		{
 			options: Options{
@@ -108,7 +109,7 @@ func TestCreateWithOptions(t *testing.T) {
 				TLS:        true,
 				APIVersion: "v1.22",
 			},
-			expectedError: fmt.Sprintf("Could not load X509 key pair: open %s/cert.pem: no such file or directory. Make sure the key is not encrypted", cliconfig.Dir()),
+			expectedError: fmt.Sprintf("Could not load X509 key pair: open %s/cert.pem: no such file or directory", cliconfig.Dir()),
 		},
 		{
 			options: Options{
@@ -120,7 +121,7 @@ func TestCreateWithOptions(t *testing.T) {
 				TrustKey:    "invalid/trust/key",
 				APIVersion:  "v1.22",
 			},
-			expectedError: "Could not load X509 key pair: open invalid/cert/file: no such file or directory. Make sure the key is not encrypted",
+			expectedError: "Could not load X509 key pair: open invalid/cert/file: no such file or directory",
 		},
 		{
 			options: Options{
@@ -131,7 +132,7 @@ func TestCreateWithOptions(t *testing.T) {
 				TLSKeyFile:  "fixtures/key.pem",
 				APIVersion:  "v1.22",
 			},
-			expectedError: "unable to parse docker host `host`",
+			expectedError: "unable to parse docker host",
 		},
 		{
 			options: Options{
@@ -148,8 +149,8 @@ func TestCreateWithOptions(t *testing.T) {
 	for _, c := range cases {
 		apiclient, err := Create(c.options)
 		if c.expectedError != "" {
-			if err == nil || err.Error() != c.expectedError {
-				t.Errorf("expected an error %s, got %s, for %v", c.expectedError, err.Error(), c)
+			if err == nil || !strings.Contains(err.Error(), c.expectedError) {
+				t.Errorf("expected an error '%s', got '%s', for %v", c.expectedError, err.Error(), c)
 			}
 		} else {
 			if err != nil {
