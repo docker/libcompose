@@ -10,12 +10,12 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
-	"github.com/docker/libcompose/config"
-	composecontainer "github.com/docker/libcompose/docker/container"
-	"github.com/docker/libcompose/labels"
-	"github.com/docker/libcompose/project"
-	"github.com/docker/libcompose/project/events"
-	util "github.com/docker/libcompose/utils"
+	"github.com/portainer/libcompose/config"
+	composecontainer "github.com/portainer/libcompose/docker/container"
+	"github.com/portainer/libcompose/labels"
+	"github.com/portainer/libcompose/project"
+	"github.com/portainer/libcompose/project/events"
+	util "github.com/portainer/libcompose/utils"
 )
 
 func (s *Service) createContainer(ctx context.Context, namer Namer, oldContainer string, configOverride *config.ServiceConfig, oneOff bool) (*composecontainer.Container, error) {

@@ -39,7 +39,7 @@ RUN set -e; set -x; \
 # Set the default Docker to be run
 RUN ln -s /usr/local/bin/docker-${DEFAULT_DOCKER_VERSION} /usr/local/bin/docker
 
-WORKDIR /go/src/github.com/docker/libcompose
+WORKDIR /go/src/github.com/portainer/libcompose
 
 # Compose COMMIT for acceptance test version, update that commit when
 # you want to update the acceptance test version to support.
@@ -52,10 +52,10 @@ RUN virtualenv venv && \
                -r requirements.txt \
                -r requirements-dev.txt
 
-ENV COMPOSE_BINARY /go/src/github.com/docker/libcompose/libcompose-cli
+ENV COMPOSE_BINARY /go/src/github.com/portainer/libcompose/libcompose-cli
 ENV USER root
 
 # Wrap all commands in the "docker-in-docker" script to allow nested containers
 ENTRYPOINT ["hack/dind"]
 
-COPY . /go/src/github.com/docker/libcompose
+COPY . /go/src/github.com/portainer/libcompose

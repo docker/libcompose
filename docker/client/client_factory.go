@@ -2,7 +2,7 @@ package client
 
 import (
 	"github.com/docker/docker/client"
-	"github.com/docker/libcompose/project"
+	"github.com/portainer/libcompose/project"
 )
 
 // Factory is a factory to create docker clients.

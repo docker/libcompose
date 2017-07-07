@@ -12,7 +12,7 @@ import (
 	"github.com/docker/docker/pkg/homedir"
 	"github.com/docker/go-connections/sockets"
 	"github.com/docker/go-connections/tlsconfig"
-	"github.com/docker/libcompose/version"
+	"github.com/portainer/libcompose/version"
 )
 
 const (
@@ -36,12 +36,14 @@ func init() {
 
 // Options holds docker client options (host, tls, ..)
 type Options struct {
-	TLS        bool
-	TLSVerify  bool
-	TLSOptions tlsconfig.Options
-	TrustKey   string
-	Host       string
-	APIVersion string
+	TLS         bool
+	TLSVerify   bool
+	TLSCAFile   string
+	TLSCertFile string
+	TLSKeyFile  string
+	TrustKey    string
+	Host        string
+	APIVersion  string
 }
 
 // Create creates a docker client based on the specified options.
@@ -62,28 +64,34 @@ func Create(c Options) (client.APIClient, error) {
 		apiVersion = DefaultAPIVersion
 	}
 
-	if c.TLSOptions.CAFile == "" {
-		c.TLSOptions.CAFile = filepath.Join(dockerCertPath, defaultCaFile)
+	if c.TLSCAFile == "" {
+		c.TLSCAFile = filepath.Join(dockerCertPath, defaultCaFile)
 	}
-	if c.TLSOptions.CertFile == "" {
-		c.TLSOptions.CertFile = filepath.Join(dockerCertPath, defaultCertFile)
+
+	if c.TLSCertFile == "" {
+		c.TLSCertFile = filepath.Join(dockerCertPath, defaultCertFile)
 	}
-	if c.TLSOptions.KeyFile == "" {
-		c.TLSOptions.KeyFile = filepath.Join(dockerCertPath, defaultKeyFile)
+
+	if c.TLSKeyFile == "" {
+		c.TLSKeyFile = filepath.Join(dockerCertPath, defaultKeyFile)
 	}
+
 	if c.TrustKey == "" {
 		c.TrustKey = filepath.Join(homedir.Get(), ".docker", defaultTrustKeyFile)
 	}
 	if c.TLSVerify {
 		c.TLS = true
 	}
-	if c.TLS {
-		c.TLSOptions.InsecureSkipVerify = !c.TLSVerify
-	}
 
 	var httpClient *http.Client
 	if c.TLS {
-		config, err := tlsconfig.Client(c.TLSOptions)
+		tlsOptions := tlsconfig.Options{
+			CAFile:             c.TLSCAFile,
+			CertFile:           c.TLSCertFile,
+			KeyFile:            c.TLSKeyFile,
+			InsecureSkipVerify: !c.TLSVerify,
+		}
+		config, err := tlsconfig.Client(tlsOptions)
 		if err != nil {
 			return nil, err
 		}

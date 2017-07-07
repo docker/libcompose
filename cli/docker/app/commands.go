@@ -2,9 +2,9 @@ package app
 
 import (
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/libcompose/cli/command"
-	"github.com/docker/libcompose/docker/client"
-	"github.com/docker/libcompose/docker/ctx"
+	"github.com/portainer/libcompose/cli/command"
+	"github.com/portainer/libcompose/docker/client"
+	"github.com/portainer/libcompose/docker/ctx"
 	"github.com/urfave/cli"
 )
 
@@ -49,9 +49,9 @@ func Populate(context *ctx.Context, c *cli.Context) {
 	opts := client.Options{}
 	opts.TLS = c.GlobalBool("tls")
 	opts.TLSVerify = c.GlobalBool("tlsverify")
-	opts.TLSOptions.CAFile = c.GlobalString("tlscacert")
-	opts.TLSOptions.CertFile = c.GlobalString("tlscert")
-	opts.TLSOptions.KeyFile = c.GlobalString("tlskey")
+	opts.TLSCAFile = c.GlobalString("tlscacert")
+	opts.TLSCertFile = c.GlobalString("tlscert")
+	opts.TLSKeyFile = c.GlobalString("tlskey")
 
 	clientFactory, err := client.NewDefaultFactory(opts)
 	if err != nil {

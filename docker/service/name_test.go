@@ -8,8 +8,8 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/docker/libcompose/labels"
 	"github.com/pkg/errors"
+	"github.com/portainer/libcompose/labels"
 )
 
 func TestSingleNamer(t *testing.T) {

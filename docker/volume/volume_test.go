@@ -5,7 +5,7 @@ import (
 
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
-	"github.com/docker/libcompose/config"
+	"github.com/portainer/libcompose/config"
 )
 
 func TestVolumesFromServices(t *testing.T) {

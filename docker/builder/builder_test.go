@@ -12,12 +12,13 @@ import (
 
 	"golang.org/x/net/context"
 
+	"strings"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/pkg/errors"
-	"strings"
 )
 
 type daemonClient struct {

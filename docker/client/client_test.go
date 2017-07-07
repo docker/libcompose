@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	cliconfig "github.com/docker/cli/cli/config"
-	"github.com/docker/go-connections/tlsconfig"
 )
 
 // TestCreateWithEnv creates client(s) using environment variables, using an empty Options.
@@ -114,41 +113,35 @@ func TestCreateWithOptions(t *testing.T) {
 		},
 		{
 			options: Options{
-				Host: "tcp://host",
-				TLS:  true,
-				TLSOptions: tlsconfig.Options{
-					CertFile: "invalid/cert/file",
-					CAFile:   "invalid/ca/file",
-					KeyFile:  "invalid/key/file",
-				},
-				TrustKey:   "invalid/trust/key",
-				APIVersion: "v1.22",
+				Host:        "tcp://host",
+				TLS:         true,
+				TLSCAFile:   "invalid/ca/file",
+				TLSCertFile: "invalid/cert/file",
+				TLSKeyFile:  "invalid/key/file",
+				TrustKey:    "invalid/trust/key",
+				APIVersion:  "v1.22",
 			},
 			expectedError: "Could not load X509 key pair: open invalid/cert/file: no such file or directory",
 		},
 		{
 			options: Options{
-				Host:      "host",
-				TLSVerify: true,
-				TLSOptions: tlsconfig.Options{
-					CertFile: "fixtures/cert.pem",
-					CAFile:   "fixtures/ca.pem",
-					KeyFile:  "fixtures/key.pem",
-				},
-				APIVersion: "v1.22",
+				Host:        "host",
+				TLSVerify:   true,
+				TLSCAFile:   "fixtures/ca.pem",
+				TLSCertFile: "fixtures/cert.pem",
+				TLSKeyFile:  "fixtures/key.pem",
+				APIVersion:  "v1.22",
 			},
 			expectedError: "unable to parse docker host",
 		},
 		{
 			options: Options{
-				Host:      "tcp://host",
-				TLSVerify: true,
-				TLSOptions: tlsconfig.Options{
-					CertFile: "fixtures/cert.pem",
-					CAFile:   "fixtures/ca.pem",
-					KeyFile:  "fixtures/key.pem",
-				},
-				APIVersion: "v1.22",
+				Host:        "tcp://host",
+				TLSVerify:   true,
+				TLSCAFile:   "fixtures/ca.pem",
+				TLSCertFile: "fixtures/cert.pem",
+				TLSKeyFile:  "fixtures/key.pem",
+				APIVersion:  "v1.22",
 			},
 			expectedVersion: "v1.22",
 		},

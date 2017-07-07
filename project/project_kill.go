@@ -3,7 +3,7 @@ package project
 import (
 	"golang.org/x/net/context"
 
-	"github.com/docker/libcompose/project/events"
+	"github.com/portainer/libcompose/project/events"
 )
 
 // Kill kills the specified services (like docker kill).
