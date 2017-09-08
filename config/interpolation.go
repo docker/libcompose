@@ -15,7 +15,7 @@ func isNum(c uint8) bool {
 }
 
 func validVariableDefault(c uint8, line string, pos int) bool {
-	return c == ':' && line[pos+1] == '-'
+	return (c == ':' && line[pos+1] == '-') || (c == '-')
 }
 
 func validVariableNameChar(c uint8) bool {
@@ -45,6 +45,14 @@ func parseVariable(line string, pos int, mapping func(string) string) (string, i
 func parseDefaultValue(line string, pos int) (string, int, bool) {
 	var buffer bytes.Buffer
 
+	// only skip :, :- and - at the beginning
+	for ; pos < len(line); pos++ {
+		c := line[pos]
+		if c == ':' || c == '-' {
+			continue
+		}
+		break
+	}
 	for ; pos < len(line); pos++ {
 		c := line[pos]
 		if c == '}' {
@@ -76,7 +84,7 @@ func parseVariableWithBraces(line string, pos int, mapping func(string) string) 
 			buffer.WriteByte(c)
 		case validVariableDefault(c, line, pos):
 			defaultValue := ""
-			defaultValue, pos, _ = parseDefaultValue(line, pos+2)
+			defaultValue, pos, _ = parseDefaultValue(line, pos)
 			defaultValues[buffer.String()] = defaultValue
 		default:
 			return "", 0, false

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,6 +26,14 @@ func testInvalidInterpolatedLine(t *testing.T, line string) {
 	assert.Equal(t, false, success)
 }
 
+func testInterpolatedDefault(t *testing.T, line string, delim string, expectedVar string, expectedVal string) {
+	envVar, _ := parseLine(line, func(env string) string { return env })
+	pos := strings.Index(line, delim)
+	envDefault, _, _ := parseDefaultValue(line, pos)
+	assert.Equal(t, expectedVal, envDefault)
+	assert.Equal(t, expectedVar, envVar)
+}
+
 func TestParseLine(t *testing.T) {
 	variables := map[string]string{
 		"A":           "ABC",
@@ -38,11 +47,17 @@ func TestParseLine(t *testing.T) {
 		"defTest":     "WORKED",
 	}
 
+	testInterpolatedDefault(t, "${defVar:-defVal}", ":-", "defVar", "defVal")
+	testInterpolatedDefault(t, "${defVar2-defVal2}", "-", "defVar2", "defVal2")
+	testInterpolatedDefault(t, "${defVar:-def:Val}", ":-", "defVar", "def:Val")
+	testInterpolatedDefault(t, "${defVar:-def-Val}", ":-", "defVar", "def-Val")
+
 	testInterpolatedLine(t, "WORKED", "$lower", variables)
 	testInterpolatedLine(t, "WORKED", "${MiXeD}", variables)
 	testInterpolatedLine(t, "WORKED", "${split_VaLue}", variables)
 	// make sure variable name is parsed correctly with default value
 	testInterpolatedLine(t, "WORKED", "${defTest:-sometest}", variables)
+	testInterpolatedLine(t, "WORKED", "${defTest-sometest}", variables)
 	// Starting with a number isn't valid
 	testInterpolatedLine(t, "", "$9aNumber", variables)
 	testInterpolatedLine(t, "WORKED", "$a9Number", variables)
@@ -70,6 +85,7 @@ func TestParseLine(t *testing.T) {
 	testInterpolatedLine(t, "", "$E", variables)
 	testInterpolatedLine(t, "", "${E}", variables)
 
+	testInvalidInterpolatedLine(t, "${df:val}")
 	testInvalidInterpolatedLine(t, "${")
 	testInvalidInterpolatedLine(t, "$}")
 	testInvalidInterpolatedLine(t, "${}")
@@ -213,7 +229,7 @@ func TestInterpolate(t *testing.T) {
 
   # dictionary item value
   labels:
-    mylabel: "myvalue"
+    mylabel: "my-val:ue"
 
   # unset value
   hostname: "host-"
@@ -231,7 +247,7 @@ func TestInterpolate(t *testing.T) {
 
   # dictionary item value
   labels:
-    mylabel: "${LABEL_VALUE:-myvalue}"
+    mylabel: "${LABEL_VALUE-my-val:ue}"
 
   # unset value
   hostname: "host-${UNSET_VALUE}"
