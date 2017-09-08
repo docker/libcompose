@@ -35,11 +35,14 @@ func TestParseLine(t *testing.T) {
 		"split_VaLue": "WORKED",
 		"9aNumber":    "WORKED",
 		"a9Number":    "WORKED",
+		"defTest":     "WORKED",
 	}
 
 	testInterpolatedLine(t, "WORKED", "$lower", variables)
 	testInterpolatedLine(t, "WORKED", "${MiXeD}", variables)
 	testInterpolatedLine(t, "WORKED", "${split_VaLue}", variables)
+	// make sure variable name is parsed correctly with default value
+	testInterpolatedLine(t, "WORKED", "${defTest:-sometest}", variables)
 	// Starting with a number isn't valid
 	testInterpolatedLine(t, "", "$9aNumber", variables)
 	testInterpolatedLine(t, "WORKED", "$a9Number", variables)
@@ -198,6 +201,43 @@ func TestInterpolate(t *testing.T) {
 			"HOST_PORT":   "=",
 			"LABEL_VALUE": "myvalue==",
 		})
+	// same as above but with default values
+	testInterpolatedConfig(t,
+		`web:
+  # unbracketed name
+  image: busybox
+
+  # array element
+  ports:
+    - "80:8000"
+
+  # dictionary item value
+  labels:
+    mylabel: "myvalue"
+
+  # unset value
+  hostname: "host-"
+
+  # escaped interpolation
+  command: "${ESCAPED}"`,
+
+		`web:
+  # unbracketed name
+  image: ${IMAGE:-busybox}
+
+  # array element
+  ports:
+    - "${HOST_PORT:-80}:8000"
+
+  # dictionary item value
+  labels:
+    mylabel: "${LABEL_VALUE:-myvalue}"
+
+  # unset value
+  hostname: "host-${UNSET_VALUE}"
+
+  # escaped interpolation
+  command: "$${ESCAPED}"`, map[string]string{})
 
 	testInvalidInterpolatedConfig(t,
 		`web:
