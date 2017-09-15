@@ -257,7 +257,7 @@ func (s *Service) Run(ctx context.Context, commandParts []string, options option
 		return -1, err
 	}
 
-	configOverride := &config.ServiceConfig{Command: commandParts, Tty: true, StdinOpen: true}
+	configOverride := &config.ServiceConfig{Command: commandParts, Tty: !options.DisableTty, StdinOpen: !options.DisableTty}
 
 	c, err := s.createContainer(ctx, namer, "", configOverride, true)
 	if err != nil {
