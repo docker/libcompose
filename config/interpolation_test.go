@@ -15,7 +15,6 @@ func testInterpolatedLine(t *testing.T, expectedLine, interpolatedLine string, e
 		return envVariables[s]
 	})
 
-	fmt.Printf("EXPECTED: %s and ACTUAL: %s\n", expectedLine, interpolatedLine)
 	assert.Equal(t, expectedLine, interpolatedLine)
 }
 
@@ -29,7 +28,6 @@ func testInvalidInterpolatedLine(t *testing.T, line string) {
 
 func testInterpolatedDefault(t *testing.T, line string, delim string, expectedVar string, expectedVal string, envVariables map[string]string) {
 	envVar, _ := parseLine(line, func(s string) string {
-		fmt.Printf("request: %v\n", s)
 		if val, ok := envVariables[s]; ok {
 			return val
 		}
@@ -38,14 +36,11 @@ func testInterpolatedDefault(t *testing.T, line string, delim string, expectedVa
 
 	pos := strings.Index(line, delim)
 	envDefault, _, _ := parseDefaultValue(line, pos, func(s string) string {
-		fmt.Printf("request: %v\n", s)
 		if val, ok := envVariables[s]; ok {
 			return val
 		}
 		return s
 	})
-	fmt.Printf("EXPECTED: %s and ACTUAL: %s\n", expectedVal, envDefault)
-	fmt.Printf("EXPECTED: %s and ACTUAL: %s\n", expectedVar, envVar)
 	assert.Equal(t, expectedVal, envDefault)
 	assert.Equal(t, expectedVar, envVar)
 }

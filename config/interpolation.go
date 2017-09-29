@@ -47,11 +47,9 @@ func parseDefaultValue(line string, pos int, mapping func(string) string) (strin
 	success := false
 	replaced := ""
 
-	fmt.Printf("INCOMING: %v\n", string(line[pos]))
 	// only skip :, :- and - at the beginning
 	for ; pos < len(line); pos++ {
 		c := line[pos]
-		fmt.Printf("SKIP: %v\n", string(c))
 		if c == ':' || c == '-' {
 			continue
 		}
@@ -62,26 +60,19 @@ func parseDefaultValue(line string, pos int, mapping func(string) string) (strin
 		switch {
 		case c == '$':
 			if line[pos-1] != '\\' {
-				fmt.Printf("NESTED: %v pos: %v\n", string(c), pos)
-				replaced, pos, success = parseInterpolationExpression(line, pos + 1, mapping)
+				replaced, pos, success = parseInterpolationExpression(line, pos+1, mapping)
 				_, err := buffer.WriteString(replaced)
-				fmt.Printf("REPLACED: %v pos: %v\n", replaced, pos)
 				if success == false || err != nil {
 					return "", 0, false
 				}
 			}
 		case c == '}':
-			fmt.Printf("ENDIT: %v\n", string(c))
 			return buffer.String(), pos - 1, true
 		default:
-			fmt.Printf("APPEND: %v\n", string(c))
-			// err := buffer.WriteByte(c)
 			if err := buffer.WriteByte(c); err != nil {
 				return "", pos, false
 			}
-			fmt.Printf("APPEND: %v\n", string(c))
 		}
-		fmt.Printf("BUFFER: %v\n", string(buffer.String()))
 	}
 	return "", 0, false
 }
@@ -91,7 +82,6 @@ func parseVariableWithBraces(line string, pos int, mapping func(string) string) 
 
 	for ; pos < len(line); pos++ {
 		c := line[pos]
-		fmt.Printf("val: %v\n", string(c))
 
 		switch {
 		case c == '}':
