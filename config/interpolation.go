@@ -42,12 +42,16 @@ func parseVariable(line string, pos int, mapping func(string) string) (string, i
 	return mapping(buffer.String()), pos, true
 }
 
-func parseDefaultValue(line string, pos int) (string, int, bool) {
+func parseDefaultValue(line string, pos int, mapping func(string) string) (string, int, bool) {
 	var buffer bytes.Buffer
+	success := false
+	replaced := ""
 
+	fmt.Printf("INCOMING: %v\n", string(line[pos]))
 	// only skip :, :- and - at the beginning
 	for ; pos < len(line); pos++ {
 		c := line[pos]
+		fmt.Printf("SKIP: %v\n", string(c))
 		if c == ':' || c == '-' {
 			continue
 		}
@@ -55,13 +59,29 @@ func parseDefaultValue(line string, pos int) (string, int, bool) {
 	}
 	for ; pos < len(line); pos++ {
 		c := line[pos]
-		if c == '}' {
+		switch {
+		case c == '$':
+			if line[pos-1] != '\\' {
+				fmt.Printf("NESTED: %v pos: %v\n", string(c), pos)
+				replaced, pos, success = parseInterpolationExpression(line, pos + 1, mapping)
+				_, err := buffer.WriteString(replaced)
+				fmt.Printf("REPLACED: %v pos: %v\n", replaced, pos)
+				if success == false || err != nil {
+					return "", 0, false
+				}
+			}
+		case c == '}':
+			fmt.Printf("ENDIT: %v\n", string(c))
 			return buffer.String(), pos - 1, true
+		default:
+			fmt.Printf("APPEND: %v\n", string(c))
+			// err := buffer.WriteByte(c)
+			if err := buffer.WriteByte(c); err != nil {
+				return "", pos, false
+			}
+			fmt.Printf("APPEND: %v\n", string(c))
 		}
-		err := buffer.WriteByte(c)
-		if err != nil {
-			return "", pos, false
-		}
+		fmt.Printf("BUFFER: %v\n", string(buffer.String()))
 	}
 	return "", 0, false
 }
@@ -71,11 +91,11 @@ func parseVariableWithBraces(line string, pos int, mapping func(string) string) 
 
 	for ; pos < len(line); pos++ {
 		c := line[pos]
+		fmt.Printf("val: %v\n", string(c))
 
 		switch {
 		case c == '}':
 			bufferString := buffer.String()
-
 			if bufferString == "" {
 				return "", 0, false
 			}
@@ -84,7 +104,7 @@ func parseVariableWithBraces(line string, pos int, mapping func(string) string) 
 			buffer.WriteByte(c)
 		case validVariableDefault(c, line, pos):
 			defaultValue := ""
-			defaultValue, pos, _ = parseDefaultValue(line, pos)
+			defaultValue, pos, _ = parseDefaultValue(line, pos, mapping)
 			defaultValues[buffer.String()] = defaultValue
 		default:
 			return "", 0, false
