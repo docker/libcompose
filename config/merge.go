@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"reflect"
@@ -25,14 +26,21 @@ var (
 	}
 )
 
-// CreateConfig unmarshals bytes to config and creates config based on version
+// CreateConfig unmarshals bytes of a YAML manifest file and returns a new
+// Config. Initialize any defaults that can't be parsed (but are optional)
+// across various file formats. Most of these can remain unused.
+//
+// This function only handles parsing YAML in the general case. Any other file
+// format validation should be handled by the caller.
 func CreateConfig(bytes []byte) (*Config, error) {
 	var config Config
 	if err := yaml.Unmarshal(bytes, &config); err != nil {
 		return nil, err
 	}
 
-	if config.Version != "2" {
+	parts := strings.Split(config.Version, ".")
+	major, _ := strconv.Atoi(parts[0])
+	if major < 2 {
 		var baseRawServices RawServiceMap
 		if err := yaml.Unmarshal(bytes, &baseRawServices); err != nil {
 			return nil, err
@@ -103,13 +111,22 @@ func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup
 	}
 
 	var serviceConfigs map[string]*ServiceConfig
-	if config.Version == "2" {
+
+	switch config.Version {
+	case "2.1":
+		// STUB until we can properly validate and parse minor versions
 		var err error
 		serviceConfigs, err = MergeServicesV2(existingServices, environmentLookup, resourceLookup, file, baseRawServices, options)
 		if err != nil {
 			return "", nil, nil, nil, err
 		}
-	} else {
+	case "2":
+		var err error
+		serviceConfigs, err = MergeServicesV2(existingServices, environmentLookup, resourceLookup, file, baseRawServices, options)
+		if err != nil {
+			return "", nil, nil, nil, err
+		}
+	default:
 		serviceConfigsV1, err := MergeServicesV1(existingServices, environmentLookup, resourceLookup, file, baseRawServices, options)
 		if err != nil {
 			return "", nil, nil, nil, err
