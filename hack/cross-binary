@@ -18,7 +18,8 @@ fi
 # Get rid of existing binaries
 rm -f bundles/libcompose-cli*
 
-BUILDTIME=$(date --rfc-3339 ns | sed -e 's/ /T/') &> /dev/null
+# NOTE: explicit `strftime(3)` so we support non-GNU `date(1)` on macOS
+BUILDTIME=$(date +"%Y-%m-%d %H:%M:%S.%N%:z" | sed -e 's/ /T/') &> /dev/null
 GITCOMMIT=$(git rev-parse --short HEAD)
 
 # Build binaries
