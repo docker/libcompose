@@ -11,10 +11,16 @@ import (
 var (
 	schemaLoaderV1           gojsonschema.JSONLoader
 	constraintSchemaLoaderV1 gojsonschema.JSONLoader
+
 	schemaLoaderV2           gojsonschema.JSONLoader
 	constraintSchemaLoaderV2 gojsonschema.JSONLoader
-	schemaV1                 map[string]interface{}
-	schemaV2                 map[string]interface{}
+
+	schemaLoaderV2_1           gojsonschema.JSONLoader
+	constraintSchemaLoaderV2_1 gojsonschema.JSONLoader
+
+	schemaV1   map[string]interface{}
+	schemaV2   map[string]interface{}
+	schemaV2_1 map[string]interface{}
 )
 
 func init() {
@@ -23,6 +29,10 @@ func init() {
 	}
 
 	if err := setupSchemaLoaders(servicesSchemaDataV2, &schemaV2, &schemaLoaderV2, &constraintSchemaLoaderV2); err != nil {
+		panic(err)
+	}
+
+	if err := setupSchemaLoaders(servicesSchemaDataV2_1, &schemaV2_1, &schemaLoaderV2_1, &constraintSchemaLoaderV2_1); err != nil {
 		panic(err)
 	}
 }
