@@ -11,12 +11,10 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/promise"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/docker/pkg/term"
 	"github.com/docker/go-connections/nat"
@@ -24,6 +22,7 @@ import (
 	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project"
+	"github.com/sirupsen/logrus"
 )
 
 // Container holds information about a docker container and the service it is tied on.
@@ -215,9 +214,10 @@ func (c *Container) Run(ctx context.Context, configOverride *config.ServiceConfi
 	}
 
 	// holdHijackedConnection (in goroutine)
-	errCh = promise.Go(func() error {
-		return holdHijackedConnection(configOverride.Tty, in, out, stderr, resp)
-	})
+	errCh = make(chan error, 1)
+	go func() {
+		errCh <- holdHijackedConnection(configOverride.Tty, in, out, stderr, resp)
+	}()
 
 	if err := c.client.ContainerStart(ctx, c.container.ID, types.ContainerStartOptions{}); err != nil {
 		return -1, err

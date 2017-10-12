@@ -229,7 +229,7 @@ type networkClient struct {
 	removeError             error
 }
 
-func (c *networkClient) NetworkInspect(ctx context.Context, networkID string, verbose bool) (types.NetworkResource, error) {
+func (c *networkClient) NetworkInspect(ctx context.Context, networkID string, options types.NetworkInspectOptions) (types.NetworkResource, error) {
 	if c.inspectError != nil {
 		return types.NetworkResource{}, c.inspectError
 	}

@@ -6,8 +6,6 @@
 
 package unix
 
-const _SYS_dup = SYS_DUP3
-
 //sys	EpollWait(epfd int, events []EpollEvent, msec int) (n int, err error) = SYS_EPOLL_PWAIT
 //sys	Fchown(fd int, uid int, gid int) (err error)
 //sys	Fstat(fd int, stat *Stat_t) (err error)
@@ -23,7 +21,12 @@ const _SYS_dup = SYS_DUP3
 //sys	Pread(fd int, p []byte, offset int64) (n int, err error) = SYS_PREAD64
 //sys	Pwrite(fd int, p []byte, offset int64) (n int, err error) = SYS_PWRITE64
 //sys	Seek(fd int, offset int64, whence int) (off int64, err error) = SYS_LSEEK
-//sys	Select(nfd int, r *FdSet, w *FdSet, e *FdSet, timeout *Timeval) (n int, err error) = SYS_PSELECT6
+
+func Select(nfd int, r *FdSet, w *FdSet, e *FdSet, timeout *Timeval) (n int, err error) {
+	ts := Timespec{Sec: timeout.Sec, Nsec: timeout.Usec * 1000}
+	return Pselect(nfd, r, w, e, &ts, nil)
+}
+
 //sys	sendfile(outfd int, infd int, offset *int64, count int) (written int, err error)
 //sys	Setfsgid(gid int) (err error)
 //sys	Setfsuid(uid int) (err error)
@@ -67,8 +70,6 @@ func Lstat(path string, stat *Stat_t) (err error) {
 //sys	recvmsg(s int, msg *Msghdr, flags int) (n int, err error)
 //sys	sendmsg(s int, msg *Msghdr, flags int) (n int, err error)
 //sys	mmap(addr uintptr, length uintptr, prot int, flags int, fd int, offset int64) (xaddr uintptr, err error)
-
-func Getpagesize() int { return 65536 }
 
 //sysnb	Gettimeofday(tv *Timeval) (err error)
 
