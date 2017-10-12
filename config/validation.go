@@ -161,11 +161,18 @@ func validate(serviceMap RawServiceMap) error {
 
 	dataLoader := gojsonschema.NewGoLoader(serviceMap)
 
+	schema, err := schemaRegistry.GetVersion("")
+	if err != nil {
+		return err
+	}
+	schemaLoaderV1 := schema.Loader
+
 	result, err := gojsonschema.Validate(schemaLoaderV1, dataLoader)
 	if err != nil {
 		return err
 	}
 
+	schemaV1 := schema.Data
 	return generateErrorMessages(serviceMap, schemaV1, result)
 }
 
@@ -174,11 +181,18 @@ func validateV2(serviceMap RawServiceMap) error {
 
 	dataLoader := gojsonschema.NewGoLoader(serviceMap)
 
+	schema, err := schemaRegistry.GetVersion("2")
+	if err != nil {
+		return err
+	}
+	schemaLoaderV2 := schema.Loader
+
 	result, err := gojsonschema.Validate(schemaLoaderV2, dataLoader)
 	if err != nil {
 		return err
 	}
 
+	schemaV2 := schema.Data
 	return generateErrorMessages(serviceMap, schemaV2, result)
 }
 
@@ -248,6 +262,12 @@ func validateServiceConstraints(service RawService, serviceName string) error {
 
 	dataLoader := gojsonschema.NewGoLoader(service)
 
+	schema, err := schemaRegistry.GetVersion("")
+	if err != nil {
+		return err
+	}
+	constraintSchemaLoaderV1 := schema.ConstraintsLoader
+
 	result, err := gojsonschema.Validate(constraintSchemaLoaderV1, dataLoader)
 	if err != nil {
 		return err
@@ -282,6 +302,12 @@ func validateServiceConstraintsv2(service RawService, serviceName string) error 
 	var validationErrors []string
 
 	dataLoader := gojsonschema.NewGoLoader(service)
+
+	schema, err := schemaRegistry.GetVersion("2")
+	if err != nil {
+		return err
+	}
+	constraintSchemaLoaderV2 := schema.ConstraintsLoader
 
 	result, err := gojsonschema.Validate(constraintSchemaLoaderV2, dataLoader)
 	if err != nil {

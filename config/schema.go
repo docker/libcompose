@@ -191,7 +191,7 @@ var schemaDataV1 = `{
 }
 `
 
-var servicesSchemaDataV2 = `{
+var schemaDataV2 = `{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "id": "config_schema_v2.0.json",
   "type": "object",
@@ -484,7 +484,7 @@ var servicesSchemaDataV2 = `{
 }
 `
 
-var servicesSchemaDataV2_1 = `{
+var schemaDataV2_1 = `{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "id": "config_schema_v2.1.json",
   "type": "object",

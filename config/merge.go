@@ -9,6 +9,7 @@ import (
 
 	"reflect"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/pkg/urlutil"
 	"github.com/docker/libcompose/utils"
 	composeYaml "github.com/docker/libcompose/yaml"
@@ -110,17 +111,14 @@ func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup
 		}
 	}
 
+	parts := strings.Split(config.Version, ".")
+	major, _ := strconv.Atoi(parts[0])
 	var serviceConfigs map[string]*ServiceConfig
 
-	switch config.Version {
-	case "2.1":
-		// STUB until we can properly validate and parse minor versions
-		var err error
-		serviceConfigs, err = MergeServicesV2(existingServices, environmentLookup, resourceLookup, file, baseRawServices, options)
-		if err != nil {
-			return "", nil, nil, nil, err
-		}
-	case "2":
+	switch major {
+	case 3:
+		logrus.Fatal("Note: Compose file version 3 is not yet implemented")
+	case 2:
 		var err error
 		serviceConfigs, err = MergeServicesV2(existingServices, environmentLookup, resourceLookup, file, baseRawServices, options)
 		if err != nil {
