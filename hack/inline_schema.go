@@ -20,6 +20,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	schemaV2_1, err := ioutil.ReadFile("./hack/config_schema_v2.1.json")
+	if err != nil {
+		panic(err)
+	}
 
 	inlinedFile, err := os.Create("config/schema.go")
 	if err != nil {
@@ -27,8 +31,9 @@ func main() {
 	}
 
 	err = t.Execute(inlinedFile, map[string]string{
-		"schemaV1": string(schemaV1),
-		"schemaV2": string(schemaV2),
+		"schemaV1":   string(schemaV1),
+		"schemaV2":   string(schemaV2),
+		"schemaV2_1": string(schemaV2_1),
 	})
 
 	if err != nil {

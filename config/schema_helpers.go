@@ -2,29 +2,62 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/docker/go-connections/nat"
 	"github.com/xeipuuv/gojsonschema"
 )
 
-var (
-	schemaLoaderV1           gojsonschema.JSONLoader
-	constraintSchemaLoaderV1 gojsonschema.JSONLoader
-	schemaLoaderV2           gojsonschema.JSONLoader
-	constraintSchemaLoaderV2 gojsonschema.JSONLoader
-	schemaV1                 map[string]interface{}
-	schemaV2                 map[string]interface{}
-)
+// Schema represents the various gojsonschema utilites we'll use with our parsed
+// JSON schema data.
+type Schema struct {
+	Loader            gojsonschema.JSONLoader
+	ConstraintsLoader gojsonschema.JSONLoader
+	Data              map[string]interface{}
+}
 
+// SchemaRegistry represents our map of Compose versions to Schema objects.
+type SchemaRegistry map[string]*Schema
+
+// GetVersion
+func (reg SchemaRegistry) GetVersion(version string) (*Schema, error) {
+	if schema, ok := reg[version]; ok {
+		return schema, nil
+	}
+	return nil, fmt.Errorf("couldn't load JSON schema '%s'")
+}
+
+var schemaRegistry SchemaRegistry
+
+// Initialize our app's schemaRegistry which maps Compose version numbers to
+// various JSON schemas.
 func init() {
-	if err := setupSchemaLoaders(schemaDataV1, &schemaV1, &schemaLoaderV1, &constraintSchemaLoaderV1); err != nil {
-		panic(err)
+	var err error
+	schemaRegistry, err = NewSchemaRegistry(map[string]string{
+		"":    schemaDataV1,
+		"2":   schemaDataV2,
+		"2.0": schemaDataV2,
+		"2.1": schemaDataV2_1,
+	})
+	if err != nil {
+		logrus.Fatalf("can't init JSON schema registry:", err)
 	}
+}
 
-	if err := setupSchemaLoaders(servicesSchemaDataV2, &schemaV2, &schemaLoaderV2, &constraintSchemaLoaderV2); err != nil {
-		panic(err)
+// NewSchemaRegistry creates a new SchemaRegistry which converts a map of
+// versions to JSON schemas into versions and proper Schema objects.
+func NewSchemaRegistry(schemaData map[string]string) (map[string]*Schema, error) {
+	schemaRegistry := make(map[string]*Schema)
+	for version, data := range schemaData {
+		schema, err := NewSchema(data)
+		if err != nil {
+			return nil, fmt.Errorf("can't load JSON schema:", err)
+		}
+		schemaRegistry[version] = schema
 	}
+	return schemaRegistry, nil
 }
 
 type (
@@ -34,8 +67,12 @@ type (
 
 func (checker environmentFormatChecker) IsFormat(input string) bool {
 	// If the value is a boolean, a warning should be given
-	// However, we can't determine type since gojsonschema converts the value to a string
-	// Adding a function with an interface{} parameter to gojsonschema is probably the best way to handle this
+	//
+	// However, we can't determine type since gojsonschema converts the value to
+	// a string
+	//
+	// Adding a function with an interface{} parameter to gojsonschema is
+	// probably the best way to handle this
 	return true
 }
 
@@ -44,30 +81,32 @@ func (checker portsFormatChecker) IsFormat(input string) bool {
 	return err == nil
 }
 
-func setupSchemaLoaders(schemaData string, schema *map[string]interface{}, schemaLoader, constraintSchemaLoader *gojsonschema.JSONLoader) error {
-	if *schema != nil {
-		return nil
-	}
-
-	var schemaRaw interface{}
-	err := json.Unmarshal([]byte(schemaData), &schemaRaw)
+// NewSchema constructs a new Schema including parsing and initializing JSON
+// schema loaders used to validate sections of a Compose file.
+func NewSchema(schemaJSON string) (*Schema, error) {
+	var schemaParsed interface{}
+	err := json.Unmarshal([]byte(schemaJSON), &schemaParsed)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	*schema = schemaRaw.(map[string]interface{})
+	data := schemaParsed.(map[string]interface{})
 
 	gojsonschema.FormatCheckers.Add("environment", environmentFormatChecker{})
 	gojsonschema.FormatCheckers.Add("ports", portsFormatChecker{})
 	gojsonschema.FormatCheckers.Add("expose", portsFormatChecker{})
-	*schemaLoader = gojsonschema.NewGoLoader(schemaRaw)
+	loader := gojsonschema.NewGoLoader(schemaParsed)
 
-	definitions := (*schema)["definitions"].(map[string]interface{})
+	definitions := data["definitions"].(map[string]interface{})
 	constraints := definitions["constraints"].(map[string]interface{})
 	service := constraints["service"].(map[string]interface{})
-	*constraintSchemaLoader = gojsonschema.NewGoLoader(service)
+	constraintsLoader := gojsonschema.NewGoLoader(service)
 
-	return nil
+	return &Schema{
+		Loader:            loader,
+		ConstraintsLoader: constraintsLoader,
+		Data:              data,
+	}, nil
 }
 
 // gojsonschema doesn't provide a list of valid types for a property
