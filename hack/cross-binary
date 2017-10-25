@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 if [ -z "$1" ]; then
     # Remove windows platform because of
     # https://github.com/mailgun/log/issues/10
-    OS_PLATFORM_ARG=(linux windows darwin freebsd)
+    OS_PLATFORM_ARG=(linux windows darwin)
 else
     OS_PLATFORM_ARG=($1)
 fi

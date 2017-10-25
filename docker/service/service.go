@@ -7,7 +7,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
@@ -26,6 +25,7 @@ import (
 	"github.com/docker/libcompose/project/options"
 	"github.com/docker/libcompose/utils"
 	"github.com/docker/libcompose/yaml"
+	"github.com/sirupsen/logrus"
 )
 
 // Service is a project.Service implementations.
@@ -488,7 +488,7 @@ func (s *Service) OutOfSync(ctx context.Context, c *container.Container) (bool, 
 
 	image, err := image.InspectImage(ctx, s.clientFactory.Create(s), c.ImageConfig())
 	if err != nil {
-		if client.IsErrImageNotFound(err) {
+		if client.IsErrNotFound(err) {
 			logrus.Debugf("Image %s do not exist, do not know if it's out of sync", c.Image())
 			return false, nil
 		}
