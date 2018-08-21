@@ -28,7 +28,17 @@ var (
 )
 
 func getComposeMajorVersion(version string) (int, error) {
-	return strconv.Atoi(strings.Split(version, ".")[0])
+	if version == "" {
+		return 1, nil
+	}
+	parts := strings.Split(version, ".")
+	if len(parts) == 1 {
+		return strconv.Atoi(version)
+	} else if len(parts) == 2 {
+		return strconv.Atoi(parts[0])
+	} else {
+		return -1, fmt.Errorf("Invalid version string, expected single integer or dot delimited int.int. Got: %s", version)
+	}
 }
 
 // CreateConfig unmarshals bytes of a YAML manifest file and returns a new
