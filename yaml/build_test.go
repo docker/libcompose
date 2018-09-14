@@ -8,9 +8,12 @@ import (
 )
 
 var (
-	buildno = "1"
-	user    = "vincent"
-	empty   = "\x00"
+	buildno       = "1"
+	user          = "vincent"
+	empty         = "\x00"
+	testCacheFrom = "someotherimage:latest"
+	target        = "intermediateimage"
+	network       = "buildnetwork"
 )
 
 func TestMarshalBuild(t *testing.T) {
@@ -46,12 +49,28 @@ dockerfile: alternate
 					"buildno": &buildno,
 					"user":    &user,
 				},
+				CacheFrom: []*string{
+					&testCacheFrom,
+				},
+				Labels: map[string]*string{
+					"buildno": &buildno,
+					"user":    &user,
+				},
+				Target:  target,
+				Network: network,
 			},
 			expected: `args:
   buildno: "1"
   user: vincent
+cache_from:
+- someotherimage:latest
 context: .
 dockerfile: alternate
+labels:
+  buildno: "1"
+  user: vincent
+network: buildnetwork
+target: intermediateimage
 `,
 		},
 	}
@@ -92,7 +111,15 @@ dockerfile: alternate`,
 dockerfile: alternate
 args:
   buildno: 1
-  user: vincent`,
+  user: vincent
+cache_from:
+  - someotherimage:latest
+labels:
+  buildno: "1"
+  user: vincent
+target: intermediateimage
+network: buildnetwork
+`,
 			expected: &Build{
 				Context:    ".",
 				Dockerfile: "alternate",
@@ -100,6 +127,15 @@ args:
 					"buildno": &buildno,
 					"user":    &user,
 				},
+				CacheFrom: []*string{
+					&testCacheFrom,
+				},
+				Labels: map[string]*string{
+					"buildno": &buildno,
+					"user":    &user,
+				},
+				Target:  target,
+				Network: network,
 			},
 		},
 		{

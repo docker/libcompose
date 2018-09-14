@@ -43,6 +43,9 @@ type DaemonBuilder struct {
 	Pull             bool
 	BuildArgs        map[string]*string
 	CacheFrom        []string
+	Labels           map[string]*string
+	Network          string
+	Target           string
 	LoggerFactory    logger.Factory
 }
 
@@ -88,6 +91,12 @@ func (d *DaemonBuilder) Build(ctx context.Context, imageName string) error {
 		outFd, isTerminalOut = term.GetFdInfo(w)
 	}
 
+	// Convert map[string]*string to map[string]string
+	labels := make(map[string]string)
+	for lk, lv := range d.Labels {
+		labels[lk] = *lv
+	}
+
 	response, err := d.Client.ImageBuild(ctx, body, types.ImageBuildOptions{
 		Tags:        []string{imageName},
 		NoCache:     d.NoCache,
@@ -98,6 +107,9 @@ func (d *DaemonBuilder) Build(ctx context.Context, imageName string) error {
 		AuthConfigs: d.AuthConfigs,
 		BuildArgs:   d.BuildArgs,
 		CacheFrom:   d.CacheFrom,
+		Labels:      labels,
+		NetworkMode: d.Network,
+		Target:      d.Target,
 	})
 	if err != nil {
 		return err
