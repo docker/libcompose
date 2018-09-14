@@ -43,6 +43,9 @@ type DaemonBuilder struct {
 	Pull             bool
 	BuildArgs        map[string]*string
 	CacheFrom        []string
+	Labels           map[string]*string
+	Network          string
+	Target           string
 	LoggerFactory    logger.Factory
 }
 
@@ -98,6 +101,9 @@ func (d *DaemonBuilder) Build(ctx context.Context, imageName string) error {
 		AuthConfigs: d.AuthConfigs,
 		BuildArgs:   d.BuildArgs,
 		CacheFrom:   d.CacheFrom,
+		Labels:      d.Labels,
+		NetworkMode: d.Network,
+		Target:      d.Target,
 	})
 	if err != nil {
 		return err
