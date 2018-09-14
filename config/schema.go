@@ -223,7 +223,7 @@ var servicesSchemaDataV2 = `{
                 "cache_from": {"$ref": "#/definitions/list_of_strings"},
                 "labels": {"$ref": "#/definitions/list_or_dict"},
                 "network": {"type": "string"},
-                "target": {"type": "string"},
+                "target": {"type": "string"}
               },
               "additionalProperties": false
             }
