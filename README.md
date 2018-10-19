@@ -5,6 +5,21 @@
 
 A Go library for Docker Compose. It does everything the command-line tool does, but from within Go -- read Compose files, start them, scale them, etc.
 
+**Note: This is not really maintained anymore — the reason are diverse but mainly lack of time from the maintainers**
+
+The current state is the following :
+- The `libcompose` CLI should considered abandonned. The `v2` parsing is incomplete and `v3` parsing is missing.
+- The official compose Go parser implementation is on [`docker/cli`](https://github.com/docker/cli/tree/master/cli/compose) but only support `v3` version of the compose format.
+
+What is the work that is needed:
+- Remove the cli code (thus removing dependencies to `docker/cli` )
+- Clearer separation of packages : `parsing`, `conversion` (to docker api or swarm api), `execution` (`Up`, `Down`, … behaviors)
+- Add support for all compose format version (v1, v2.x, v3.x)
+- Switch to either `golang/dep` or `go mod` for dependencies (removing the `vendor` folder)
+- *(bonus)* extract the [`docker/cli`](https://github.com/docker/cli/tree/master/cli/compose) code here and vendor this library into `docker/cli`.
+
+If you are interested to work on `libcompose`, feel free to ping me (over twitter @vdemeest), I'll definitely do code reviews and help as much as I can 😉.
+
 **Note: This is experimental and not intended to replace the [Docker Compose](https://github.com/docker/compose) command-line tool. If you're looking to use Compose, head over to the [Compose installation instructions](http://docs.docker.com/compose/install/) to get started with it.**
 
 Here is a list of known project that uses `libcompose`:

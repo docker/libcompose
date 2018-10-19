@@ -11,12 +11,7 @@
 [Org]
 	[Org."Core maintainers"]
 		people = [
-			"aanand",
-			"aduermael",
 			"dnephin",
-			"ibuildthecloud",
-			"joshwget",
-			"gdevillele",
 			"vdemeester",
 		]
 
@@ -27,36 +22,10 @@
 # in the people section.
 
 	# ADD YOURSELF HERE IN ALPHABETICAL ORDER
-
-	[people.aanand]
-	Name = "Aanand Prasad"
-	Email = "aanand@docker.com"
-	GitHub = "aanand"
-
-	[people.aduermael]
-	Name = "Adrien Duermael"
-	Email = "adrien@docker.com"
-	GitHub = "aduermael"
-
 	[people.dnephin]
 	Name = "Daniel Nephin"
 	Email = "dnephin@gmail.com"
 	GitHub = "dnephin"
-
-	[people.ibuildthecloud]
-	Name = "Darren Shepherd"
-	Email = "darren@rancher.com"
-	GitHub = "ibuildthecloud"
-
-	[people.gdevillele]
-	Name = "Gaetan de Villele"
-	Email = "gaetan@docker.com"
-	GitHub = "gdevillele"
-
-	[people.joshwget]
-	Name = "Josh Curl"
-	Email = "josh@rancher.com"
-	GitHub = "joshwget"
 
 	[people.vdemeester]
 	Name = "Vincent Demeester"
