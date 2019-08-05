@@ -89,7 +89,7 @@ func testExpectedContainsVolume(t *testing.T, index int, expected []*Volume, vol
 type volumeClient struct {
 	client.Client
 	expectedName         string
-	expectedVolumeCreate volume.VolumesCreateBody
+	expectedVolumeCreate volume.VolumeCreateBody
 	inspectError         error
 	inspectVolumeDriver  string
 	inspectVolumeOptions map[string]string

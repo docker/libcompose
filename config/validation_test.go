@@ -351,8 +351,8 @@ func TestMixedInvalidServicesAndInvalidServiceNames(t *testing.T) {
 			"ports": "invalid_type",
 		},
 	}, []string{
-		"Service 'foo1' configuration key 'ports' contains an invalid type, it should be an array",
 		"Invalid service name '???' - only [a-zA-Z0-9\\._\\-] characters are allowed",
+		"Service 'foo1' configuration key 'ports' contains an invalid type, it should be an array",
 		"Service 'foo2' configuration key 'ports' contains an invalid type, it should be an array",
 	}, 3)
 }
