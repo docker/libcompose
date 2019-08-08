@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
+export GO111MODULE=on
 export LIBCOMPOSE_PKG='github.com/docker/libcompose'
 
 # List of bundles to create when no argument is passed
