@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	t, err := template.New("schema_template.go").ParseFiles("./hack/schema_template.go")
+	t, err := template.New("schema_template.go").ParseFiles("./hack/schema_template.go.tmpl")
 	if err != nil {
 		panic(err)
 	}
