@@ -6,10 +6,11 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Microsoft/go-winio v0.3.8 // indirect
 	github.com/Microsoft/hcsshim v0.8.6 // indirect
+	github.com/containerd/containerd v1.2.7 // indirect
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc // indirect
 	github.com/docker/cli v0.0.0-20190711175710-5b38d82aa076
 	github.com/docker/distribution v2.7.1+incompatible
-	github.com/docker/docker v0.7.3-0.20190813234819-fade624f1696 // indirect
+	github.com/docker/docker v0.7.3-0.20190813234819-fade624f1696
 	github.com/docker/docker-credential-helpers v0.6.3 // indirect
 	github.com/docker/go-connections v0.3.0
 	github.com/docker/go-metrics v0.0.0-20181218153428-b84716841b82 // indirect
