@@ -1,4 +1,4 @@
-.PHONY: all build binary clean cross-binary help test test-unit test-integration test-acceptance validate
+.PHONY: all build clean help test test-unit test-integration test-acceptance validate
 
 LIBCOMPOSE_ENVS := \
 	-e OS_PLATFORM_ARG \
@@ -21,28 +21,22 @@ DAEMON_VERSION := $(if $(DAEMON_VERSION),$(DAEMON_VERSION),"default")
 TTY := $(shell [ -t 0 ] && echo "-t")
 DOCKER_RUN_LIBCOMPOSE := docker run --rm -i $(TTY) --privileged -e DAEMON_VERSION="$(DAEMON_VERSION)" $(LIBCOMPOSE_ENVS) $(LIBCOMPOSE_MOUNT) "$(LIBCOMPOSE_IMAGE)"
 
-default: binary
+default: test
 
-all: build ## validate all checks, build linux binary, run all tests\ncross build non-linux binaries
+all: build ## validate all checks, run all tests
 	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh
 
-binary: build ## build the linux binary
-	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh binary
-
-cross-binary: build ## cross build the non linux binaries (windows, darwin)
-	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh cross-binary
-
 test: build ## run the unit, integration and acceptance tests
-	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh binary test-unit test-integration test-acceptance
+	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh test-unit test-integration test-acceptance
 
 test-unit: build ## run the unit tests
 	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh test-unit
 
 test-integration: build ## run the integration tests
-	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh binary test-integration
+	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh test-integration
 
 test-acceptance: build ## run the acceptance tests
-	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh binary test-acceptance
+	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh test-acceptance
 
 validate: build ## validate DCO, git conflicts marks, gofmt, golint and go vet
 	$(DOCKER_RUN_LIBCOMPOSE) ./hack/make.sh validate-dco validate-git-marks validate-gofmt validate-lint validate-vet
