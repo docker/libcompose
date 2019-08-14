@@ -9,7 +9,7 @@ require (
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc // indirect
 	github.com/docker/cli v0.0.0-20190711175710-5b38d82aa076
 	github.com/docker/distribution v2.7.1+incompatible
-	github.com/docker/docker v0.0.0-00010101000000-000000000000
+	github.com/docker/docker v0.7.3-0.20190813234819-fade624f1696 // indirect
 	github.com/docker/docker-credential-helpers v0.6.3 // indirect
 	github.com/docker/go-connections v0.3.0
 	github.com/docker/go-metrics v0.0.0-20181218153428-b84716841b82 // indirect
@@ -42,5 +42,3 @@ require (
 	gopkg.in/yaml.v2 v2.2.2
 	gotest.tools v2.2.0+incompatible // indirect
 )
-
-replace github.com/docker/docker => github.com/docker/engine v0.0.0-20190725163905-fa8dd90ceb7b
