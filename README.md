@@ -1,3 +1,5 @@
+### :warning: Deprecation Notice: This project and repository is now deprecated and is no longer under active development. Please use [compose-go](https://github.com/compose-spec/compose-go) instead.
+
 # libcompose
 
 [![GoDoc](https://godoc.org/github.com/docker/libcompose?status.png)](https://godoc.org/github.com/docker/libcompose)
