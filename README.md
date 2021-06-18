@@ -33,6 +33,7 @@ Here is a list of known project that uses `libcompose`:
 - [compose2kube](https://github.com/kelseyhightower/compose2kube) (by [kelseyhightower](https://github.com/kelseyhightower))
 - [amazon-ecs-cli](https://github.com/aws/amazon-ecs-cli) (by [Amazon AWS](https://github.com/aws))
 - [libkermit](https://github.com/libkermit/docker) (by [vdemeester](https://github.com/vdemeester))
+- [portainer](https://github.com/portainer/portainer) (by [deviantony](https://github.com/deviantony))
 
 ## Usage
 
