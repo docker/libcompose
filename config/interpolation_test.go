@@ -26,10 +26,21 @@ func testInvalidInterpolatedLine(t *testing.T, line string) {
 	assert.Equal(t, false, success)
 }
 
-func testInterpolatedDefault(t *testing.T, line string, delim string, expectedVar string, expectedVal string) {
-	envVar, _ := parseLine(line, func(env string) string { return env })
+func testInterpolatedDefault(t *testing.T, line string, delim string, expectedVar string, expectedVal string, envVariables map[string]string) {
+	envVar, _ := parseLine(line, func(s string) string {
+		if val, ok := envVariables[s]; ok {
+			return val
+		}
+		return s
+	})
+
 	pos := strings.Index(line, delim)
-	envDefault, _, _ := parseDefaultValue(line, pos)
+	envDefault, _, _ := parseDefaultValue(line, pos, func(s string) string {
+		if val, ok := envVariables[s]; ok {
+			return val
+		}
+		return s
+	})
 	assert.Equal(t, expectedVal, envDefault)
 	assert.Equal(t, expectedVar, envVar)
 }
@@ -45,16 +56,25 @@ func TestParseLine(t *testing.T) {
 		"9aNumber":    "WORKED",
 		"a9Number":    "WORKED",
 		"defTest":     "WORKED",
+		"test_domain": "127.0.0.1:27017",
+		"HOME":        "/home/foo",
+		"test_tilde":  "~/.home/test",
 	}
 
-	testInterpolatedDefault(t, "${defVar:-defVal}", ":-", "defVar", "defVal")
-	testInterpolatedDefault(t, "${defVar2-defVal2}", "-", "defVar2", "defVal2")
-	testInterpolatedDefault(t, "${defVar:-def:Val}", ":-", "defVar", "def:Val")
-	testInterpolatedDefault(t, "${defVar:-def-Val}", ":-", "defVar", "def-Val")
+	testInterpolatedDefault(t, "${defVar:-defVal}", ":-", "defVar", "defVal", variables)
+	testInterpolatedDefault(t, "${defVar2-defVal2}", "-", "defVar2", "defVal2", variables)
+	testInterpolatedDefault(t, "${defVar:-def:Val}", ":-", "defVar", "def:Val", variables)
+	testInterpolatedDefault(t, "${defVar:-def-Val}", ":-", "defVar", "def-Val", variables)
+	testInterpolatedDefault(t, "${defVar:-~/foo/bar}", ":-", "defVar", "~/foo/bar", variables)
+	testInterpolatedDefault(t, "${defVar:-${HOME}/.bar/test}", ":-", "defVar", "/home/foo/.bar/test", variables)
+	testInterpolatedDefault(t, "${defVar:-127.0.0.1:27017}", ":-", "defVar", "127.0.0.1:27017", variables)
 
 	testInterpolatedLine(t, "WORKED", "$lower", variables)
 	testInterpolatedLine(t, "WORKED", "${MiXeD}", variables)
 	testInterpolatedLine(t, "WORKED", "${split_VaLue}", variables)
+	testInterpolatedLine(t, "127.0.0.1:27017", "${test_domain}", variables)
+	testInterpolatedLine(t, "~/.home/test", "${test_tilde}", variables)
+	testInterpolatedLine(t, "~/.home/test", "${test_tilde}", variables)
 	// make sure variable name is parsed correctly with default value
 	testInterpolatedLine(t, "WORKED", "${defTest:-sometest}", variables)
 	testInterpolatedLine(t, "WORKED", "${defTest-sometest}", variables)
@@ -190,6 +210,8 @@ func TestInterpolate(t *testing.T) {
   # dictionary item value
   labels:
     mylabel: "myvalue=="
+	domainlable: "127.0.0.1:27017"
+	tildelabel: "~/.home/test"
 
   # unset value
   hostname: "host-"
@@ -207,6 +229,8 @@ func TestInterpolate(t *testing.T) {
   # dictionary item value
   labels:
     mylabel: "${LABEL_VALUE}"
+	domainlable: "${TEST_DOMAIN}"
+	tildelabel: "${TILDE_DIR}"
 
   # unset value
   hostname: "host-${UNSET_VALUE}"
@@ -215,6 +239,8 @@ func TestInterpolate(t *testing.T) {
   command: "$${ESCAPED}"`, map[string]string{
 			"IMAGE":       "=busybox",
 			"HOST_PORT":   "=",
+			"TEST_DOMAIN": "127.0.0.1:27017",
+			"TILDE_DIR":   "~/.home/test",
 			"LABEL_VALUE": "myvalue==",
 		})
 	// same as above but with default values

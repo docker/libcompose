@@ -42,8 +42,10 @@ func parseVariable(line string, pos int, mapping func(string) string) (string, i
 	return mapping(buffer.String()), pos, true
 }
 
-func parseDefaultValue(line string, pos int) (string, int, bool) {
+func parseDefaultValue(line string, pos int, mapping func(string) string) (string, int, bool) {
 	var buffer bytes.Buffer
+	success := false
+	replaced := ""
 
 	// only skip :, :- and - at the beginning
 	for ; pos < len(line); pos++ {
@@ -55,12 +57,21 @@ func parseDefaultValue(line string, pos int) (string, int, bool) {
 	}
 	for ; pos < len(line); pos++ {
 		c := line[pos]
-		if c == '}' {
+		switch {
+		case c == '$':
+			if line[pos-1] != '\\' {
+				replaced, pos, success = parseInterpolationExpression(line, pos+1, mapping)
+				_, err := buffer.WriteString(replaced)
+				if success == false || err != nil {
+					return "", 0, false
+				}
+			}
+		case c == '}':
 			return buffer.String(), pos - 1, true
-		}
-		err := buffer.WriteByte(c)
-		if err != nil {
-			return "", pos, false
+		default:
+			if err := buffer.WriteByte(c); err != nil {
+				return "", pos, false
+			}
 		}
 	}
 	return "", 0, false
@@ -75,7 +86,6 @@ func parseVariableWithBraces(line string, pos int, mapping func(string) string) 
 		switch {
 		case c == '}':
 			bufferString := buffer.String()
-
 			if bufferString == "" {
 				return "", 0, false
 			}
@@ -84,7 +94,7 @@ func parseVariableWithBraces(line string, pos int, mapping func(string) string) 
 			buffer.WriteByte(c)
 		case validVariableDefault(c, line, pos):
 			defaultValue := ""
-			defaultValue, pos, _ = parseDefaultValue(line, pos)
+			defaultValue, pos, _ = parseDefaultValue(line, pos, mapping)
 			defaultValues[buffer.String()] = defaultValue
 		default:
 			return "", 0, false
