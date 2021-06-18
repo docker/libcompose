@@ -70,69 +70,6 @@ func main() {
 }
 ```
 
-
-## Building
-
-You need either [Docker](http://github.com/docker/docker) and `make`,
-or `go` in order to build libcompose.
-
-### Building with `docker`
-
-You need Docker and ``make`` and then run the ``binary`` target. This
-will create binary for all platform in the `bundles` folder.
-
-```bash
-$ make binary
-docker build -t "libcompose-dev:refactor-makefile" .
-# […]
----> Making bundle: binary (in .)
-Number of parallel builds: 4
-
--->      darwin/386: github.com/docker/libcompose/cli/main
--->    darwin/amd64: github.com/docker/libcompose/cli/main
--->       linux/386: github.com/docker/libcompose/cli/main
--->     linux/amd64: github.com/docker/libcompose/cli/main
--->       linux/arm: github.com/docker/libcompose/cli/main
--->     windows/386: github.com/docker/libcompose/cli/main
--->   windows/amd64: github.com/docker/libcompose/cli/main
-
-$ ls bundles
-libcompose-cli_darwin-386*    libcompose-cli_linux-amd64*      libcompose-cli_windows-amd64.exe*
-libcompose-cli_darwin-amd64*  libcompose-cli_linux-arm*
-libcompose-cli_linux-386*     libcompose-cli_windows-386.exe*
-```
-
-
-### Building with `go`
-
-- You need `go` v1.11 or greater
-- you need to set export `GO111MODULE=on` environment variable
-- If your working copy is not in your `GOPATH`, you need to set it
-accordingly.
-
-```bash
-$ go generate
-# Generate some stuff
-$ go build -o libcompose ./cli/main
-```
-
-
-## Running
-
-A partial implementation of the libcompose-cli CLI is also implemented in Go. The primary purpose of this code is so one can easily test the behavior of libcompose.
-
-Run one of these:
-
-```
-libcompose-cli_darwin-386
-libcompose-cli_linux-amd64
-libcompose-cli_windows-amd64.exe
-libcompose-cli_darwin-amd64
-libcompose-cli_linux-arm
-libcompose-cli_linux-386
-libcompose-cli_windows-386.exe
-```
-
 ## Tests (unit & integration)
 
 
