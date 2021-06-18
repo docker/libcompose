@@ -1,6 +1,7 @@
 package client
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -37,6 +38,7 @@ func init() {
 type Options struct {
 	TLS        bool
 	TLSVerify  bool
+	TLSConfig  *tls.Config
 	TLSOptions tlsconfig.Options
 	TrustKey   string
 	Host       string
@@ -82,14 +84,17 @@ func Create(c Options) (client.APIClient, error) {
 
 	var httpClient *http.Client
 	if c.TLS {
-		config, err := tlsconfig.Client(c.TLSOptions)
-		if err != nil {
-			return nil, err
+		if c.TLSConfig == nil {
+			var err error
+			c.TLSConfig, err = tlsconfig.Client(c.TLSOptions)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		httpClient = &http.Client{
 			Transport: &http.Transport{
-				TLSClientConfig: config,
+				TLSClientConfig: c.TLSConfig,
 			},
 		}
 	}
