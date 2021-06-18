@@ -40,6 +40,7 @@ type APIProject interface {
 	Load(bytes []byte) error
 	Containers(ctx context.Context, filter Filter, services ...string) ([]string, error)
 
+	GetName() string
 	GetServiceConfig(service string) (*config.ServiceConfig, bool)
 }
 
