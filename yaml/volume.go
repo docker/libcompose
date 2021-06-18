@@ -20,7 +20,7 @@ type Volume struct {
 	AccessMode  string `yaml:"-"`
 }
 
-// Generate a hash string to detect service volume config changes
+// HashString: Generate a hash string to detect service volume config changes
 func (v *Volumes) HashString() string {
 	if v == nil {
 		return ""
