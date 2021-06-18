@@ -313,6 +313,7 @@ func (s *Service) up(ctx context.Context, imageName string, create bool, options
 
 	logrus.Debugf("Found %d existing containers for service %s", len(containers), s.name)
 
+	newService := false
 	if len(containers) == 0 && create {
 		namer, err := s.namer(ctx, 1)
 		if err != nil {
@@ -323,27 +324,32 @@ func (s *Service) up(ctx context.Context, imageName string, create bool, options
 			return err
 		}
 		containers = []*container.Container{c}
+		newService = true
 	}
 
 	return s.eachContainer(ctx, containers, func(c *container.Container) error {
 		var err error
-		if create {
+
+		oldContainerID := c.ID()
+
+		if !newService {
 			c, err = s.recreateIfNeeded(ctx, c, options.NoRecreate, options.ForceRecreate)
 			if err != nil {
 				return err
 			}
 		}
 
-		if err := s.connectContainerToNetworks(ctx, c, false); err != nil {
-			return err
-		}
+		if newService || oldContainerID != c.ID() {
+			if err := s.connectContainerToNetworks(ctx, c, false); err != nil {
+				return err
+			}
 
-		err = c.Start(ctx)
-
-		if err == nil {
-			s.project.Notify(events.ContainerStarted, s.name, map[string]string{
-				"name": c.Name(),
-			})
+			err = c.Start(ctx)
+			if err == nil {
+				s.project.Notify(events.ContainerStarted, s.name, map[string]string{
+					"name": c.Name(),
+				})
+			}
 		}
 
 		return err
