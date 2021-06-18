@@ -22,7 +22,7 @@ type Network struct {
 	IPv6Address string   `yaml:"ipv6_address,omitempty"`
 }
 
-// Generate a hash string to detect service network config changes
+// HashString: Generate a hash string to detect service network config changes
 func (n *Networks) HashString() string {
 	if n == nil {
 		return ""
@@ -35,7 +35,7 @@ func (n *Networks) HashString() string {
 	return strings.Join(result, ",")
 }
 
-// Generate a hash string to detect service network config changes
+// HashString: Generate a hash string to detect service network config changes
 func (n *Network) HashString() string {
 	if n == nil {
 		return ""
