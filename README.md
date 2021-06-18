@@ -10,7 +10,7 @@ A Go library for Docker Compose. It does everything the command-line tool does, 
 **Note: This is not really maintained anymore — the reason are diverse but mainly lack of time from the maintainers**
 
 The current state is the following :
-- The `libcompose` CLI should considered abandonned. The `v2` parsing is incomplete and `v3` parsing is missing.
+- The `libcompose` CLI should considered abandoned. The `v2` parsing is incomplete and `v3` parsing is missing.
 - The official compose Go parser implementation is on [`docker/cli`](https://github.com/docker/cli/tree/master/cli/compose) but only support `v3` version of the compose format.
 
 What is the work that is needed:
